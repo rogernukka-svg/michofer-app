@@ -6,6 +6,7 @@ export default function Login() {
   const [step, setStep] = useState('welcome')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [knownUser, setKnownUser] = useState(null)
 
@@ -16,38 +17,58 @@ export default function Login() {
     const savedEmail = localStorage.getItem('michofer_last_email')
     const savedName = localStorage.getItem('michofer_last_name')
     const savedRole = localStorage.getItem('michofer_last_role')
+    const savedPhoto = localStorage.getItem('michofer_last_photo')
 
     const finalEmail = emailFromUrl || savedEmail
 
     if (finalEmail) {
       setEmail(finalEmail)
+
       setKnownUser({
         email: finalEmail,
         name: savedName || '',
         role: savedRole || '',
+        photo: savedPhoto || '',
       })
+
       setStep('password')
     }
   }, [])
 
   const title = useMemo(() => {
-    if (knownUser?.email && step === 'password') return 'A vos te conozco 👋'
-    if (step === 'welcome') return 'Bienvenido'
+    if (knownUser?.email && step === 'password') {
+      return `👋 Hola ${knownUser.name?.split(' ')[0] || ''}`
+    }
+
+    if (step === 'welcome') return 'Movilidad conectada.'
     if (step === 'email') return 'Tu correo'
-    if (step === 'password') return 'Tu contraseña'
-    if (step === 'loading') return 'Entrando'
+    if (step === 'password') return 'Tu clave'
+    if (step === 'loading') return 'Entrando...'
+
     return 'MiChofer'
   }, [step, knownUser])
 
   const subtitle = useMemo(() => {
     if (knownUser?.email && step === 'password') {
-      return `${knownUser.name ? knownUser.name.split(' ')[0] + ', ' : ''}poné tu contraseña nomás y seguimos.`
+      return 'Tu dispositivo ya está registrado.'
     }
 
-    if (step === 'welcome') return 'Elegí quién te lleva.'
-    if (step === 'email') return 'Primero identificamos tu cuenta.'
-    if (step === 'password') return 'Último paso para entrar.'
-    if (step === 'loading') return 'Verificando tu cuenta.'
+    if (step === 'welcome') {
+      return 'Respuesta rápida. Presencia clara.'
+    }
+
+    if (step === 'email') {
+      return 'Primero identifiquemos tu cuenta.'
+    }
+
+    if (step === 'password') {
+      return 'Último paso y seguimos.'
+    }
+
+    if (step === 'loading') {
+      return 'Verificando acceso.'
+    }
+
     return ''
   }, [step, knownUser])
 
@@ -74,8 +95,8 @@ export default function Login() {
 
     const cleanEmail = normalizeEmail(email)
 
-    if (!cleanEmail || !password || password.length < 6) {
-      alert('Completá correo y contraseña')
+    if (!cleanEmail || !password) {
+      alert('Completá los datos')
       return
     }
 
@@ -100,19 +121,28 @@ export default function Login() {
         .eq('id', data.user.id)
         .single()
 
-      localStorage.setItem('michofer_last_email', cleanEmail)
-      localStorage.setItem('michofer_last_name', profile?.full_name || '')
-      localStorage.setItem('michofer_last_role', profile?.role || '')
+     localStorage.setItem('michofer_last_email', cleanEmail)
+localStorage.setItem('michofer_last_name', profile?.full_name || '')
+localStorage.setItem('michofer_last_role', profile?.role || '')
+
+if (profile?.avatar_url) {
+  localStorage.setItem(
+    'michofer_last_photo',
+    profile.avatar_url
+  )
+} else {
+  localStorage.removeItem('michofer_last_photo')
+}
 
       if (profile?.role === 'driver') {
-        window.location.href = '/driver'
-        return
-      }
+  window.location.href = '/driver'
+  return
+}
 
-      window.location.href = '/'
+window.location.href = '/client'
     } catch (err) {
       console.error(err)
-      alert('Error al iniciar sesión')
+      alert('No se pudo iniciar sesión')
       setStep('password')
     } finally {
       setBusy(false)
@@ -122,14 +152,22 @@ export default function Login() {
   return (
     <div className="login-screen">
       <div className="login-phone">
-        <div className="login-red-orb"></div>
-
         <div className="login-panel">
           <div className="login-hero-logo">
             <img src={logo} alt="MiChofer" />
           </div>
 
-          <div className="login-spacer"></div>
+          <div className="login-spacer" />
+
+          {step === 'password' && (
+  <div className="login-user-avatar-fallback">
+    {knownUser?.photo?.startsWith('http') ? (
+      <img src={knownUser.photo} alt="Usuario" />
+    ) : (
+      <span>{knownUser?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+    )}
+  </div>
+)}
 
           <h1>{title}</h1>
 
@@ -138,11 +176,10 @@ export default function Login() {
           {step === 'welcome' && (
             <>
               <button
-                type="button"
                 className="login-main-btn"
                 onClick={() => setStep('email')}
               >
-                Empezar
+                Continuar
               </button>
 
               <a className="login-create-link" href="/registro">
@@ -153,15 +190,12 @@ export default function Login() {
 
           {step === 'email' && (
             <form className="login-step-form" onSubmit={handleEmailNext}>
-              <label>Correo electrónico</label>
-
               <input
                 autoFocus
-                placeholder="tu correo"
+                placeholder="Tu correo"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
               />
 
               <button className="login-main-btn" type="submit">
@@ -170,10 +204,10 @@ export default function Login() {
 
               <button
                 type="button"
-                className="login-back-btn"
+                className="login-text-btn"
                 onClick={() => setStep('welcome')}
               >
-                Volver
+                ← Atrás
               </button>
             </form>
           )}
@@ -182,36 +216,45 @@ export default function Login() {
             <form className="login-step-form" onSubmit={handleLogin}>
               <div className="login-recognized-pill">{email}</div>
 
-              <label>Contraseña</label>
+              <div className="password-box">
+                <input
+                  autoFocus
+                  placeholder="Tu clave"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
 
-              <input
-                autoFocus
-                placeholder="tu contraseña"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? '🙈' : '👁'}
+                </button>
+              </div>
 
-              <button className="login-main-btn" disabled={busy} type="submit">
+              <button
+                className="login-main-btn"
+                disabled={busy}
+                type="submit"
+              >
                 {busy ? 'Entrando...' : 'Entrar'}
               </button>
 
               <button
                 type="button"
-                className="login-back-btn"
+                className="login-text-btn"
                 onClick={() => setStep('email')}
-                disabled={busy}
               >
-                Cambiar correo
+                ← Cambiar correo
               </button>
             </form>
           )}
 
           {step === 'loading' && (
             <div className="login-loading-box">
-              <div className="login-spinner"></div>
-              <p>Verificando tu cuenta...</p>
+              <div className="login-spinner" />
             </div>
           )}
         </div>

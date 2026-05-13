@@ -5,6 +5,7 @@ import './styles.css'
 import App from './App'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Client from './pages/Client'
 import Driver from './pages/Driver'
 import Trips from './pages/Trips'
 import Chat from './pages/Chat'
@@ -16,6 +17,7 @@ let Component = App
 
 if (path === '/login') Component = Login
 if (path === '/registro') Component = Register
+if (path === '/client') Component = Client
 if (path === '/driver') Component = Driver
 if (path === '/viajes') Component = Trips
 if (path === '/chat') Component = Chat
