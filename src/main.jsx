@@ -3,28 +3,29 @@ import ReactDOM from 'react-dom/client'
 import './styles.css'
 
 import App from './App'
-import Login from './pages/Login'
-import Register from './pages/Register'
+import Admin from './pages/Admin'
+import Chat from './pages/Chat'
 import Client from './pages/Client'
 import Driver from './pages/Driver'
+import Login from './pages/Login'
+import Register from './pages/Register'
 import Trips from './pages/Trips'
-import Chat from './pages/Chat'
-import Admin from './pages/Admin'
 
-const path = window.location.pathname
+const routes = {
+  '/': App,
+  '/login': Login,
+  '/registro': Register,
+  '/client': Client,
+  '/driver': Driver,
+  '/viajes': Trips,
+  '/chat': Chat,
+  '/admin': Admin,
+}
 
-let Component = App
-
-if (path === '/login') Component = Login
-if (path === '/registro') Component = Register
-if (path === '/client') Component = Client
-if (path === '/driver') Component = Driver
-if (path === '/viajes') Component = Trips
-if (path === '/chat') Component = Chat
-if (path === '/admin') Component = Admin
+const Component = routes[window.location.pathname] || App
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Component />
-  </React.StrictMode>,
+  </React.StrictMode>
 )

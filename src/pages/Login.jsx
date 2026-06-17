@@ -2,6 +2,26 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import logo from '../assets/logo.png'
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function getStoredRoleForEmail(email) {
+  const savedEmail = normalizeEmail(localStorage.getItem('michofer_last_email'))
+  const savedRole = localStorage.getItem('michofer_last_role') || ''
+
+  return savedEmail === normalizeEmail(email) ? savedRole : ''
+}
+
+function resolveRole(user, profile, email) {
+  return (
+    profile?.role ||
+    user?.user_metadata?.role ||
+    getStoredRoleForEmail(email) ||
+    'passenger'
+  )
+}
+
 export default function Login() {
   const [step, setStep] = useState('welcome')
   const [email, setEmail] = useState('')
@@ -9,6 +29,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [knownUser, setKnownUser] = useState(null)
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -37,7 +58,7 @@ export default function Login() {
 
   const title = useMemo(() => {
     if (knownUser?.email && step === 'password') {
-      return `👋 Hola ${knownUser.name?.split(' ')[0] || ''}`
+      return `Hola ${knownUser.name?.split(' ')[0] || ''}`
     }
 
     if (step === 'welcome') return 'Movilidad conectada.'
@@ -53,36 +74,22 @@ export default function Login() {
       return 'Tu dispositivo ya está registrado.'
     }
 
-    if (step === 'welcome') {
-      return 'Respuesta rápida. Presencia clara.'
-    }
-
-    if (step === 'email') {
-      return 'Primero identifiquemos tu cuenta.'
-    }
-
-    if (step === 'password') {
-      return 'Último paso y seguimos.'
-    }
-
-    if (step === 'loading') {
-      return 'Verificando acceso.'
-    }
+    if (step === 'welcome') return 'Respuesta rápida. Presencia clara.'
+    if (step === 'email') return 'Primero identifiquemos tu cuenta.'
+    if (step === 'password') return 'Último paso y seguimos.'
+    if (step === 'loading') return 'Verificando acceso.'
 
     return ''
   }, [step, knownUser])
 
-  function normalizeEmail(value) {
-    return String(value || '').trim().toLowerCase()
-  }
-
   function handleEmailNext(e) {
     e.preventDefault()
+    setErrorMessage('')
 
     const cleanEmail = normalizeEmail(email)
 
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      alert('Poné un correo válido')
+      setErrorMessage('Poné un correo válido.')
       return
     }
 
@@ -92,11 +99,12 @@ export default function Login() {
 
   async function handleLogin(e) {
     e.preventDefault()
+    setErrorMessage('')
 
     const cleanEmail = normalizeEmail(email)
 
     if (!cleanEmail || !password) {
-      alert('Completá los datos')
+      setErrorMessage('Completá tu correo y clave.')
       return
     }
 
@@ -110,39 +118,62 @@ export default function Login() {
       })
 
       if (error) {
-        alert(error.message)
+        setErrorMessage(
+          error.message === 'Failed to fetch'
+            ? 'No pude conectar con Supabase. Revisá el Project URL en .env y reiniciá Vite.'
+            : error.message
+        )
         setStep('password')
         return
       }
 
-      const { data: profile } = await supabase
+      const user = data.user
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', data.user.id)
-        .single()
+        .eq('id', user.id)
+        .maybeSingle()
 
-     localStorage.setItem('michofer_last_email', cleanEmail)
-localStorage.setItem('michofer_last_name', profile?.full_name || '')
-localStorage.setItem('michofer_last_role', profile?.role || '')
+      if (profileError) {
+        console.warn('PROFILE LOAD ERROR:', profileError)
+      }
 
-if (profile?.avatar_url) {
-  localStorage.setItem(
-    'michofer_last_photo',
-    profile.avatar_url
-  )
-} else {
-  localStorage.removeItem('michofer_last_photo')
-}
+      const role = resolveRole(user, profile, cleanEmail)
+      const fullName = profile?.full_name || user?.user_metadata?.full_name || ''
+      const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || ''
 
-      if (profile?.role === 'driver') {
-  window.location.href = '/driver'
-  return
-}
+      localStorage.setItem('michofer_last_email', cleanEmail)
+      localStorage.setItem('michofer_last_name', fullName)
+      localStorage.setItem('michofer_last_role', role)
 
-window.location.href = '/client'
+      if (avatarUrl) {
+        localStorage.setItem('michofer_last_photo', avatarUrl)
+      } else {
+        localStorage.removeItem('michofer_last_photo')
+      }
+
+      if (!profile && !profileError) {
+        await supabase.from('profiles').upsert(
+          {
+            id: user.id,
+            full_name: fullName,
+            role,
+            avatar_url: avatarUrl,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        )
+      }
+
+      if (role === 'driver') {
+        window.location.href = '/driver'
+        return
+      }
+
+      window.location.href = '/client'
     } catch (err) {
       console.error(err)
-      alert('No se pudo iniciar sesión')
+      setErrorMessage('No se pudo iniciar sesión. Revisá la conexión con Supabase.')
       setStep('password')
     } finally {
       setBusy(false)
@@ -160,18 +191,24 @@ window.location.href = '/client'
           <div className="login-spacer" />
 
           {step === 'password' && (
-  <div className="login-user-avatar-fallback">
-    {knownUser?.photo?.startsWith('http') ? (
-      <img src={knownUser.photo} alt="Usuario" />
-    ) : (
-      <span>{knownUser?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
-    )}
-  </div>
-)}
+            <div className="login-user-avatar-fallback">
+              {knownUser?.photo?.startsWith('http') ? (
+                <img src={knownUser.photo} alt="Usuario" />
+              ) : (
+                <span>{knownUser?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+              )}
+            </div>
+          )}
 
           <h1>{title}</h1>
 
           <p className="login-subtitle">{subtitle}</p>
+
+          {errorMessage && (
+            <div className="login-error-message">
+              {errorMessage}
+            </div>
+          )}
 
           {step === 'welcome' && (
             <>
@@ -230,7 +267,7 @@ window.location.href = '/client'
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? '🙈' : '👁'}
+                  {showPassword ? 'Ocultar' : 'Ver'}
                 </button>
               </div>
 

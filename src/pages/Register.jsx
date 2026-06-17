@@ -2,6 +2,55 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import logo from '../assets/logo.png'
 
+const CAMERA_CONSTRAINTS = [
+  {
+    video: {
+      facingMode: { ideal: 'user' },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+    audio: false,
+  },
+  {
+    video: {
+      facingMode: 'user',
+    },
+    audio: false,
+  },
+  {
+    video: true,
+    audio: false,
+  },
+]
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function makeCameraErrorMessage(error) {
+  if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') {
+    return 'Chrome no tiene permiso para usar la cámara. Permití el acceso desde el icono de la barra de direcciones.'
+  }
+
+  if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
+    return 'No encontré una cámara disponible en este dispositivo.'
+  }
+
+  if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') {
+    return 'La cámara está ocupada por otra app. Cerrá Zoom, Meet, WhatsApp Web u otra pestaña y probá de nuevo.'
+  }
+
+  if (error?.name === 'OverconstrainedError') {
+    return 'La cámara no soporta la configuración pedida. Probá de nuevo con la opción automática.'
+  }
+
+  if (error?.name === 'AbortError' || error?.name === 'CameraTimeoutError') {
+    return 'La cámara tardó demasiado en iniciar. Cerrá otras apps que la usen, recargá la página o subí una foto.'
+  }
+
+  return 'No pude abrir la cámara. Probá de nuevo o subí una foto desde tu equipo.'
+}
+
 export default function Register() {
   const [step, setStep] = useState('name')
   const [fullName, setFullName] = useState('')
@@ -13,13 +62,16 @@ export default function Register() {
   const [photoPreview, setPhotoPreview] = useState('')
   const [busy, setBusy] = useState(false)
   const [knownUser, setKnownUser] = useState(null)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const [cameraOpen, setCameraOpen] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
+  const [cameraError, setCameraError] = useState('')
   const [cameraMessage, setCameraMessage] = useState('Preparando cámara...')
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('michofer_last_email')
@@ -35,14 +87,22 @@ export default function Register() {
     return () => closeCamera()
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (photoPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview)
+      }
+    }
+  }, [photoPreview])
+
   const title = useMemo(() => {
     if (knownUser?.email && step === 'name') {
-      return `👋 Hola ${knownUser.name?.split(' ')[0] || ''}`
+      return `Hola ${knownUser.name?.split(' ')[0] || ''}`
     }
 
     if (step === 'name') return 'Empecemos rápido.'
     if (step === 'role') return '¿Cómo usarás michofer?'
-    if (step === 'photo') return 'Queremos conocerte 👌'
+    if (step === 'photo') return 'Queremos conocerte'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Creá tu clave'
     if (step === 'loading') return 'Creando cuenta...'
@@ -60,54 +120,153 @@ export default function Register() {
     return ''
   }, [step, knownUser])
 
-  function normalizeEmail(value) {
-    return String(value || '').trim().toLowerCase()
-  }
-
-  async function openCamera() {
-    try {
-      setCameraOpen(true)
-      setCameraReady(false)
-      setCameraMessage('Activando cámara...')
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 720 },
-          height: { ideal: 960 },
-        },
-        audio: false,
-      })
-
-      streamRef.current = stream
-
-      setTimeout(async () => {
-        if (!videoRef.current) return
-
-        videoRef.current.srcObject = stream
-        videoRef.current.muted = true
-        videoRef.current.playsInline = true
-
-        await videoRef.current.play()
-
-        setCameraReady(true)
-        setCameraMessage('Mirá de frente. Sin kepis, lentes oscuros ni rostro tapado.')
-      }, 150)
-    } catch (err) {
-      console.error(err)
-      setCameraOpen(false)
-      alert('Permití el acceso a la cámara para continuar.')
-    }
-  }
-
-  function closeCamera() {
+  function stopCameraStream() {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
 
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.srcObject = null
+    }
+  }
+
+  async function getStreamWithTimeout(constraints) {
+    let timeoutId
+    const timeout = new Promise((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        const error = new Error('Timeout starting video source')
+        error.name = 'CameraTimeoutError'
+        reject(error)
+      }, 9000)
+    })
+
+    try {
+      return await Promise.race([
+        navigator.mediaDevices.getUserMedia(constraints),
+        timeout,
+      ])
+    } finally {
+      window.clearTimeout(timeoutId)
+    }
+  }
+
+  async function findCameraStream() {
+    let lastError = null
+
+    for (const constraints of CAMERA_CONSTRAINTS) {
+      try {
+        return await getStreamWithTimeout(constraints)
+      } catch (error) {
+        lastError = error
+      }
+    }
+
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const cameras = devices.filter((device) => device.kind === 'videoinput')
+
+      for (const camera of cameras) {
+        try {
+          return await getStreamWithTimeout({
+            video: { deviceId: { exact: camera.deviceId } },
+            audio: false,
+          })
+        } catch (error) {
+          lastError = error
+        }
+      }
+    } catch (error) {
+      lastError = error
+    }
+
+    throw lastError || new Error('No camera stream available')
+  }
+
+  async function attachStreamToVideo(stream) {
+    const video = videoRef.current
+    if (!video) return
+
+    video.srcObject = stream
+    video.muted = true
+    video.playsInline = true
+
+    await new Promise((resolve) => {
+      if (video.readyState >= 2) {
+        resolve()
+        return
+      }
+
+      video.onloadedmetadata = resolve
+    })
+
+    await video.play()
+  }
+
+  async function openCamera() {
+    setCameraOpen(true)
+    setCameraReady(false)
+    setCameraError('')
+    setCameraMessage('Activando cámara...')
+    stopCameraStream()
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Tu navegador no permite usar cámara en esta página.')
+      setCameraMessage('Podés subir una foto desde tu equipo.')
+      return
+    }
+
+    try {
+      const stream = await findCameraStream()
+      streamRef.current = stream
+
+      await new Promise((resolve) => window.setTimeout(resolve, 120))
+      await attachStreamToVideo(stream)
+
+      setCameraReady(true)
+      setCameraMessage('Mirá de frente. Sin kepis, lentes oscuros ni rostro tapado.')
+    } catch (error) {
+      console.error('CAMERA ERROR:', error)
+      stopCameraStream()
+      setCameraReady(false)
+      setCameraError(makeCameraErrorMessage(error))
+      setCameraMessage('La cámara no arrancó.')
+    }
+  }
+
+  function closeCamera() {
+    stopCameraStream()
     setCameraOpen(false)
     setCameraReady(false)
+    setCameraError('')
+  }
+
+  function setSelectedPhoto(file) {
+    if (!file) return
+
+    if (photoPreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(photoPreview)
+    }
+
+    setPhotoFile(file)
+    setPhotoPreview(URL.createObjectURL(file))
+    closeCamera()
+  }
+
+  function handlePhotoUpload(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setErrorMessage('')
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Elegí una imagen válida.')
+      event.target.value = ''
+      return
+    }
+
+    setSelectedPhoto(file)
+    event.target.value = ''
   }
 
   function capturePhoto() {
@@ -130,9 +289,11 @@ export default function Register() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    ctx.save()
     ctx.translate(canvas.width, 0)
     ctx.scale(-1, 1)
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    ctx.restore()
 
     canvas.toBlob(
       (blob) => {
@@ -145,9 +306,7 @@ export default function Register() {
           type: 'image/jpeg',
         })
 
-        setPhotoFile(file)
-        setPhotoPreview(URL.createObjectURL(blob))
-        closeCamera()
+        setSelectedPhoto(file)
       },
       'image/jpeg',
       0.92
@@ -156,9 +315,10 @@ export default function Register() {
 
   function nextFromName(e) {
     e.preventDefault()
+    setErrorMessage('')
 
     if (!fullName.trim()) {
-      alert('Escribí tu nombre')
+      setErrorMessage('Escribí tu nombre.')
       return
     }
 
@@ -172,11 +332,12 @@ export default function Register() {
 
   function nextFromEmail(e) {
     e.preventDefault()
+    setErrorMessage('')
 
     const cleanEmail = normalizeEmail(email)
 
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      alert('Poné un correo válido')
+      setErrorMessage('Poné un correo válido.')
       return
     }
 
@@ -186,18 +347,19 @@ export default function Register() {
 
   async function handleRegister(e) {
     e.preventDefault()
+    setErrorMessage('')
 
     const cleanEmail = normalizeEmail(email)
 
     if (!photoFile) {
-  alert('Sacá tu foto para continuar')
-  return
-}
+      setErrorMessage('Sacá o subí tu foto para continuar.')
+      return
+    }
 
-if (!password || password.length < 6) {
-  alert('La clave debe tener al menos 6 caracteres')
-  return
-}
+    if (!password || password.length < 6) {
+      setErrorMessage('La clave debe tener al menos 6 caracteres.')
+      return
+    }
 
     try {
       setBusy(true)
@@ -206,90 +368,95 @@ if (!password || password.length < 6) {
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
+        options: {
+          data: {
+            full_name: fullName,
+            role,
+          },
+        },
       })
 
       if (error) {
-  console.error('SUPABASE SIGNUP ERROR:', error)
+        console.error('SUPABASE SIGNUP ERROR:', error)
 
-  alert(
-    error.message ||
-    error.error_description ||
-    'No se pudo crear la cuenta'
-  )
+        setErrorMessage(
+          error.message === 'Failed to fetch'
+            ? 'No pude conectar con Supabase. Revisá DNS/conexión, reiniciá Vite o esperá que el proyecto termine de propagarse.'
+            : error.message ||
+              error.error_description ||
+              'No se pudo crear la cuenta.'
+        )
 
-  setStep('password')
-  return
-}
+        setStep('password')
+        return
+      }
 
       const userId = data.user?.id
-
       let avatarUrl = ''
 
-if (userId && photoFile) {
-  const fileExt = photoFile.name.split('.').pop()
-  const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`
+      if (userId && photoFile) {
+        const fileExt = photoFile.name.split('.').pop() || 'jpg'
+        const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`
 
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, photoFile, {
-      cacheControl: '3600',
-      upsert: true,
-    })
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, photoFile, {
+            cacheControl: '3600',
+            upsert: true,
+          })
 
-  if (uploadError) {
-    console.error(uploadError)
-    alert('No se pudo subir la foto')
-    setStep('photo')
-    return
-  }
+        if (uploadError) {
+          console.error(uploadError)
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath)
 
-  const { data: publicUrlData } = supabase.storage
-    .from('avatars')
-    .getPublicUrl(filePath)
+          avatarUrl = publicUrlData.publicUrl
+        }
+      }
 
-  avatarUrl = publicUrlData.publicUrl
-
-  await supabase.from('profiles').upsert(
-  {
-    id: userId,
-    full_name: fullName,
-    role,
-    email: cleanEmail,
-    avatar_url: avatarUrl,
-    updated_at: new Date().toISOString(),
-  },
-  { onConflict: 'id' }
-)
-}
+      if (userId) {
+        await supabase.from('profiles').upsert(
+          {
+            id: userId,
+            full_name: fullName,
+            role,
+            avatar_url: avatarUrl,
+            email: cleanEmail,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        )
+      }
 
       localStorage.setItem('michofer_last_email', cleanEmail)
       localStorage.setItem('michofer_last_name', fullName)
-      localStorage.setItem('michofer_last_role', role)
 
       if (avatarUrl) {
-  localStorage.setItem('michofer_last_photo', avatarUrl)
-}
-await supabase.auth.updateUser({
-  data: {
-    full_name: fullName,
-    avatar_url: avatarUrl,
-    role,
-  },
-})
+        localStorage.setItem('michofer_last_photo', avatarUrl)
+      }
 
-const targetRole = role || 'passenger'
+      await supabase.auth.updateUser({
+        data: {
+          full_name: fullName,
+          avatar_url: avatarUrl,
+          role,
+        },
+      })
 
-localStorage.setItem('michofer_last_role', targetRole)
+      const targetRole = role || 'passenger'
+      localStorage.setItem('michofer_last_role', targetRole)
 
-if (targetRole === 'driver') {
-  window.location.replace('/driver')
-  return
-}
+      if (targetRole === 'driver') {
+        window.location.replace('/driver')
+        return
+      }
 
-window.location.replace('/client')
+      window.location.replace('/client')
     } catch (err) {
       console.error(err)
-      alert('No se pudo crear la cuenta')
+      setErrorMessage('No se pudo crear la cuenta. Revisá la conexión con Supabase.')
       setStep('password')
     } finally {
       setBusy(false)
@@ -309,6 +476,12 @@ window.location.replace('/client')
           <h1>{title}</h1>
 
           <p className="login-subtitle">{subtitle}</p>
+
+          {errorMessage && (
+            <div className="login-error-message">
+              {errorMessage}
+            </div>
+          )}
 
           {knownUser?.email && step === 'name' && (
             <button
@@ -391,17 +564,44 @@ window.location.replace('/client')
                   >
                     Abrir cámara
                   </button>
+
+                  <button
+                    type="button"
+                    className="login-secondary-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Subir foto
+                  </button>
                 </div>
               )}
 
+              <input
+                ref={fileInputRef}
+                className="register-file-input"
+                type="file"
+                accept="image/*"
+                capture="user"
+                onChange={handlePhotoUpload}
+              />
+
               {photoPreview && (
-                <button
-                  type="button"
-                  className="login-main-btn"
-                  onClick={() => setStep('email')}
-                >
-                  Continuar
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="login-main-btn"
+                    onClick={() => setStep('email')}
+                  >
+                    Continuar
+                  </button>
+
+                  <button
+                    type="button"
+                    className="login-secondary-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Cambiar foto
+                  </button>
+                </>
               )}
 
               <button
@@ -456,7 +656,7 @@ window.location.replace('/client')
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? '🙈' : '👁'}
+                  {showPassword ? 'Ocultar' : 'Ver'}
                 </button>
               </div>
 
@@ -505,14 +705,40 @@ window.location.replace('/client')
 
             <p className="camera-message">{cameraMessage}</p>
 
-            <button
-              type="button"
-              className="login-main-btn"
-              onClick={capturePhoto}
-              disabled={!cameraReady}
-            >
-              Sacar foto
-            </button>
+            {cameraError && (
+              <p className="camera-error">
+                {cameraError}
+              </p>
+            )}
+
+            {!cameraError ? (
+              <button
+                type="button"
+                className="login-main-btn"
+                onClick={capturePhoto}
+                disabled={!cameraReady}
+              >
+                Sacar foto
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="login-main-btn"
+                  onClick={openCamera}
+                >
+                  Reintentar cámara
+                </button>
+
+                <button
+                  type="button"
+                  className="login-secondary-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Subir foto
+                </button>
+              </>
+            )}
 
             <button
               type="button"

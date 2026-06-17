@@ -9,13 +9,14 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "react": "latest",
-    "react-dom": "latest",
+    "@supabase/supabase-js": "latest",
     "framer-motion": "latest",
     "lucide-react": "latest",
-    "@supabase/supabase-js": "latest"
+    "react": "latest",
+    "react-dom": "latest"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "vite": "^7.3.3"
+  }
 }
