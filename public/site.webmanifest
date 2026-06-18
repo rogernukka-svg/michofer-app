@@ -2,7 +2,7 @@
   "name": "MiChofer",
   "short_name": "MiChofer",
   "description": "Pedí tu viaje o manejá con MiChofer.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#050505",

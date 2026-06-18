@@ -1,4 +1,5 @@
 import { ArrowRight, Heart } from 'lucide-react'
+import InstallMiChoferButton from './components/InstallMiChoferButton.jsx'
 import InteractiveRouteMap from './components/InteractiveRouteMap.jsx'
 import alexAvatar from './assets/roger-nunez-client.jpeg'
 import logo from './assets/logo.png'
@@ -32,7 +33,10 @@ export default function App() {
       <section className="phone home-phone">
         <header className="home-header">
           <img src={logo} alt="MiChofer" />
-          <a href="/login">Entrar</a>
+          <div className="home-header-actions">
+            <InstallMiChoferButton className="home-install-btn" />
+            <a href="/login">Entrar</a>
+          </div>
         </header>
 
         <section className="home-map" aria-label="Vista de mapa MiChofer">
@@ -78,6 +82,7 @@ export default function App() {
             <a className="main-btn" href="/login">
               Empezar <ArrowRight size={20} />
             </a>
+            <InstallMiChoferButton className="home-sheet-install-btn" />
             <a className="secondary-btn woman-mode-link" href="/login">
               <Heart size={16} />
               Modo Mujer

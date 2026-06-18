@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import InstallMiChoferButton from '../components/InstallMiChoferButton.jsx'
 import { getOwnProfile, supabase, upsertOwnProfile } from '../lib/supabase'
 import logo from '../assets/logo.png'
 
@@ -448,6 +449,8 @@ export default function Login() {
               >
                 Continuar
               </button>
+
+              <InstallMiChoferButton className="login-install-btn" />
 
               <a className="login-create-link" href="/registro">
                 Crear cuenta

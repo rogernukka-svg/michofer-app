@@ -7317,6 +7317,62 @@ body.route-registro .login-main-btn {
   font-size: 14px !important;
 }
 
+.install-michofer-btn {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  min-height: 42px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(8, 18, 29, 0.72);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 950;
+  white-space: nowrap;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.install-michofer-btn svg {
+  flex: 0 0 auto;
+}
+
+body.route-home .home-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+body.route-home .home-sheet-install-btn {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(227, 6, 19, 0.92), rgba(174, 0, 13, 0.94));
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  box-shadow:
+    0 20px 54px rgba(227, 6, 19, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+body.route-login .login-install-btn {
+  width: min(100%, 318px);
+  margin: 0 auto;
+  min-height: 50px;
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(227, 6, 19, 0.9), rgba(125, 0, 9, 0.92));
+}
+
 @media (min-width: 720px) and (max-height: 780px) {
   body.route-login .login-panel,
   body.route-registro .login-panel {
@@ -7349,6 +7405,10 @@ body.route-registro .login-main-btn {
   }
 
   body.route-home .home-actions .secondary-btn {
+    display: none !important;
+  }
+
+  body.route-home .home-install-btn {
     display: none !important;
   }
 
