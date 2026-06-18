@@ -590,6 +590,75 @@ button {
   border: 3px solid var(--red);
 }
 
+.active-trip-chat {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.active-trip-cancel {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--white);
+  cursor: pointer;
+}
+
+.active-trip-actions {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  z-index: 46;
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px;
+  border-radius: 24px;
+  background: rgba(7, 17, 28, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.active-trip-actions a,
+.active-trip-actions button {
+  min-width: 0;
+  min-height: 50px;
+  border: 0;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 950;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.active-trip-actions a {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.active-trip-actions button {
+  background: #ffffff;
+  color: #07111c;
+}
+
 .destination-card {
   margin: 0 16px;
   border-radius: 24px;
@@ -960,6 +1029,19 @@ button {
   background: var(--black);
 }
 
+.mapbox-point-marker.with-avatar {
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border: 3px solid var(--white);
+}
+
+.mapbox-point-marker.with-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .mapbox-point-marker.destination span {
   background: var(--red);
 }
@@ -998,28 +1080,163 @@ button {
   font-weight: 950;
 }
 
+.mapbox-navigation-marker {
+  width: 92px;
+  height: 92px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  isolation: isolate;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.42));
+  overflow: visible;
+}
+
+.mapbox-navigation-marker::before,
+.mapbox-navigation-marker::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.mapbox-navigation-marker::before {
+  inset: 2px;
+  z-index: 0;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.94) 0 27%, rgba(255, 255, 255, 0.48) 28% 47%, rgba(255, 255, 255, 0) 48%),
+    radial-gradient(circle, rgba(30, 117, 255, 0.22), rgba(30, 117, 255, 0) 68%);
+  opacity: 0.95;
+}
+
+.mapbox-navigation-marker::after {
+  left: 50%;
+  bottom: 13px;
+  z-index: 1;
+  width: 58px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.24);
+  transform: translateX(-50%);
+}
+
+.mapbox-navigation-marker .navigation-arrow {
+  width: 62px;
+  height: 62px;
+  position: relative;
+  z-index: 3;
+  display: block;
+  background:
+    linear-gradient(180deg, #f8fbff 0 18%, #2d7dff 19% 58%, #095ee9 100%);
+  clip-path: polygon(50% 3%, 84% 78%, 50% 65%, 16% 78%);
+  border-radius: 14px;
+  transform: translateY(-20px);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.86),
+    inset 0 -10px 14px rgba(0, 34, 114, 0.32);
+}
+
+.mapbox-navigation-marker .navigation-arrow::before,
+.mapbox-navigation-marker .navigation-arrow::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.mapbox-navigation-marker .navigation-arrow::before {
+  left: 50%;
+  top: 10px;
+  width: 9px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.18));
+  transform: translateX(-50%);
+}
+
+.mapbox-navigation-marker .navigation-arrow::after {
+  left: 50%;
+  bottom: 8px;
+  width: 19px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  transform: translateX(-50%);
+}
+
 .map-empty-state {
   position: absolute;
   inset: 0;
   z-index: 2;
   display: grid;
   place-content: center;
-  gap: 6px;
+  gap: 10px;
   padding: 24px;
   text-align: center;
-  background: linear-gradient(180deg, #f8fafc, #eef2f7);
-  color: var(--gray-700);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(31, 122, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.94), rgba(238, 242, 247, 0.96));
+  color: #07111c;
+}
+
+.map-loading-orbit {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  margin: 0 auto 2px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.98) 0 24%, rgba(31, 122, 255, 0.14) 25% 48%, transparent 49%),
+    conic-gradient(from 0deg, rgba(31, 122, 255, 0.1), rgba(31, 122, 255, 0.92), rgba(20, 184, 166, 0.8), rgba(31, 122, 255, 0.1));
+  box-shadow:
+    0 20px 50px rgba(31, 122, 255, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.78);
+  animation: mapLoaderSpin 1.45s linear infinite;
+}
+
+.map-loading-orbit span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #1f7aff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 18px rgba(31, 122, 255, 0.8);
+}
+
+.map-loading-orbit span:nth-child(1) {
+  transform: translate(-50%, -50%) translateY(-30px);
+}
+
+.map-loading-orbit span:nth-child(2) {
+  transform: translate(-50%, -50%) rotate(120deg) translateY(-30px);
+  opacity: 0.72;
+}
+
+.map-loading-orbit span:nth-child(3) {
+  transform: translate(-50%, -50%) rotate(240deg) translateY(-30px);
+  opacity: 0.44;
 }
 
 .map-empty-state strong {
-  color: var(--black);
+  color: #07111c;
   font-size: 16px;
 }
 
 .map-empty-state span {
-  color: var(--gray-500);
+  color: #667085;
   font-size: 13px;
   font-weight: 850;
+}
+
+@keyframes mapLoaderSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .route-summary-icon {
@@ -1230,7 +1447,7 @@ button {
 }
 
 .driver-price {
-  color: var(--red);
+  color: var(--black);
   font-size: 12px;
   font-weight: 950;
   white-space: nowrap;
@@ -1798,49 +2015,131 @@ button {
   min-height: 680px;
 }
 
-.map-filter-chips {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 106px;
-  z-index: 11;
-  display: flex;
+/* =========================================================
+   MiChofer Cliente: barra inferior premium
+   Acciones abajo, mapa limpio arriba
+========================================================= */
+
+.client-bottom-quickbar {
+  position: absolute !important;
+  z-index: 90 !important;
+  left: 14px !important;
+  right: 14px !important;
+  bottom: 18px !important;
+
+  display: grid !important;
+  grid-template-columns: auto auto minmax(126px, 1fr);
+  align-items: center;
   gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
+
+  padding: 8px;
+  border-radius: 26px;
+  background: rgba(9, 11, 15, 0.84);
+
+  box-shadow:
+    0 26px 64px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
   pointer-events: auto;
 }
 
-.map-filter-chips::-webkit-scrollbar {
-  display: none;
-}
-
-.map-filter-chips button {
-  flex: 0 0 auto;
-  min-height: 36px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+.client-bottom-quickbar button {
+  min-height: 40px;
+  border: 0;
   border-radius: 999px;
-  background: rgba(20, 20, 22, 0.82);
-  color: var(--white);
-  padding: 0 13px;
+  padding: 0 14px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+
   font-size: 12px;
   font-weight: 950;
-  box-shadow: 0 12px 30px rgba(5, 5, 5, 0.2);
-  backdrop-filter: blur(18px);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  cursor: pointer;
 }
 
-.map-filter-chips button.active {
-  background: var(--white);
-  color: var(--black);
+.client-bottom-quickbar button.active {
+  color: #050505;
+  background: #ffffff;
 }
 
-.map-filter-chips button.women {
-  background: rgba(159, 18, 57, 0.88);
-  color: var(--white);
+.client-bottom-quickbar button.women {
+  color: #ffdce3;
+  background: rgba(227, 6, 19, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(227, 6, 19, 0.22);
 }
 
-.map-filter-chips button:disabled {
-  opacity: 0.72;
+.client-bottom-quickbar button.active.women {
+  color: #ffffff;
+  background: #b70721;
+}
+
+.client-bottom-quickbar .primary-destination-chip {
+  justify-self: stretch;
+  color: #ffffff;
+  background: #050505;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.client-bottom-quickbar .primary-destination-chip:disabled {
+  color: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.12);
+  cursor: not-allowed;
+}
+
+/* El mapa queda por debajo de la barra */
+.mobility-map,
+.interactive-map,
+.mapbox-real-map {
+  z-index: 1;
+}
+
+/* Herramientas del mapa siguen visibles pero no compiten */
+.map-toolbar,
+.map-locate-btn {
+  z-index: 50;
+}
+
+/* Si hay chofer seleccionado, subimos esa tarjeta para que no tape la quickbar */
+.selected-map-card {
+  bottom: 88px !important;
+  z-index: 70 !important;
+}
+
+/* El panel de choferes debe abrir por encima de todo */
+.driver-panel-backdrop {
+  z-index: 120 !important;
+}
+
+/* Ajuste para celulares chicos */
+@media (max-width: 390px) {
+  .client-bottom-quickbar {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 14px !important;
+    gap: 6px;
+    padding: 7px;
+    border-radius: 22px;
+    grid-template-columns: auto auto minmax(112px, 1fr);
+  }
+
+  .client-bottom-quickbar button {
+    min-height: 38px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
 }
 
 .map-toolbar {
@@ -2692,5 +2991,4171 @@ button {
 
   .filters-row button:last-child {
     grid-column: 1 / -1;
+  }
+}
+
+/* Production viewport rules */
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 0;
+}
+
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.app-shell,
+.login-screen {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.phone {
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100dvh;
+}
+
+@media (min-width: 700px) {
+  .app-shell {
+    padding: 0;
+  }
+
+  .phone {
+    min-height: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+body.route-client .app-shell {
+  width: 100vw;
+  background: #050505;
+}
+
+body.route-client .client-phone {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  background: #050505;
+  padding: 0;
+  overflow: hidden;
+}
+
+body.route-client .mobility-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  border-radius: 0;
+}
+
+body.route-client .mapbox-real-map::after {
+  background:
+    linear-gradient(180deg, rgba(5, 5, 5, 0.12) 0%, transparent 24%, rgba(5, 5, 5, 0.1) 100%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.18), transparent 38%);
+}
+
+body.route-client .client-top {
+  top: env(safe-area-inset-top, 0);
+  left: 0;
+  right: 0;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: start;
+  gap: 10px;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: clamp(10px, 2.4vw, 18px) clamp(12px, 2.6vw, 20px) 0;
+}
+
+body.route-client .client-top .destination-card {
+  min-width: 0;
+  padding: clamp(10px, 1.8vw, 14px);
+  border-radius: clamp(20px, 3vw, 26px);
+}
+
+body.route-client .client-top .destination-input {
+  height: clamp(42px, 6.8vw, 54px);
+}
+
+body.route-client .client-top .destination-input input {
+  min-width: 0;
+  font-size: clamp(14px, 2.2vw, 16px);
+  text-overflow: ellipsis;
+}
+
+body.route-client .client-top .avatar-button {
+  width: clamp(44px, 6.8vw, 54px);
+  height: clamp(44px, 6.8vw, 54px);
+  border-radius: clamp(16px, 2.4vw, 20px);
+}
+
+body.route-client .map-filter-chips {
+  top: calc(env(safe-area-inset-top, 0px) + clamp(88px, 16vw, 112px));
+  left: max(12px, calc((100vw - 760px) / 2 + 16px));
+  right: max(12px, calc((100vw - 760px) / 2 + 16px));
+  gap: 8px;
+  padding-bottom: 2px;
+}
+
+body.route-client .map-filter-chips button {
+  min-height: clamp(34px, 5vw, 40px);
+  padding: 0 clamp(12px, 2.4vw, 16px);
+  font-size: clamp(11px, 1.9vw, 13px);
+}
+
+body.route-client .map-toolbar {
+  top: calc(env(safe-area-inset-top, 0px) + clamp(142px, 24vw, 166px));
+  left: max(12px, calc((100vw - 760px) / 2 + 16px));
+  right: auto;
+  width: max-content;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+body.route-client .map-locate-btn {
+  top: calc(env(safe-area-inset-top, 0px) + clamp(142px, 24vw, 166px));
+  right: max(12px, calc((100vw - 760px) / 2 + 16px));
+}
+
+body.route-client .route-summary,
+body.route-client .selected-map-card {
+  left: max(12px, calc((100vw - 760px) / 2 + 16px));
+  right: max(12px, calc((100vw - 760px) / 2 + 16px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+}
+
+body.route-client .route-summary {
+  min-height: 58px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body.route-client .route-summary strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.route-client .driver-panel-backdrop {
+  padding: calc(env(safe-area-inset-top, 0px) + 88px) 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  place-items: end center;
+}
+
+body.route-client .floating-driver-panel {
+  width: min(100%, 430px);
+  max-height: min(72dvh, 620px);
+  border-radius: 28px;
+  overscroll-behavior: contain;
+}
+
+body.route-client .side-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  padding: calc(env(safe-area-inset-top, 0px) + 78px) 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  display: grid;
+  place-items: start center;
+}
+
+body.route-client .side-menu {
+  width: min(100%, 430px);
+  max-height: calc(100dvh - 110px);
+  height: auto;
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 900px) {
+  body.route-client .client-top {
+    width: min(680px, calc(100vw - 420px));
+    margin-left: 24px;
+    margin-right: auto;
+  }
+
+  body.route-client .map-filter-chips,
+  body.route-client .map-toolbar {
+    left: 24px;
+    max-width: min(680px, calc(100vw - 420px));
+  }
+
+  body.route-client .map-locate-btn {
+    right: 24px;
+  }
+
+  body.route-client .route-summary,
+  body.route-client .selected-map-card {
+    left: 24px;
+    right: auto;
+    width: min(520px, calc(100vw - 420px));
+  }
+
+  body.route-client .driver-panel-backdrop {
+    padding: 96px 24px 24px;
+    place-items: start end;
+    background: linear-gradient(90deg, transparent 0 52%, rgba(5, 5, 5, 0.36));
+  }
+
+  body.route-client .floating-driver-panel {
+    width: 390px;
+    max-height: calc(100dvh - 120px);
+  }
+
+  body.route-client .side-backdrop {
+    padding: 96px 24px 24px;
+    place-items: start end;
+    background: linear-gradient(90deg, transparent 0 58%, rgba(5, 5, 5, 0.42));
+  }
+
+  body.route-client .side-menu {
+    width: 380px;
+    max-height: calc(100dvh - 120px);
+  }
+}
+
+@media (max-width: 360px) {
+  body.route-client .client-top {
+    grid-template-columns: minmax(0, 1fr) 42px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  body.route-client .client-top .destination-card {
+    padding: 9px 10px;
+  }
+
+  body.route-client .client-top .avatar-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  body.route-client .map-filter-chips,
+  body.route-client .map-toolbar {
+    left: 10px;
+  }
+
+  body.route-client .map-locate-btn {
+    right: 10px;
+  }
+}
+
+body.route-login .login-screen,
+body.route-registro .login-screen {
+  background: var(--white);
+}
+
+body.route-login .login-phone,
+body.route-registro .login-phone {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  width: min(100%, 430px);
+  height: 100dvh;
+  min-height: 0;
+  margin: 0 auto;
+  padding:
+    max(18px, env(safe-area-inset-top, 0px))
+    clamp(18px, 5vw, 28px)
+    max(18px, env(safe-area-inset-bottom, 0px));
+  justify-content: center;
+  gap: clamp(10px, 2dvh, 18px);
+}
+
+body.route-login .login-hero-logo,
+body.route-registro .login-hero-logo {
+  width: clamp(76px, 12dvh, 112px);
+  height: clamp(76px, 12dvh, 112px);
+  border-radius: clamp(22px, 4dvh, 30px);
+}
+
+body.route-login .login-hero-logo img,
+body.route-registro .login-hero-logo img {
+  width: 74%;
+}
+
+body.route-login .login-spacer,
+body.route-registro .login-spacer {
+  display: none;
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  margin: 0;
+  font-size: clamp(32px, 7.2vw, 46px);
+}
+
+body.route-login .login-subtitle,
+body.route-registro .login-subtitle {
+  margin: 0;
+  font-size: clamp(14px, 3.8vw, 17px);
+}
+
+body.route-login .login-step-form,
+body.route-registro .login-step-form {
+  margin-top: clamp(4px, 1.6dvh, 16px);
+  gap: clamp(10px, 1.7dvh, 14px);
+}
+
+body.route-login .login-main-btn,
+body.route-login .login-secondary-btn,
+body.route-login .login-choice-btn,
+body.route-login .login-text-btn,
+body.route-registro .login-main-btn,
+body.route-registro .login-secondary-btn,
+body.route-registro .login-choice-btn,
+body.route-registro .login-text-btn {
+  min-height: 0;
+  height: clamp(52px, 8dvh, 62px);
+}
+
+body.route-login .login-step-form input,
+body.route-login .password-box input,
+body.route-registro .login-step-form input,
+body.route-registro .password-box input {
+  height: clamp(52px, 8dvh, 62px);
+}
+
+body.route-login .login-create-link,
+body.route-registro .login-create-link {
+  margin-top: 0;
+}
+
+body.route-login .login-error-message,
+body.route-registro .login-error-message {
+  margin-top: 0;
+}
+
+body.route-login .login-user-avatar-fallback,
+body.route-registro .register-photo-preview {
+  width: clamp(96px, 18dvh, 142px);
+  height: clamp(96px, 18dvh, 142px);
+  margin-top: 0;
+}
+
+@media (max-height: 680px) {
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    gap: 8px;
+  }
+
+  body.route-login .login-panel h1,
+  body.route-registro .login-panel h1 {
+    font-size: clamp(29px, 7vw, 38px);
+  }
+
+  body.route-login .login-subtitle,
+  body.route-registro .login-subtitle {
+    line-height: 1.25;
+  }
+}
+/* =========================================================
+   MiChofer Cliente Premium
+   Mapa protagonista, header limpio, cuenta tipo Google Maps
+========================================================= */
+
+.client-phone {
+  position: relative;
+  overflow: hidden;
+  background: #050505;
+}
+
+.premium-map-header {
+  position: absolute;
+  z-index: 40;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: block;
+  pointer-events: none;
+}
+
+.map-search-bar {
+  width: 100%;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow:
+    0 18px 45px rgba(8, 12, 20, 0.18),
+    0 2px 8px rgba(8, 12, 20, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+.map-search-icon {
+  color: #ef0014;
+  flex: 0 0 auto;
+}
+
+.map-search-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.map-search-copy label {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a8191;
+}
+
+.map-search-copy input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #090909;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.map-search-copy input::placeholder {
+  color: #7b808a;
+  font-weight: 800;
+}
+
+.clear-destination-btn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #606674;
+  background: rgba(244, 245, 247, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(10, 10, 10, 0.04);
+  cursor: pointer;
+}
+
+.destination-suggestions {
+  pointer-events: auto;
+  margin-top: 8px;
+  padding: 6px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 22px 50px rgba(8, 12, 20, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.destination-suggestions button {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 16px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  background: transparent;
+  color: #111827;
+  text-align: left;
+  cursor: pointer;
+}
+
+.destination-suggestions button:hover,
+.destination-suggestions button:focus-visible {
+  outline: 0;
+  background: rgba(31, 122, 255, 0.08);
+}
+
+.destination-suggestions svg {
+  color: #ef0014;
+}
+
+.destination-suggestions span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.destination-suggestions strong,
+.destination-suggestions small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.destination-suggestions strong {
+  font-size: 14px;
+  font-weight: 950;
+  color: #07111c;
+}
+
+.destination-suggestions small {
+  font-size: 11px;
+  font-weight: 850;
+  color: #667085;
+  text-transform: capitalize;
+}
+
+.header-avatar,
+.avatar-button.header-avatar {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #0a0a0a;
+  background: #ffffff;
+  box-shadow:
+    0 10px 26px rgba(8, 12, 20, 0.14),
+    inset 0 0 0 1px rgba(10, 10, 10, 0.06);
+  cursor: pointer;
+}
+
+.header-avatar img,
+.avatar-button.header-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.premium-map-tools,
+.map-filter-chips.premium-map-tools {
+  position: absolute;
+  z-index: 39;
+  top: 88px;
+  left: 16px;
+  right: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100% - 32px);
+  overflow-x: auto;
+  padding: 0;
+  scrollbar-width: none;
+}
+
+.premium-map-tools::-webkit-scrollbar {
+  display: none;
+}
+
+.premium-map-tools button {
+  min-height: 30px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #111111;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(10, 10, 10, 0.05);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.premium-map-tools button.active {
+  color: #ffffff;
+  background: #090909;
+}
+
+.premium-map-tools button.women,
+.premium-map-tools button.active.women {
+  color: #a40018;
+  background: rgba(255, 238, 241, 0.94);
+  box-shadow:
+    0 8px 22px rgba(164, 0, 24, 0.08),
+    inset 0 0 0 1px rgba(239, 0, 20, 0.1);
+}
+
+.premium-map-tools button.active.women {
+  color: #ffffff;
+  background: #b70721;
+}
+
+.premium-map-tools .soft-chip {
+  color: #ffffff;
+  background: rgba(14, 18, 26, 0.74);
+}
+
+.premium-map-tools button:disabled {
+  opacity: 0.82;
+  cursor: not-allowed;
+}
+
+.selected-map-card {
+  z-index: 38;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 18px 45px rgba(8, 12, 20, 0.16);
+}
+
+.client-sheet,
+.floating-driver-panel {
+  border-radius: 30px 30px 0 0;
+  box-shadow: 0 -22px 50px rgba(8, 12, 20, 0.18);
+}
+
+.sheet-handle {
+  width: 58px;
+  height: 5px;
+  border-radius: 999px;
+  background: #d7dbe2;
+  margin: 0 auto 18px;
+}
+
+.sheet-heading .eyebrow {
+  color: #e90013;
+  letter-spacing: 0.22em;
+  font-weight: 1000;
+}
+
+.sheet-heading h1 {
+  letter-spacing: -0.06em;
+}
+
+.driver-card {
+  border-radius: 24px;
+  box-shadow: 0 12px 30px rgba(8, 12, 20, 0.06);
+}
+
+.driver-card.selected {
+  box-shadow:
+    0 18px 40px rgba(8, 12, 20, 0.12),
+    inset 0 0 0 2px rgba(239, 0, 20, 0.16);
+}
+
+.side-backdrop {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.side-menu {
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.side-menu a,
+.side-menu button:not(.close-menu):not(.danger-link) {
+  border-radius: 18px;
+  background: #f3f4f6;
+  font-weight: 900;
+}
+
+.close-menu {
+  border-radius: 18px;
+}
+
+@media (max-width: 390px) {
+  .premium-map-header {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .map-search-bar {
+    min-height: 58px;
+    border-radius: 23px;
+    padding-left: 14px;
+  }
+
+  .map-search-copy input {
+    font-size: 15px;
+  }
+
+  .header-avatar,
+  .avatar-button.header-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 16px;
+  }
+
+  .premium-map-tools,
+  .map-filter-chips.premium-map-tools {
+    top: 82px;
+    left: 14px;
+  }
+}
+/* =========================================================
+   MiChofer Cliente: Quickbar inferior tipo Google Maps
+   Los filtros ya no ensucian la parte superior del mapa
+========================================================= */
+
+.map-filter-chips.premium-map-tools {
+  display: none !important;
+}
+
+.client-bottom-quickbar {
+  position: absolute;
+  z-index: 42;
+  left: 14px;
+  right: 14px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: auto auto minmax(116px, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 26px;
+  background: rgba(12, 14, 18, 0.78);
+  box-shadow:
+    0 22px 55px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.client-bottom-quickbar button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.client-bottom-quickbar button.active {
+  color: #050505;
+  background: #ffffff;
+}
+
+.client-bottom-quickbar button.women {
+  color: #ffdde3;
+  background: rgba(239, 0, 20, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(239, 0, 20, 0.18);
+}
+
+.client-bottom-quickbar button.active.women {
+  color: #ffffff;
+  background: #b70721;
+}
+
+.client-bottom-quickbar .primary-destination-chip {
+  justify-self: stretch;
+  color: #ffffff;
+  background: #050505;
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.client-bottom-quickbar .primary-destination-chip:disabled {
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.12);
+  cursor: not-allowed;
+}
+
+.selected-map-card {
+  bottom: 82px !important;
+}
+
+.driver-panel-backdrop {
+  z-index: 70;
+}
+
+@media (max-width: 390px) {
+  .client-bottom-quickbar {
+    left: 10px;
+    right: 10px;
+    bottom: 14px;
+    gap: 6px;
+    padding: 7px;
+    border-radius: 22px;
+  }
+
+  .client-bottom-quickbar button {
+    min-height: 38px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
+}
+
+/* =========================================================
+   MiChofer Glass System
+   Modales fijos tipo Google Maps + ManosYA, sin scroll global
+========================================================= */
+
+:root {
+  --glass-ink: #06121c;
+  --glass-panel: rgba(8, 18, 29, 0.72);
+  --glass-panel-strong: rgba(8, 18, 29, 0.86);
+  --glass-panel-soft: rgba(255, 255, 255, 0.12);
+  --glass-stroke: rgba(255, 255, 255, 0.24);
+  --glass-text: #f8fbff;
+  --glass-muted: rgba(248, 251, 255, 0.72);
+  --glass-teal: #69c4c0;
+}
+
+body.route-client,
+body.route-driver,
+body.route-login,
+body.route-registro {
+  background: #07111c;
+}
+
+body.route-client .map-search-bar,
+body.route-client .client-bottom-quickbar,
+body.route-client .selected-map-card,
+body.route-client .route-summary,
+.glass-panel,
+.floating-driver-panel,
+.account-panel,
+.login-panel,
+.camera-card,
+body.route-driver .driver-hero,
+body.route-driver .driver-status-grid,
+body.route-driver .driver-section,
+body.route-driver .driver-trip-card,
+body.route-driver .review-card {
+  border: 1px solid var(--glass-stroke);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.06)),
+    var(--glass-panel);
+  color: var(--glass-text);
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(24px) saturate(1.18);
+  -webkit-backdrop-filter: blur(24px) saturate(1.18);
+}
+
+body.route-client .map-search-bar {
+  min-height: 58px;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.09)),
+    rgba(7, 18, 29, 0.72);
+}
+
+body.route-client .map-search-icon {
+  color: #ff3044;
+}
+
+body.route-client .map-search-copy label,
+body.route-client .route-summary span,
+body.route-client .selected-map-card span {
+  color: rgba(248, 251, 255, 0.68);
+}
+
+body.route-client .map-search-copy input,
+body.route-client .route-summary strong,
+body.route-client .selected-map-card strong,
+body.route-client .selected-map-card small {
+  color: var(--glass-text);
+}
+
+body.route-client .map-search-copy input::placeholder {
+  color: rgba(248, 251, 255, 0.74);
+}
+
+body.route-client .clear-destination-btn,
+body.route-client .header-avatar,
+body.route-client .avatar-button.header-avatar,
+body.route-client .map-locate-btn,
+body.route-client .panel-close,
+.account-close-top {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--glass-text);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+body.route-client .map-toolbar button,
+body.route-client .client-bottom-quickbar button,
+body.route-client .filters-row button,
+body.route-client .selected-map-card button,
+body.route-client .route-summary button,
+body.route-client .request-btn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--glass-text);
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body.route-client .map-toolbar button.active,
+body.route-client .client-bottom-quickbar button.active,
+body.route-client .filters-row button.active,
+body.route-client .selected-map-card button,
+body.route-client .route-summary button,
+body.route-client .request-btn {
+  background: #05070a;
+  color: #ffffff;
+}
+
+body.route-client .client-bottom-quickbar {
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  height: 58px;
+  max-width: 430px;
+  margin: 0 auto;
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)),
+    rgba(5, 10, 16, 0.82);
+}
+
+body.route-client .client-bottom-quickbar .primary-destination-chip {
+  background: #05070a;
+}
+
+body.route-client .driver-panel-backdrop,
+body.route-client .side-backdrop,
+.camera-modal {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(105, 196, 192, 0.14), transparent 34%),
+    rgba(3, 9, 15, 0.54);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+body.route-client .floating-driver-panel,
+body.route-client .account-panel {
+  width: min(100% - 20px, 430px);
+  max-height: min(72dvh, 620px);
+  overflow: hidden;
+  border-radius: 30px;
+  padding: 14px;
+  background:
+    linear-gradient(145deg, rgba(105, 196, 192, 0.28), rgba(255, 255, 255, 0.08)),
+    rgba(7, 18, 29, 0.86);
+}
+
+body.route-client .driver-panel-backdrop {
+  align-items: end;
+  padding-top: 0;
+}
+
+body.route-client .sheet-handle {
+  background: rgba(255, 255, 255, 0.36);
+}
+
+body.route-client .sheet-heading {
+  color: var(--glass-text);
+}
+
+body.route-client .sheet-heading h1,
+body.route-client .account-copy h2 {
+  color: var(--glass-text);
+  letter-spacing: 0;
+}
+
+body.route-client .sheet-heading div > p:not(.eyebrow),
+body.route-client .account-copy p,
+body.route-client .side-head p {
+  color: var(--glass-muted);
+}
+
+body.route-client .eyebrow,
+body.route-client .account-kicker,
+body.route-client .account-system-mark strong {
+  color: rgba(255, 255, 255, 0.68);
+  letter-spacing: 0.14em;
+}
+
+body.route-client .driver-list {
+  max-height: clamp(210px, 34dvh, 330px);
+  overflow: hidden;
+  gap: 8px;
+}
+
+body.route-client .driver-card:nth-child(n + 4) {
+  display: none;
+}
+
+body.route-client .driver-card {
+  min-height: 76px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--glass-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11);
+}
+
+body.route-client .driver-info > span,
+body.route-client .driver-meta small,
+body.route-client .empty-state,
+body.route-client .notice-card,
+body.route-client .safety-message {
+  color: var(--glass-muted);
+}
+
+body.route-client .driver-side button,
+body.route-client .account-main-action,
+body.route-client .account-logout {
+  background: #05070a;
+  color: #ffffff;
+}
+
+body.route-client .account-section {
+  display: grid;
+  gap: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+body.route-client .account-section a,
+body.route-client .account-section button {
+  min-height: 50px;
+  border: 0;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--glass-text);
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 18px;
+}
+
+body.route-client .account-section span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.route-client .account-avatar {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--glass-text);
+}
+
+body.route-client .account-avatar-action {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+body.route-client .account-avatar-action:disabled {
+  cursor: progress;
+  opacity: 0.76;
+}
+
+body.route-client .account-panel .account-close-top {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 0 0 8px auto;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.route-client .account-panel .account-system-mark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+body.route-client .account-panel .account-system-mark span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #ff3044;
+  box-shadow: 0 0 24px rgba(255, 48, 68, 0.6);
+}
+
+body.route-client .account-panel .account-hero {
+  margin: 0 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+body.route-client .account-panel .account-main-action,
+body.route-client .account-panel .account-logout {
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--glass-text);
+}
+
+body.route-client .account-panel .account-main-action {
+  margin-bottom: 10px;
+  background: #05070a;
+}
+
+body.route-client .account-panel .account-section {
+  margin-bottom: 10px;
+}
+
+body.route-client .account-panel .account-section a,
+body.route-client .account-panel .account-section button {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  text-align: left;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--glass-text);
+}
+
+body.route-client .account-panel .account-section a + a,
+body.route-client .account-panel .account-section button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.route-client .account-panel .account-section svg {
+  color: rgba(248, 251, 255, 0.84);
+}
+
+body.route-client .account-panel .account-logout {
+  margin-top: 0;
+  color: #ffd9de;
+  background: rgba(227, 6, 19, 0.24);
+  border-color: rgba(255, 109, 123, 0.28);
+}
+
+body.route-client .account-overlay {
+  padding: 12px;
+  place-items: center;
+}
+
+body.route-client .account-overlay .account-panel {
+  width: min(100% - 24px, 430px);
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+body.route-client .account-panel .account-close-top {
+  margin-bottom: 0;
+}
+
+body.route-client .account-panel .account-system-mark {
+  margin-bottom: 0;
+}
+
+body.route-client .account-panel .account-hero {
+  min-height: 78px;
+  margin-bottom: 0;
+  padding: 10px;
+}
+
+body.route-client .account-panel .account-avatar {
+  width: 58px;
+  height: 58px;
+}
+
+body.route-client .account-panel .account-copy h2 {
+  font-size: 22px;
+  line-height: 1;
+}
+
+body.route-client .account-panel .account-copy p {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+body.route-client .account-panel .account-main-action,
+body.route-client .account-panel .account-logout {
+  min-height: 44px;
+  border-radius: 18px;
+}
+
+body.route-client .account-panel .account-section {
+  margin-bottom: 0;
+  border-radius: 20px;
+}
+
+body.route-client .account-panel .account-section a,
+body.route-client .account-panel .account-section button {
+  min-height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+body.route-client .account-panel .account-section svg {
+  width: 17px;
+  height: 17px;
+}
+
+body.route-login .login-screen,
+body.route-registro .login-screen {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(105, 196, 192, 0.4), transparent 32%),
+    radial-gradient(circle at 82% 20%, rgba(227, 6, 19, 0.18), transparent 28%),
+    #07111c;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  position: relative;
+  width: min(calc(100% - 24px), 430px);
+  height: calc(100dvh - 24px);
+  margin: 12px auto;
+  border-radius: 32px;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, rgba(105, 196, 192, 0.24), rgba(255, 255, 255, 0.07)),
+    rgba(7, 18, 29, 0.78);
+  color: var(--glass-text);
+}
+
+body.route-login .login-hero-logo,
+body.route-registro .login-hero-logo {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  color: var(--glass-text);
+}
+
+body.route-login .login-subtitle,
+body.route-registro .login-subtitle,
+body.route-login .login-create-link,
+body.route-registro .login-create-link,
+body.route-login .login-text-btn,
+body.route-registro .login-text-btn {
+  color: var(--glass-muted);
+}
+
+body.route-login .login-step-form input,
+body.route-login .password-box input,
+body.route-registro .login-step-form input,
+body.route-registro .password-box input,
+body.route-login .login-recognized-pill,
+body.route-registro .login-recognized-pill,
+body.route-registro .register-photo-box {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--glass-text);
+}
+
+body.route-login .login-step-form input::placeholder,
+body.route-login .password-box input::placeholder,
+body.route-registro .login-step-form input::placeholder,
+body.route-registro .password-box input::placeholder {
+  color: rgba(248, 251, 255, 0.58);
+}
+
+body.route-login .login-main-btn,
+body.route-registro .login-main-btn,
+body.route-login .login-choice-btn,
+body.route-registro .login-choice-btn,
+body.route-login .login-secondary-btn,
+body.route-registro .login-secondary-btn,
+body.route-login .password-toggle,
+body.route-registro .password-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--glass-text);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body.route-login .login-main-btn,
+body.route-registro .login-main-btn {
+  background: #05070a;
+}
+
+body.route-registro .login-choice-btn {
+  justify-content: flex-start;
+  padding: 0 18px;
+  text-align: left;
+}
+
+body.route-driver .app-shell {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(105, 196, 192, 0.28), transparent 32%),
+    radial-gradient(circle at 88% 22%, rgba(227, 6, 19, 0.16), transparent 30%),
+    #07111c;
+}
+
+body.route-driver .driver-phone {
+  width: min(100%, 430px);
+  max-width: 430px;
+  height: 100dvh;
+  padding: 12px;
+  display: grid;
+  grid-template-rows: 54px auto auto auto minmax(0, 1fr) 50px;
+  gap: 10px;
+  overflow: hidden;
+  background: transparent;
+}
+
+body.route-driver .driver-top {
+  min-height: 0;
+  padding: 0;
+  grid-template-columns: 1fr 48px;
+}
+
+body.route-driver .driver-top button {
+  grid-column: 2;
+  justify-self: end;
+}
+
+body.route-driver .driver-top img {
+  justify-self: start;
+  filter: drop-shadow(0 12px 28px rgba(255, 255, 255, 0.16));
+}
+
+body.route-driver .driver-hero,
+body.route-driver .driver-status-grid,
+body.route-driver .driver-section,
+body.route-driver .driver-trip-card,
+body.route-driver .review-card,
+body.route-driver .notice-card,
+body.route-driver .empty-state {
+  margin: 0;
+}
+
+body.route-driver .driver-hero {
+  border-radius: 28px;
+  padding: 16px;
+}
+
+body.route-driver .driver-hero h1 {
+  color: var(--glass-text);
+  font-size: clamp(24px, 5dvh, 34px);
+}
+
+body.route-driver .driver-hero span,
+body.route-driver .driver-trip-card p,
+body.route-driver .empty-state,
+body.route-driver .notice-card,
+body.route-driver .review-card p {
+  color: var(--glass-muted);
+}
+
+body.route-driver .driver-status-grid {
+  grid-template-columns: 1fr 1fr;
+  border-radius: 24px;
+  padding: 8px;
+  gap: 8px;
+}
+
+body.route-driver .driver-intel-card {
+  margin: 0;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 24px;
+  padding: 12px;
+  background:
+    linear-gradient(145deg, rgba(105, 196, 192, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(8, 18, 29, 0.72);
+  color: var(--glass-text);
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  display: grid;
+  gap: 10px;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+body.route-driver .driver-intel-card span {
+  display: block;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+body.route-driver .driver-intel-card strong {
+  display: block;
+  margin-top: 4px;
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+body.route-driver .driver-intel-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+body.route-driver .driver-intel-metrics small {
+  min-height: 34px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.86);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+body.route-driver .driver-command-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+body.route-driver .driver-command-row button,
+body.route-driver .driver-command-row a {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.32);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 8px;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+body.route-driver .status-tile {
+  min-height: 72px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--glass-text);
+}
+
+body.route-driver .status-tile:disabled {
+  opacity: 0.5;
+}
+
+body.route-driver .status-tile.online-action.active {
+  background: linear-gradient(135deg, rgba(33, 197, 122, 0.92), rgba(13, 148, 136, 0.82));
+  color: #ffffff;
+}
+
+body.route-driver .driver-section {
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 28px;
+  padding: 14px;
+}
+
+body.route-driver .request-list {
+  max-height: 100%;
+  overflow: hidden;
+  display: grid;
+  gap: 8px;
+}
+
+body.route-driver .request-list .driver-trip-card:nth-child(n + 3) {
+  display: none;
+}
+
+body.route-driver .empty-state {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+body.route-driver .driver-trip-card {
+  border-radius: 24px;
+  padding: 14px;
+}
+
+body.route-driver .driver-actions-grid button,
+body.route-driver .driver-actions-grid a,
+body.route-driver .logout-button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--glass-text);
+}
+
+body.route-driver .logout-button {
+  min-height: 50px;
+  border-radius: 20px;
+  justify-content: center;
+}
+
+@media (min-width: 900px) {
+  body.route-client .client-bottom-quickbar {
+    left: 24px;
+    right: auto;
+    margin: 0;
+    width: min(430px, calc(100vw - 470px));
+  }
+
+  body.route-client .floating-driver-panel,
+  body.route-client .account-panel {
+    width: 410px;
+    max-height: calc(100dvh - 120px);
+  }
+
+  body.route-driver .driver-phone {
+    max-width: 520px;
+    padding: 18px;
+  }
+}
+
+@media (max-width: 380px), (max-height: 680px) {
+  body.route-client .floating-driver-panel,
+  body.route-client .account-panel {
+    max-height: calc(100dvh - 98px);
+    padding: 12px;
+  }
+
+  body.route-client .driver-card {
+    min-height: 68px;
+  }
+
+  body.route-client .driver-list {
+    max-height: 220px;
+  }
+
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    height: calc(100dvh - 16px);
+    margin: 8px auto;
+    border-radius: 28px;
+  }
+
+  body.route-driver .driver-phone {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  body.route-driver .driver-hero {
+    padding: 13px;
+  }
+}
+
+/* Solo para ellas: identidad rosa glass en toda la experiencia cliente */
+body.route-client .women-client-mode::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 22% 8%, rgba(255, 79, 139, 0.32), transparent 32%),
+    radial-gradient(circle at 86% 22%, rgba(255, 185, 215, 0.28), transparent 30%),
+    linear-gradient(180deg, rgba(117, 13, 58, 0.2), rgba(255, 122, 176, 0.08) 38%, rgba(117, 13, 58, 0.24));
+  mix-blend-mode: multiply;
+}
+
+body.route-client .women-client-mode::after {
+  content: 'SOLO PARA ELLAS';
+  position: absolute;
+  z-index: 41;
+  left: max(14px, env(safe-area-inset-left));
+  top: calc(env(safe-area-inset-top, 0px) + 82px);
+  border: 1px solid rgba(255, 211, 229, 0.34);
+  border-radius: 999px;
+  padding: 7px 11px;
+  color: rgba(255, 238, 246, 0.92);
+  background: rgba(141, 19, 76, 0.38);
+  box-shadow:
+    0 14px 38px rgba(162, 24, 88, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body.route-client .women-client-mode .mapbox-real-map::after {
+  background:
+    linear-gradient(180deg, rgba(112, 14, 56, 0.18) 0%, transparent 26%, rgba(112, 14, 56, 0.22) 100%),
+    radial-gradient(circle at 50% 18%, rgba(255, 126, 181, 0.22), transparent 36%);
+}
+
+body.route-client .women-client-mode .map-search-bar,
+body.route-client .women-client-mode .client-bottom-quickbar,
+body.route-client .women-client-mode .selected-map-card,
+body.route-client .women-client-mode .route-summary,
+body.route-client .women-client-mode .floating-driver-panel,
+body.route-client .women-client-mode .account-panel {
+  border-color: rgba(255, 211, 229, 0.34);
+  background:
+    linear-gradient(145deg, rgba(255, 202, 224, 0.22), rgba(255, 255, 255, 0.07)),
+    rgba(82, 12, 45, 0.78);
+  box-shadow:
+    0 28px 86px rgba(142, 20, 76, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+body.route-client .women-client-mode .map-search-icon,
+body.route-client .women-client-mode .sheet-heading .eyebrow,
+body.route-client .women-client-mode .driver-price,
+body.route-client .women-client-mode .account-system-mark span {
+  color: #ff4f8b;
+}
+
+body.route-client .women-client-mode .account-system-mark span {
+  background: #ff4f8b;
+  box-shadow: 0 0 26px rgba(255, 79, 139, 0.72);
+}
+
+body.route-client .women-client-mode .map-toolbar button,
+body.route-client .women-client-mode .client-bottom-quickbar button,
+body.route-client .women-client-mode .filters-row button,
+body.route-client .women-client-mode .clear-destination-btn,
+body.route-client .women-client-mode .header-avatar,
+body.route-client .women-client-mode .avatar-button.header-avatar,
+body.route-client .women-client-mode .map-locate-btn,
+body.route-client .women-client-mode .panel-close,
+body.route-client .women-client-mode .account-close-top {
+  border-color: rgba(255, 211, 229, 0.28);
+  background: rgba(255, 228, 239, 0.16);
+  color: #fff4f9;
+}
+
+body.route-client .women-client-mode .map-toolbar button.active,
+body.route-client .women-client-mode .client-bottom-quickbar button.active,
+body.route-client .women-client-mode .filters-row button.active,
+body.route-client .women-client-mode .client-bottom-quickbar button.active.women,
+body.route-client .women-client-mode .client-bottom-quickbar .primary-destination-chip,
+body.route-client .women-client-mode .selected-map-card button,
+body.route-client .women-client-mode .route-summary button,
+body.route-client .women-client-mode .request-btn,
+body.route-client .women-client-mode .account-main-action {
+  border-color: rgba(255, 126, 181, 0.42);
+  background: linear-gradient(135deg, #ff2f78, #9f1239);
+  color: #ffffff;
+  box-shadow:
+    0 16px 44px rgba(255, 47, 120, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+body.route-client .women-client-mode .client-bottom-quickbar button:not(.active):not(.primary-destination-chip),
+body.route-client .women-client-mode .filters-row button:not(.active) {
+  color: rgba(255, 238, 246, 0.88);
+}
+
+body.route-client .women-client-mode .driver-card,
+body.route-client .women-client-mode .account-section,
+body.route-client .women-client-mode .account-hero,
+body.route-client .women-client-mode .notice-card,
+body.route-client .women-client-mode .empty-state,
+body.route-client .women-client-mode .safety-message {
+  border-color: rgba(255, 211, 229, 0.22);
+  background: rgba(255, 228, 239, 0.1);
+}
+
+body.route-client .women-client-mode .driver-card.selected {
+  border-color: rgba(255, 79, 139, 0.56);
+  box-shadow:
+    0 18px 42px rgba(255, 79, 139, 0.22),
+    inset 0 0 0 1px rgba(255, 184, 213, 0.18);
+}
+
+body.route-client .women-client-mode .driver-name-row em {
+  background: rgba(255, 79, 139, 0.22);
+  color: #ffeef6;
+}
+
+@media (min-width: 900px) {
+  body.route-client .women-client-mode::after {
+    left: 44px;
+    top: 102px;
+  }
+}
+
+@media (max-width: 390px) {
+  body.route-client .women-client-mode::after {
+    top: 78px;
+    font-size: 9px;
+    padding: 6px 9px;
+  }
+}
+
+/* Cuenta cliente full-screen estilo Google Maps */
+body.route-client .account-overlay {
+  padding: 0 !important;
+  place-items: stretch !important;
+  background:
+    radial-gradient(circle at 50% 6%, rgba(255, 255, 255, 0.08), transparent 28%),
+    rgba(48, 48, 51, 0.88) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body.route-client .account-overlay .account-panel {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding:
+    max(18px, env(safe-area-inset-top, 0px))
+    clamp(20px, 6vw, 54px)
+    max(16px, env(safe-area-inset-bottom, 0px)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: clamp(12px, 1.8dvh, 18px) !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 50% 2%, rgba(255, 255, 255, 0.1), transparent 34%),
+    rgba(54, 54, 57, 0.84) !important;
+  box-shadow: none !important;
+}
+
+body.route-client .account-panel .account-close-top {
+  position: absolute;
+  top: max(18px, env(safe-area-inset-top, 0px));
+  right: clamp(20px, 6vw, 54px);
+  z-index: 3;
+  width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.route-client .account-panel .account-system-mark,
+body.route-client .account-panel .account-hero {
+  display: none !important;
+}
+
+body.route-client .account-panel .google-account-head {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  display: grid;
+  justify-items: center;
+  gap: clamp(8px, 1.6dvh, 14px);
+  text-align: center;
+}
+
+body.route-client .account-panel .google-account-head p {
+  width: min(100%, 360px);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.route-client .account-panel .google-account-avatar {
+  position: relative;
+  width: clamp(92px, 16dvh, 128px);
+  height: clamp(92px, 16dvh, 128px);
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.28),
+    0 0 0 4px rgba(255, 255, 255, 0.12);
+}
+
+body.route-client .account-panel .google-account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+}
+
+body.route-client .account-panel .google-account-avatar::after {
+  content: none;
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 4px solid transparent;
+  background:
+    linear-gradient(#0000, #0000) padding-box,
+    conic-gradient(#4285f4, #db4437, #f4b400, #0f9d58, #4285f4) border-box;
+  pointer-events: none;
+}
+
+body.route-client .account-panel .google-account-head h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(26px, 5dvh, 38px);
+  line-height: 1;
+  font-weight: 800;
+}
+
+body.route-client .avatar-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(7, 10, 14, 0.58);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body.route-client .avatar-preview-card {
+  position: relative;
+  width: min(100%, 360px);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 22px;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05)),
+    rgba(19, 28, 36, 0.88);
+  box-shadow:
+    0 32px 90px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+body.route-client .avatar-preview-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.route-client .avatar-preview-photo {
+  width: min(68vw, 220px);
+  height: min(68vw, 220px);
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 28px 72px rgba(0, 0, 0, 0.38),
+    0 0 0 6px rgba(255, 255, 255, 0.12);
+}
+
+body.route-client .avatar-preview-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+body.route-client .avatar-preview-copy {
+  text-align: center;
+}
+
+body.route-client .avatar-preview-copy span {
+  color: #ff3346;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+body.route-client .avatar-preview-copy h3 {
+  margin: 6px 0 3px;
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+body.route-client .avatar-preview-copy p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+body.route-client .avatar-preview-action {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 20px;
+  color: #05070a;
+  background: #ffffff;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+body.route-client .account-panel .account-main-action,
+body.route-client .account-panel .account-logout,
+body.route-client .account-panel .account-section {
+  width: min(100%, 620px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  flex: 0 0 auto !important;
+}
+
+body.route-client .account-panel .account-main-action {
+  min-height: clamp(48px, 6.6dvh, 58px) !important;
+  margin-bottom: 0 !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.34) !important;
+  background: transparent !important;
+  color: #8ab4f8 !important;
+  box-shadow: none !important;
+}
+
+body.route-client .account-panel .account-section {
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 28px !important;
+  background: #000000 !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+}
+
+body.route-client .account-panel .account-section a,
+body.route-client .account-panel .account-section button {
+  min-height: clamp(42px, 5.7dvh, 52px) !important;
+  padding: 0 clamp(18px, 4vw, 28px) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-size: clamp(15px, 2.2dvh, 17px) !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .account-panel .account-section a + a,
+body.route-client .account-panel .account-section button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+body.route-client .account-panel .account-section svg {
+  width: 22px !important;
+  height: 22px !important;
+  color: #ffffff !important;
+}
+
+body.route-client .account-panel .account-logout {
+  min-height: clamp(44px, 5.8dvh, 52px) !important;
+  margin-top: auto !important;
+  border-radius: 999px !important;
+  background: #000000 !important;
+  color: #ffccd3 !important;
+}
+
+@media (min-width: 900px) {
+  body.route-client .account-overlay .account-panel {
+    align-items: center;
+  }
+}
+
+@media (max-height: 720px) {
+  body.route-client .account-overlay .account-panel {
+    gap: 8px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  body.route-client .account-panel .google-account-avatar {
+    width: 78px;
+    height: 78px;
+  }
+
+  body.route-client .account-panel .google-account-head h2 {
+    font-size: 24px;
+  }
+
+  body.route-client .account-panel .account-section a,
+  body.route-client .account-panel .account-section button {
+    min-height: 38px !important;
+  }
+}
+
+body.route-client .account-panel .google-account-head {
+  flex: 0 0 auto !important;
+  gap: clamp(6px, 1dvh, 10px) !important;
+}
+
+body.route-client .account-panel .google-account-avatar {
+  width: clamp(82px, 12dvh, 112px) !important;
+  height: clamp(82px, 12dvh, 112px) !important;
+}
+
+body.route-client .account-panel .google-account-head h2 {
+  font-size: clamp(25px, 4.4dvh, 34px) !important;
+}
+
+body.route-client .account-panel .account-section span {
+  font-size: inherit;
+}
+
+/* Home premium: minimal, powerful, ManosYA/MiChofer identity */
+body.route-home .app-shell {
+  width: 100vw;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(227, 6, 19, 0.18), transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(105, 196, 192, 0.18), transparent 30%),
+    #05070a;
+}
+
+body.route-home .home-phone {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  background: #05070a;
+  overflow: hidden;
+}
+
+body.route-home .home-header {
+  position: absolute;
+  z-index: 20;
+  top: max(16px, env(safe-area-inset-top, 0px));
+  left: max(18px, env(safe-area-inset-left, 0px));
+  right: max(18px, env(safe-area-inset-right, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+}
+
+body.route-home .home-header img {
+  width: clamp(112px, 28vw, 136px);
+  height: auto;
+  padding: 9px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.76));
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body.route-home .home-header a {
+  min-height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
+    rgba(8, 18, 29, 0.62);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 950;
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+body.route-home .home-map {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 48% 38%, rgba(255, 255, 255, 0.06), transparent 28%),
+    linear-gradient(180deg, #122334 0%, #07111c 54%, #05070a 100%);
+}
+
+body.route-home .home-map-grid {
+  position: absolute;
+  inset: -12%;
+  transform: rotateX(58deg) rotateZ(-18deg) translateY(10%) scale(1.35);
+  transform-origin: 50% 58%;
+  background:
+    linear-gradient(90deg, rgba(105, 196, 192, 0.28) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(105, 196, 192, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, transparent 0 32%, rgba(227, 6, 19, 0.22) 33%, transparent 34% 100%),
+    linear-gradient(0deg, transparent 0 58%, rgba(255, 255, 255, 0.12) 59%, transparent 60% 100%);
+  background-size: 34px 34px, 34px 34px, 100% 100%, 100% 100%;
+  opacity: 0.86;
+}
+
+body.route-home .home-map-tint {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(5, 7, 10, 0.08) 0%, rgba(5, 7, 10, 0.22) 48%, rgba(5, 7, 10, 0.9) 100%),
+    radial-gradient(circle at 70% 18%, rgba(227, 6, 19, 0.18), transparent 28%);
+}
+
+body.route-home .home-map::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  background: linear-gradient(180deg, transparent, #05070a 72%);
+  pointer-events: none;
+}
+
+body.route-home .home-route {
+  position: absolute;
+  inset: 9% 4% 20%;
+  width: 92%;
+  height: 71%;
+  overflow: visible;
+  filter: drop-shadow(0 24px 42px rgba(227, 6, 19, 0.28));
+}
+
+body.route-home .route-halo {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.route-home .route-base {
+  fill: none;
+  stroke: rgba(5, 7, 10, 0.82);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.route-home .route-line {
+  fill: none;
+  stroke: #e30613;
+  stroke-width: 4.5;
+  stroke-dasharray: 14 13;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: routeFlow 1.4s linear infinite;
+}
+
+body.route-home .route-dot {
+  fill: #ffffff;
+  stroke: #05070a;
+  stroke-width: 5;
+}
+
+body.route-home .destination-dot {
+  stroke: #e30613;
+}
+
+body.route-home .home-map .map-marker,
+body.route-home .home-map-tool,
+body.route-home .home-driver-card,
+body.route-home .home-woman-chip {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(8, 18, 29, 0.7);
+  color: #ffffff;
+  box-shadow:
+    0 20px 55px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+body.route-home .home-map .map-marker {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+}
+
+body.route-home .marker-origin {
+  left: 23%;
+  top: 58%;
+}
+
+body.route-home .marker-destination {
+  right: 17%;
+  top: 26%;
+  color: #e30613;
+}
+
+body.route-home .home-driver-card {
+  position: absolute;
+  left: 7%;
+  top: 29%;
+  min-width: 188px;
+  border-radius: 24px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+body.route-home .home-driver-card::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+
+body.route-home .avatar-initial {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #05070a;
+  color: #ffffff;
+  font-weight: 950;
+}
+
+body.route-home .home-driver-card strong,
+body.route-home .home-driver-card span {
+  display: block;
+}
+
+body.route-home .home-driver-card span {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+body.route-home .home-map-tool {
+  position: absolute;
+  left: 7%;
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+body.route-home .tool-3d {
+  top: 19%;
+}
+
+body.route-home .tool-traffic {
+  top: calc(19% + 42px);
+}
+
+body.route-home .home-woman-chip {
+  position: absolute;
+  right: 6%;
+  top: 53%;
+  bottom: auto;
+  min-height: 44px;
+  border-radius: 999px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffd9e5;
+  background:
+    linear-gradient(145deg, rgba(255, 120, 170, 0.24), rgba(255, 255, 255, 0.08)),
+    rgba(82, 12, 45, 0.64);
+}
+
+body.route-home .home-sheet {
+  position: absolute;
+  z-index: 10;
+  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  margin: 0 auto;
+  width: min(calc(100% - 32px), 430px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 32px;
+  padding: 26px 22px 20px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(8, 18, 29, 0.76);
+  color: #ffffff;
+  box-shadow:
+    0 34px 110px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(26px) saturate(1.2);
+  -webkit-backdrop-filter: blur(26px) saturate(1.2);
+}
+
+body.route-home .home-sheet .eyebrow {
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.18em;
+}
+
+body.route-home .home-sheet h1 {
+  margin: 12px 0 0;
+  max-width: 10ch;
+  color: #ffffff;
+  font-size: clamp(34px, 6dvh, 52px);
+  line-height: 0.92;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+body.route-home .home-sheet .muted {
+  max-width: 310px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 15px;
+}
+
+body.route-home .home-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+body.route-home .home-actions .main-btn,
+body.route-home .home-actions .secondary-btn {
+  min-height: 58px;
+  border-radius: 22px;
+}
+
+body.route-home .home-actions .main-btn {
+  background: #ffffff;
+  color: #05070a;
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.28);
+}
+
+body.route-home .woman-mode-link {
+  background: rgba(255, 228, 239, 0.12);
+  color: #ffd9e5;
+  border: 1px solid rgba(255, 211, 229, 0.26);
+}
+
+body.route-home .home-note {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+@media (min-width: 900px) {
+  body.route-home .home-sheet {
+    left: 44px;
+    right: auto;
+    bottom: 44px;
+  }
+
+  body.route-home .home-header {
+    left: 44px;
+    right: 44px;
+  }
+
+  body.route-home .home-driver-card {
+    left: 46%;
+    top: 26%;
+  }
+
+  body.route-home .home-woman-chip {
+    right: 18%;
+    top: 48%;
+  }
+}
+
+@media (max-height: 720px) {
+  body.route-home .home-sheet {
+    padding: 20px;
+  }
+
+  body.route-home .home-sheet h1 {
+    font-size: 34px;
+  }
+
+  body.route-home .home-actions {
+    margin-top: 16px;
+  }
+}
+
+/* Auth premium: Apple/Uber inspired */
+body.route-login,
+body.route-registro {
+  background: #05070a;
+}
+
+body.route-login .login-screen,
+body.route-registro .login-screen {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% -8%, rgba(255, 255, 255, 0.24), transparent 28%),
+    radial-gradient(circle at 18% 18%, rgba(227, 6, 19, 0.2), transparent 24%),
+    radial-gradient(circle at 86% 22%, rgba(105, 196, 192, 0.22), transparent 30%),
+    linear-gradient(145deg, #05070a 0%, #101820 48%, #05070a 100%) !important;
+}
+
+body.route-login .login-screen::before,
+body.route-registro .login-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(135deg, transparent 0 46%, rgba(105, 196, 192, 0.16) 47%, transparent 49% 100%),
+    linear-gradient(28deg, transparent 0 58%, rgba(227, 6, 19, 0.13) 59%, transparent 61% 100%);
+  background-size: 44px 44px, 44px 44px, 100% 100%, 100% 100%;
+  opacity: 0.52;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 16%, #000 76%, transparent 100%);
+}
+
+body.route-login .login-screen::after,
+body.route-registro .login-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255, 255, 255, 0.1), transparent 26%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.62));
+}
+
+body.route-login .login-phone,
+body.route-registro .login-phone {
+  width: 100%;
+  max-width: none;
+  background: transparent;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  width: min(100%, 430px) !important;
+  height: 100dvh !important;
+  margin: 0 auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding:
+    max(24px, env(safe-area-inset-top, 0px))
+    clamp(22px, 6vw, 32px)
+    max(22px, env(safe-area-inset-bottom, 0px)) !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(14px, 2.2dvh, 22px);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02) !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.route-login .login-panel::before,
+body.route-registro .login-panel::before {
+  content: '';
+  position: absolute;
+  left: clamp(18px, 5vw, 28px);
+  right: clamp(18px, 5vw, 28px);
+  top: clamp(18px, 5dvh, 44px);
+  bottom: clamp(18px, 4dvh, 34px);
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.16), transparent 28%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.035)),
+    rgba(10, 14, 19, 0.58);
+  box-shadow:
+    0 32px 120px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(26px) saturate(1.18);
+  -webkit-backdrop-filter: blur(26px) saturate(1.18);
+}
+
+body.route-login .login-hero-logo,
+body.route-registro .login-hero-logo {
+  position: relative;
+  width: clamp(82px, 13dvh, 118px) !important;
+  height: clamp(82px, 13dvh, 118px) !important;
+  border-radius: 30px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05)),
+    rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.42),
+    0 0 52px rgba(105, 196, 192, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+body.route-login .login-hero-logo::after,
+body.route-registro .login-hero-logo::after {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 58%),
+    radial-gradient(circle, rgba(227, 6, 19, 0.13), transparent 68%);
+  filter: blur(10px);
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  max-width: 10.8ch;
+  margin: 0 auto !important;
+  color: #ffffff !important;
+  font-size: clamp(34px, 6.5dvh, 52px) !important;
+  line-height: 0.94;
+  font-weight: 950;
+  text-align: center;
+  text-wrap: balance;
+  text-shadow: 0 16px 44px rgba(0, 0, 0, 0.38);
+}
+
+body.route-registro .login-panel h1 {
+  max-width: 9.2ch;
+  font-size: clamp(32px, 5.6dvh, 46px) !important;
+}
+
+body.route-login .login-subtitle,
+body.route-registro .login-subtitle {
+  max-width: 320px;
+  color: rgba(255, 255, 255, 0.68) !important;
+  font-size: clamp(14px, 2.2dvh, 17px) !important;
+  line-height: 1.32;
+  font-weight: 760;
+}
+
+body.route-login .login-step-form,
+body.route-registro .login-step-form {
+  width: min(100%, 350px);
+  margin: 0 auto !important;
+  gap: 12px !important;
+}
+
+body.route-login .login-step-form input,
+body.route-login .password-box input,
+body.route-registro .login-step-form input,
+body.route-registro .password-box input,
+body.route-login .login-recognized-pill,
+body.route-registro .login-recognized-pill {
+  height: clamp(54px, 7.2dvh, 62px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 22px !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.045)),
+    rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+body.route-login .login-step-form input:focus,
+body.route-login .password-box input:focus,
+body.route-registro .login-step-form input:focus,
+body.route-registro .password-box input:focus {
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.08),
+    0 20px 54px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+body.route-login .login-main-btn,
+body.route-registro .login-main-btn {
+  height: clamp(54px, 7.2dvh, 62px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 22px !important;
+  background:
+    linear-gradient(180deg, #111318, #020305) !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
+  box-shadow:
+    0 22px 58px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.13) !important;
+}
+
+body.route-login .login-main-btn:active,
+body.route-registro .login-main-btn:active,
+body.route-login .login-choice-btn:active,
+body.route-registro .login-choice-btn:active {
+  transform: scale(0.985);
+}
+
+body.route-login .login-choice-btn,
+body.route-registro .login-choice-btn,
+body.route-login .login-secondary-btn,
+body.route-registro .login-secondary-btn {
+  min-height: clamp(54px, 7.2dvh, 62px) !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+body.route-login .login-text-btn,
+body.route-registro .login-text-btn,
+body.route-login .login-create-link,
+body.route-registro .login-create-link {
+  color: rgba(255, 255, 255, 0.72) !important;
+  text-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+}
+
+body.route-login .login-create-link {
+  display: inline-flex;
+  align-self: center;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+body.route-registro .register-photo-box {
+  border-radius: 26px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(255, 255, 255, 0.07) !important;
+  color: #ffffff;
+}
+
+body.route-registro .register-photo-box small {
+  color: rgba(255, 255, 255, 0.64) !important;
+}
+
+body.route-login .login-error-message,
+body.route-registro .login-error-message {
+  width: min(100%, 350px);
+  margin-left: auto;
+  margin-right: auto;
+  border: 1px solid rgba(255, 97, 112, 0.24);
+  background: rgba(227, 6, 19, 0.13);
+  color: #ffd7dc;
+}
+
+@media (min-width: 900px) {
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    width: min(100%, 480px) !important;
+  }
+
+  body.route-login .login-panel::before,
+  body.route-registro .login-panel::before {
+    left: 0;
+    right: 0;
+  }
+}
+
+@media (max-height: 700px) {
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    gap: 9px !important;
+  }
+
+  body.route-login .login-hero-logo,
+  body.route-registro .login-hero-logo {
+    width: 72px !important;
+    height: 72px !important;
+    border-radius: 24px !important;
+  }
+
+  body.route-login .login-panel h1,
+  body.route-registro .login-panel h1 {
+    font-size: clamp(28px, 6dvh, 38px) !important;
+  }
+}
+
+/* Home refinement: calmer, responsive, no visual overload */
+body.route-home .home-map-tool,
+body.route-home .home-woman-chip {
+  display: none;
+}
+
+body.route-home .home-header {
+  top: max(14px, env(safe-area-inset-top, 0px));
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+body.route-home .home-header img {
+  width: clamp(108px, 26vw, 128px);
+  padding: 8px 12px;
+  border-radius: 18px;
+}
+
+body.route-home .home-header a {
+  min-height: 44px;
+  padding: 0 18px;
+}
+
+body.route-home .home-map-grid {
+  opacity: 0.58;
+}
+
+body.route-home .home-route {
+  inset: 12% 8% 26%;
+  width: 84%;
+  height: 62%;
+  opacity: 0.84;
+}
+
+body.route-home .home-map .map-marker {
+  width: 44px;
+  height: 44px;
+}
+
+body.route-home .home-driver-card {
+  left: 8%;
+  top: 29%;
+  min-width: 164px;
+  border-radius: 22px;
+  padding: 10px;
+  gap: 10px;
+  opacity: 0.94;
+}
+
+body.route-home .home-driver-card::after {
+  width: 10px;
+  height: 10px;
+}
+
+body.route-home .avatar-initial {
+  width: 40px;
+  height: 40px;
+}
+
+body.route-home .home-driver-card strong {
+  font-size: 13px;
+}
+
+body.route-home .home-driver-card span {
+  font-size: 11px;
+}
+
+body.route-home .home-sheet {
+  width: min(calc(100% - 28px), 404px);
+  bottom: max(14px, env(safe-area-inset-bottom));
+  border-radius: 28px;
+  padding: clamp(18px, 3.3dvh, 24px) clamp(18px, 5vw, 22px) clamp(16px, 3dvh, 20px);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04)),
+    rgba(8, 18, 29, 0.72);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+body.route-home .home-sheet .eyebrow {
+  letter-spacing: 0.16em;
+  font-size: 10px;
+}
+
+body.route-home .home-sheet h1 {
+  margin-top: 8px;
+  max-width: 11ch;
+  font-size: clamp(32px, 5.4dvh, 46px);
+  line-height: 0.94;
+}
+
+body.route-home .home-sheet .muted {
+  max-width: 290px;
+  margin-top: 12px;
+  font-size: clamp(13px, 1.9dvh, 15px);
+  line-height: 1.3;
+}
+
+body.route-home .home-actions {
+  margin-top: clamp(16px, 2.7dvh, 22px);
+}
+
+body.route-home .home-actions .main-btn,
+body.route-home .home-actions .secondary-btn {
+  min-height: clamp(50px, 7dvh, 56px);
+  border-radius: 20px;
+  font-size: clamp(14px, 2.1dvh, 16px);
+}
+
+body.route-home .home-note {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+@media (min-width: 900px) {
+  body.route-home .home-sheet {
+    width: 390px;
+    left: 44px;
+    bottom: 36px;
+  }
+
+  body.route-home .home-driver-card {
+    left: 46%;
+    top: 26%;
+  }
+}
+
+@media (max-width: 380px), (max-height: 680px) {
+  body.route-home .home-header img {
+    width: 104px;
+    padding: 7px 11px;
+  }
+
+  body.route-home .home-header a {
+    min-height: 42px;
+    padding: 0 16px;
+  }
+
+  body.route-home .home-driver-card {
+    top: 31%;
+    transform: scale(0.9);
+    transform-origin: left top;
+  }
+
+  body.route-home .marker-destination {
+    top: 27%;
+  }
+
+  body.route-home .home-sheet {
+    width: min(calc(100% - 24px), 380px);
+    border-radius: 26px;
+    padding: 16px;
+  }
+
+  body.route-home .home-sheet h1 {
+    font-size: clamp(29px, 6dvh, 36px);
+    max-width: 10.8ch;
+  }
+
+  body.route-home .home-sheet .muted {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  body.route-home .home-actions {
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  body.route-home .home-actions .main-btn,
+  body.route-home .home-actions .secondary-btn {
+    min-height: 48px;
+    border-radius: 18px;
+    padding: 0 14px;
+  }
+
+  body.route-home .home-note {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  body.route-home .home-actions {
+    grid-template-columns: 1fr;
+  }
+
+  body.route-home .home-actions .secondary-btn {
+    display: none;
+  }
+}
+
+/* Home story: clear driver-to-client connection */
+body.route-home .home-map .home-person-pin {
+  width: 54px;
+  height: 54px;
+  border: 2px solid rgba(255, 255, 255, 0.68);
+  background: rgba(8, 18, 29, 0.78);
+}
+
+body.route-home .home-person-pin img,
+body.route-home .home-card-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+body.route-home .home-person-pin img {
+  border-radius: inherit;
+}
+
+body.route-home .home-person-pin span {
+  position: absolute;
+  left: 50%;
+  bottom: -19px;
+  transform: translateX(-50%);
+  min-width: max-content;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: rgba(5, 7, 10, 0.78);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body.route-home .driver-pin {
+  border-color: rgba(34, 197, 94, 0.86);
+}
+
+body.route-home .client-pin {
+  border-color: rgba(227, 6, 19, 0.9);
+}
+
+body.route-home .home-driver-card,
+body.route-home .home-client-card {
+  position: absolute;
+  min-width: 190px;
+  max-width: min(250px, 54vw);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)),
+    rgba(8, 18, 29, 0.76);
+  color: #ffffff;
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+body.route-home .home-driver-card {
+  left: 7%;
+  top: 29%;
+}
+
+body.route-home .home-driver-card::after {
+  content: '';
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.64);
+}
+
+body.route-home .home-client-card {
+  right: 7%;
+  top: 39%;
+}
+
+body.route-home .home-client-card::after {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  width: 22px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(227, 6, 19, 0.9));
+}
+
+body.route-home .home-card-avatar {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+body.route-home .home-driver-card strong,
+body.route-home .home-driver-card span,
+body.route-home .home-client-card strong,
+body.route-home .home-client-card span {
+  display: block;
+}
+
+body.route-home .home-driver-card strong,
+body.route-home .home-client-card strong {
+  font-size: 13px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+body.route-home .home-driver-card span,
+body.route-home .home-client-card span {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+body.route-home .home-sheet h1 {
+  max-width: 9.2ch;
+}
+
+body.route-home .home-sheet .muted {
+  max-width: 320px;
+}
+
+@media (min-width: 900px) {
+  body.route-home .home-client-card {
+    right: 18%;
+    top: 38%;
+  }
+}
+
+@media (max-width: 420px) {
+  body.route-home .home-client-card {
+    right: 6%;
+    top: 38%;
+    min-width: 156px;
+    max-width: 172px;
+  }
+
+  body.route-home .home-client-card .home-card-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  body.route-home .home-client-card strong,
+  body.route-home .home-client-card span {
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 380px), (max-height: 680px) {
+  body.route-home .home-map .home-person-pin {
+    width: 46px;
+    height: 46px;
+  }
+
+  body.route-home .home-driver-card {
+    top: 29%;
+    transform: scale(0.88);
+  }
+
+  body.route-home .home-client-card {
+    top: 39%;
+    transform: scale(0.86);
+    transform-origin: right top;
+  }
+
+  body.route-home .home-sheet h1 {
+    max-width: 9.2ch;
+    font-size: clamp(28px, 5.8dvh, 34px);
+  }
+}
+
+/* Keep the route readable above the sheet */
+body.route-home .home-route {
+  inset: 11% 10% 39%;
+  width: 80%;
+  height: 50%;
+}
+
+body.route-home .marker-origin {
+  left: 22%;
+  top: 43%;
+}
+
+body.route-home .marker-destination {
+  right: 17%;
+  top: 22%;
+}
+
+body.route-home .home-driver-card {
+  top: 24%;
+}
+
+body.route-home .home-client-card {
+  top: 31%;
+  min-width: 178px;
+}
+
+@media (max-width: 420px) {
+  body.route-home .home-route {
+    inset: 11% 8% 39%;
+    width: 84%;
+    height: 50%;
+  }
+
+  body.route-home .home-driver-card {
+    top: 24%;
+  }
+
+  body.route-home .home-client-card {
+    top: 32%;
+    min-width: 168px;
+    max-width: 184px;
+  }
+
+  body.route-home .home-client-card strong,
+  body.route-home .home-client-card span {
+    max-width: 106px;
+  }
+}
+
+@media (max-width: 380px), (max-height: 680px) {
+  body.route-home .home-route {
+    inset: 12% 8% 45%;
+  }
+
+  body.route-home .marker-origin {
+    top: 42%;
+  }
+
+  body.route-home .marker-destination {
+    top: 22%;
+  }
+
+  body.route-home .home-driver-card {
+    top: 24%;
+  }
+
+  body.route-home .home-client-card {
+    top: 33%;
+  }
+}
+
+/* Home route coherence fix: visible route, correct sizing, no clipped text */
+body.route-home .home-map-grid {
+  z-index: 0;
+}
+
+body.route-home .home-map-tint {
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(5, 7, 10, 0.02) 0%, rgba(5, 7, 10, 0.12) 42%, rgba(5, 7, 10, 0.68) 100%),
+    radial-gradient(circle at 70% 18%, rgba(227, 6, 19, 0.12), transparent 28%);
+}
+
+body.route-home .home-map::after {
+  z-index: 2;
+  height: 30%;
+  opacity: 0.38;
+}
+
+body.route-home .home-route {
+  z-index: 4;
+  filter:
+    drop-shadow(0 10px 18px rgba(227, 6, 19, 0.28))
+    drop-shadow(0 0 12px rgba(255, 255, 255, 0.1));
+}
+
+body.route-home .route-halo {
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 16;
+}
+
+body.route-home .route-base {
+  stroke: rgba(5, 7, 10, 0.92);
+  stroke-width: 11;
+}
+
+body.route-home .route-line {
+  stroke-width: 5.2;
+  stroke-dasharray: 18 10;
+}
+
+body.route-home .home-map .map-marker,
+body.route-home .home-driver-card,
+body.route-home .home-client-card {
+  z-index: 6;
+}
+
+body.route-home .home-driver-card,
+body.route-home .home-client-card {
+  min-width: 0;
+  width: max-content;
+  max-width: min(78vw, 278px);
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 12px;
+  align-items: center;
+  column-gap: 9px;
+  padding: 9px 10px;
+}
+
+body.route-home .home-client-card {
+  grid-template-columns: 42px minmax(0, 1fr);
+}
+
+body.route-home .home-driver-card > div,
+body.route-home .home-client-card > div {
+  min-width: 0;
+}
+
+body.route-home .home-driver-card strong,
+body.route-home .home-driver-card span,
+body.route-home .home-client-card strong,
+body.route-home .home-client-card span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.route-home .home-driver-card span,
+body.route-home .home-client-card span {
+  font-size: clamp(10px, 2.8vw, 11px);
+}
+
+body.route-home .home-driver-card::after {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+@media (min-width: 900px) {
+  body.route-home .home-route {
+    inset: 14% 12% 28% 5%;
+    width: auto;
+    height: auto;
+  }
+
+  body.route-home .marker-origin {
+    left: 23.2%;
+    top: 57.2%;
+  }
+
+  body.route-home .marker-destination {
+    right: 28.2%;
+    top: 24.8%;
+  }
+
+  body.route-home .home-driver-card {
+    left: 7%;
+    top: 24%;
+    max-width: 286px;
+  }
+
+  body.route-home .home-client-card {
+    right: 13%;
+    top: 24%;
+    max-width: 230px;
+  }
+}
+
+@media (max-width: 420px) {
+  body.route-home .home-driver-card {
+    max-width: calc(100vw - 116px);
+  }
+
+  body.route-home .home-client-card {
+    width: max-content;
+    min-width: 0;
+    max-width: 158px;
+    grid-template-columns: 34px minmax(0, 1fr);
+    column-gap: 7px;
+  }
+
+  body.route-home .home-client-card .home-card-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  body.route-home .home-client-card span {
+    display: none;
+  }
+
+  body.route-home .home-client-card strong {
+    max-width: 94px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 380px), (max-height: 680px) {
+  body.route-home .home-driver-card {
+    max-width: calc(100vw - 108px);
+  }
+
+  body.route-home .home-driver-card span {
+    font-size: 10px;
+  }
+}
+
+/* Final home polish: one avatar per person, route points stay functional */
+body.route-home .home-map .home-route-pin {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 999px;
+  padding: 0;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  background: #22c55e;
+  box-shadow:
+    0 0 0 5px rgba(34, 197, 94, 0.14),
+    0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+body.route-home .home-map .home-route-pin.client-pin {
+  background: #e30613;
+  box-shadow:
+    0 0 0 5px rgba(227, 6, 19, 0.15),
+    0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+body.route-home .home-map .home-route-pin::before,
+body.route-home .home-map .home-route-pin::after {
+  display: none;
+}
+
+body.route-home .home-map .home-route-pin {
+  display: none;
+}
+
+body.route-home .route-dot {
+  opacity: 1;
+  stroke: #ffffff;
+  stroke-width: 5;
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.28));
+}
+
+body.route-home .origin-dot {
+  fill: #22c55e;
+}
+
+body.route-home .destination-dot {
+  fill: #e30613;
+}
+
+body.route-home .home-driver-card,
+body.route-home .home-client-card {
+  overflow: visible;
+}
+
+body.route-home .home-client-card::after {
+  display: none;
+}
+
+/* Home Mapbox: the map owns the route calculation */
+body.route-home .home-map .mobility-map,
+body.route-home .home-map .interactive-map,
+body.route-home .home-map .mapbox-real-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+body.route-home .home-map .mobility-map,
+body.route-home .home-map .interactive-map {
+  background:
+    linear-gradient(90deg, rgba(105, 196, 192, 0.14) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(105, 196, 192, 0.12) 1px, transparent 1px),
+    radial-gradient(circle at 72% 18%, rgba(227, 6, 19, 0.13), transparent 28%),
+    linear-gradient(180deg, #122334 0%, #07111c 52%, #05070a 100%);
+  background-size: 38px 38px, 38px 38px, auto, auto;
+}
+
+body.route-home .home-map .mapbox-real-map {
+  opacity: 0;
+  filter: saturate(0.92) contrast(1.05);
+  pointer-events: none;
+}
+
+body.route-home .home-map .mapbox-real-map.ready {
+  opacity: 0.86;
+}
+
+body.route-home .home-map .mapbox-real-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(5, 7, 10, 0.04) 0%, rgba(5, 7, 10, 0.2) 42%, rgba(5, 7, 10, 0.86) 100%),
+    radial-gradient(circle at 74% 18%, rgba(227, 6, 19, 0.12), transparent 26%);
+}
+
+body.route-home .home-map .map-toolbar,
+body.route-home .home-map .map-locate-btn,
+body.route-home .home-map .route-summary,
+body.route-home .home-map .map-empty-state,
+body.route-home .home-map .mapboxgl-ctrl-bottom-right {
+  display: none !important;
+}
+
+body.route-home .home-map .mapbox-point-marker {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 0 0 5px rgba(34, 197, 94, 0.14),
+    0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+body.route-home .home-map .mapbox-point-marker.destination {
+  box-shadow:
+    0 0 0 5px rgba(227, 6, 19, 0.16),
+    0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+body.route-home .home-map .mapbox-point-marker span {
+  display: none;
+}
+
+body.route-home .home-driver-card,
+body.route-home .home-client-card,
+body.route-home .home-header,
+body.route-home .home-sheet {
+  z-index: 20;
+}
+
+body.route-home .home-driver-card {
+  left: 7%;
+  top: 23%;
+}
+
+body.route-home .home-client-card {
+  right: 7%;
+  top: 34%;
+}
+
+body.route-home .home-sheet h1 {
+  max-width: 10.8ch;
+}
+
+@media (min-width: 900px) {
+  body.route-home .home-driver-card {
+    left: 7%;
+    top: 22%;
+  }
+
+  body.route-home .home-client-card {
+    right: 13%;
+    top: 22%;
+  }
+}
+
+@media (max-width: 420px) {
+  body.route-home .home-driver-card {
+    left: 7%;
+    top: 24%;
+  }
+
+  body.route-home .home-client-card {
+    right: 6%;
+    top: 33%;
+  }
+}
+
+body.route-client .driver-map-profile {
+  left: 12px;
+  right: 12px;
+  bottom: 16px !important;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(13, 24, 33, 0.88), rgba(25, 36, 48, 0.82)),
+    rgba(18, 28, 38, 0.9);
+  border: 1px solid rgba(218, 231, 242, 0.2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(22px);
+  color: #fff;
+}
+
+body.route-client .driver-map-profile-head {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  min-width: 0;
+}
+
+body.route-client .driver-map-profile-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 950;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+body.route-client .driver-map-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+body.route-client .driver-map-profile span {
+  color: #ff2332;
+  letter-spacing: 0.08em;
+}
+
+body.route-client .driver-map-profile strong {
+  color: #fff;
+  font-size: 18px;
+}
+
+body.route-client .driver-map-profile small {
+  color: rgba(241, 246, 250, 0.72);
+}
+
+body.route-client .driver-map-profile-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+body.route-client .driver-map-profile-metrics small {
+  min-height: 34px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 6px;
+  white-space: nowrap;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+body.route-client .driver-map-profile-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+body.route-client .driver-map-profile-actions button {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 16px;
+}
+
+body.route-client .driver-map-profile-actions .ghost-profile-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+body.route-client .driver-profile-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+body.route-client .women-client-mode .driver-map-profile {
+  background:
+    linear-gradient(145deg, rgba(82, 24, 58, 0.9), rgba(37, 28, 45, 0.84)),
+    rgba(46, 20, 42, 0.9);
+  border-color: rgba(255, 118, 170, 0.3);
+  box-shadow: 0 24px 74px rgba(255, 47, 111, 0.24);
+}
+
+body.route-client .women-client-mode .driver-map-profile-metrics small,
+body.route-client .women-client-mode .driver-map-profile-actions .ghost-profile-btn {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 185, 214, 0.2);
+}
+
+@media (max-width: 390px) {
+  body.route-client .driver-map-profile-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Client/driver readability: keep route/traffic colors visual, but remove red text labels. */
+body.route-client .route-summary span,
+body.route-client .selected-map-card span,
+body.route-client .driver-map-profile span,
+body.route-client .driver-price,
+body.route-client .women-client-mode .driver-price,
+body.route-driver .driver-live-sheet span,
+body.route-driver .driver-turn-card span,
+body.route-driver .active-flow-card span,
+body.route-driver .driver-section > span,
+body.route-driver .driver-trip-card span,
+body.route-driver .driver-intel-card > span,
+body.route-driver .driver-hero span {
+  color: #ffffff !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.28);
+}
+
+body.route-client .map-search-icon,
+body.route-client .destination-suggestions svg {
+  color: #ffffff;
+}
+
+/* Driver live navigation */
+body.route-driver .driver-phone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+body.route-driver .driver-navigation-map {
+  position: relative;
+  min-height: 218px;
+  height: clamp(218px, 32dvh, 330px);
+  overflow: hidden;
+  border: 1px solid rgba(105, 196, 192, 0.24);
+  border-radius: 26px;
+  background: rgba(4, 12, 19, 0.82);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  flex: 0 0 auto;
+}
+
+body.route-driver .driver-navigation-map .mobility-map,
+body.route-driver .driver-navigation-map .mapbox-real-map {
+  height: 100%;
+  min-height: 0;
+  border-radius: 26px;
+}
+
+body.route-driver .driver-navigation-map .map-toolbar {
+  left: 12px;
+  top: auto;
+  bottom: 12px;
+}
+
+body.route-driver .driver-navigation-map .map-locate-btn {
+  top: auto;
+  right: 12px;
+  bottom: 12px;
+}
+
+body.route-driver .driver-nav-instruction {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 14px;
+  z-index: 8;
+  border-radius: 22px;
+  padding: 14px;
+  background:
+    linear-gradient(135deg, rgba(30, 113, 255, 0.88), rgba(20, 70, 164, 0.9)),
+    rgba(8, 18, 29, 0.92);
+  color: #ffffff;
+  box-shadow: 0 22px 45px rgba(0, 0, 0, 0.28);
+}
+
+body.route-driver .driver-nav-instruction span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+body.route-driver .driver-nav-instruction strong {
+  display: block;
+  font-size: clamp(20px, 4.7vw, 28px);
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+body.route-driver .driver-nav-instruction div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 11px;
+}
+
+body.route-driver .driver-nav-instruction small {
+  min-width: 0;
+  border-radius: 14px;
+  padding: 8px 6px;
+  background: rgba(255, 255, 255, 0.16);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+body.route-driver .active-flow-card {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+body.route-driver .active-flow-card h2 {
+  margin: 0;
+  overflow: hidden;
+  font-size: clamp(19px, 4.8vw, 25px);
+  line-height: 1.04;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.route-driver .active-flow-card p {
+  margin: 0;
+  font-size: 12px;
+}
+
+body.route-driver .active-flow-card .driver-actions-grid {
+  gap: 8px;
+}
+
+body.route-driver .active-flow-card .driver-actions-grid button,
+body.route-driver .active-flow-card .driver-actions-grid a {
+  min-height: 46px;
+  border-radius: 18px;
+  font-size: 13px;
+}
+
+body.route-driver .driver-section {
+  flex: 1 1 auto;
+}
+
+body.route-driver .logout-button {
+  flex: 0 0 48px;
+}
+
+@media (max-height: 760px) {
+  body.route-driver .driver-hero {
+    padding: 12px;
+  }
+
+  body.route-driver .driver-status-grid {
+    display: none;
+  }
+
+  body.route-driver .driver-intel-card {
+    padding: 10px;
+  }
+
+  body.route-driver .driver-navigation-map {
+    height: 210px;
+    min-height: 210px;
+  }
+
+  body.route-driver .driver-nav-instruction {
+    padding: 12px;
+  }
+}
+
+/* Driver active trip: map-first cockpit */
+body.route-driver .driver-phone.active-navigation {
+  position: relative;
+  width: min(100%, 460px);
+  max-width: 460px;
+  height: 100dvh;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  background: #07111c;
+}
+
+body.route-driver .active-navigation .driver-top {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 20;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+body.route-driver .active-navigation .driver-top img {
+  width: 120px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+}
+
+body.route-driver .active-navigation .driver-top button {
+  pointer-events: auto;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #05070a;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.26);
+}
+
+body.route-driver .driver-live-cockpit {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+body.route-driver .driver-live-cockpit .mobility-map,
+body.route-driver .driver-live-cockpit .mapbox-real-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+}
+
+body.route-driver .driver-live-cockpit .mapbox-real-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(5, 7, 10, 0.12) 0%, rgba(5, 7, 10, 0.02) 34%, rgba(5, 7, 10, 0.62) 100%),
+    radial-gradient(circle at 50% 52%, transparent 0 35%, rgba(5, 7, 10, 0.16) 62%, rgba(5, 7, 10, 0.38) 100%);
+}
+
+body.route-driver .driver-live-cockpit .map-toolbar {
+  display: none;
+}
+
+body.route-driver .driver-live-cockpit .map-locate-btn {
+  top: auto;
+  right: 18px;
+  bottom: 134px;
+  z-index: 18;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #05070a;
+}
+
+body.route-driver .driver-live-cockpit .mapboxgl-ctrl-bottom-right {
+  right: 10px;
+  bottom: 8px;
+}
+
+body.route-driver .driver-turn-card {
+  position: absolute;
+  top: 76px;
+  left: 14px;
+  right: 14px;
+  z-index: 18;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  min-height: 82px;
+  padding: 14px 16px;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(43, 116, 255, 0.94), rgba(15, 70, 174, 0.94)),
+    rgba(8, 18, 29, 0.94);
+  color: #ffffff;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.32);
+}
+
+body.route-driver .driver-turn-card span {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.76;
+}
+
+body.route-driver .driver-turn-card strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: clamp(22px, 5.6vw, 30px);
+  line-height: 1;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.route-driver .driver-turn-card div {
+  display: inline-flex;
+  gap: 7px;
+}
+
+body.route-driver .driver-turn-card small {
+  min-width: 54px;
+  border-radius: 999px;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.17);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+body.route-driver .driver-live-sheet {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 18;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(218, 231, 242, 0.18);
+  border-radius: 26px;
+  background:
+    linear-gradient(145deg, rgba(10, 21, 31, 0.94), rgba(20, 31, 43, 0.9)),
+    rgba(8, 18, 29, 0.94);
+  color: #ffffff;
+  box-shadow: 0 -18px 54px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+body.route-driver .driver-live-sheet span {
+  display: block;
+  color: #ff2332;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+body.route-driver .driver-live-sheet strong {
+  display: block;
+  min-width: 0;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 23px;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.route-driver .driver-live-sheet small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+body.route-driver .driver-live-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  gap: 10px;
+}
+
+body.route-driver .driver-live-actions button,
+body.route-driver .driver-live-actions a {
+  min-height: 54px;
+  border: 0;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+body.route-driver .driver-live-actions .primary-live-action {
+  background: #ffffff;
+  color: #05070a;
+}
+
+body.route-driver .driver-live-actions a {
+  background: rgba(255, 255, 255, 0.11);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Readability pass: routes are blue, traffic stays red; light cards keep dark text. */
+body.route-client .notice-card,
+body.route-driver .notice-card {
+  background: #fff7ed;
+  color: #7c2d12;
+  border: 1px solid rgba(251, 146, 60, 0.28);
+  text-shadow: none;
+}
+
+body.route-client .safety-message {
+  color: #ecfeff;
+}
+
+body.route-client .driver-card {
+  background: rgba(20, 48, 56, 0.92);
+  color: #f8fafc;
+}
+
+body.route-client .driver-card strong,
+body.route-client .driver-name-row strong {
+  color: #f8fafc;
+}
+
+body.route-client .driver-info > span {
+  color: #d7eef2;
+}
+
+body.route-client .driver-meta small,
+body.route-client .driver-map-profile-metrics small {
+  background: rgba(3, 8, 14, 0.74);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+body.route-client .driver-price {
+  color: #ffffff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.34);
+}
+
+body.route-client .women-client-mode .driver-price {
+  color: #ffffff;
+}
+
+body.route-client .driver-side button {
+  color: #ffffff;
+}
+
+body.route-client .request-btn:disabled {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+body.route-driver .status-tile.active,
+body.route-driver .status-tile.active.red {
+  color: #ffffff;
+}
+
+body.route-driver .driver-intel-metrics small,
+body.route-driver .driver-command-row button,
+body.route-driver .driver-command-row a {
+  color: #ffffff;
+}
+
+@media (min-width: 900px) {
+  body.route-driver .driver-phone.active-navigation {
+    max-width: 720px;
+  }
+
+  body.route-driver .driver-turn-card {
+    left: 24px;
+    right: auto;
+    width: min(420px, calc(100% - 48px));
+  }
+
+  body.route-driver .driver-live-sheet {
+    left: 24px;
+    right: auto;
+    bottom: 24px;
+    width: min(420px, calc(100% - 48px));
+  }
+}
+
+@media (max-height: 690px) {
+  body.route-driver .driver-turn-card {
+    top: 68px;
+    min-height: 68px;
+    padding: 11px 13px;
+  }
+
+  body.route-driver .driver-turn-card strong {
+    font-size: 22px;
+  }
+
+  body.route-driver .driver-live-sheet {
+    padding: 12px;
+  }
+
+  body.route-driver .driver-live-sheet strong {
+    font-size: 20px;
   }
 }

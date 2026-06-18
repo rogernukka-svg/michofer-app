@@ -2,11 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, CarFront, Send, ShieldCheck, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
-const fallbackMessages = [
-  { id: 'm1', from: 'other', text: 'Hola, ya vi tu solicitud.' },
-  { id: 'm2', from: 'me', text: 'Perfecto, te espero en el punto.' },
-]
-
 function statusText(status) {
   if (status === 'accepted') return 'Chofer en camino'
   if (status === 'arriving') return 'Chofer en el punto'
@@ -19,7 +14,7 @@ export default function Chat() {
   const [user, setUser] = useState(null)
   const [trip, setTrip] = useState(null)
   const [otherProfile, setOtherProfile] = useState(null)
-  const [messages, setMessages] = useState(fallbackMessages)
+  const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -52,32 +47,74 @@ export default function Chat() {
 
     setTrip(tripData)
 
-    const otherId = currentUser.id === tripData.client_id ? tripData.driver_id : tripData.client_id
-    if (otherId) {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', otherId)
-        .maybeSingle()
+    const { data: contactData } = await supabase
+      .rpc('get_trip_contact_profile', { p_trip_id: tripId })
+      .maybeSingle()
 
-      setOtherProfile(profileData || null)
-    }
+    setOtherProfile(contactData || null)
 
-    // La estructura esta lista para una tabla messages:
-    // id, trip_id, sender_id, body, created_at.
-    // No se consulta aun para no inventar tablas ni romper RLS existente.
+    await loadMessages(tripId)
   }
 
-  function sendMessage(event) {
+  useEffect(() => {
+    if (!tripId || !user?.id) return undefined
+
+    const channel = supabase
+      .channel(`trip-messages-${tripId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `trip_id=eq.${tripId}` },
+        ({ new: nextMessage }) => {
+          setMessages((current) =>
+            current.some((message) => message.id === nextMessage.id)
+              ? current
+              : [...current, nextMessage]
+          )
+        }
+      )
+      .subscribe()
+    const interval = window.setInterval(() => loadMessages(tripId), 5000)
+
+    return () => {
+      window.clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
+  }, [tripId, user?.id])
+
+  async function loadMessages(nextTripId = tripId) {
+    if (!nextTripId) return
+
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('trip_id', nextTripId)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      setNotice('No pude cargar mensajes de este viaje.')
+      return
+    }
+
+    setMessages(data || [])
+  }
+
+  async function sendMessage(event) {
     event.preventDefault()
     const clean = text.trim()
-    if (!clean) return
+    if (!clean || !tripId || !user?.id) return
 
-    setMessages((current) => [
-      ...current,
-      { id: `local-${Date.now()}`, from: 'me', text: clean },
-    ])
     setText('')
+
+    const { error } = await supabase.from('messages').insert({
+      trip_id: tripId,
+      sender_id: user.id,
+      body: clean,
+    })
+
+    if (error) {
+      setNotice('No pude enviar el mensaje.')
+      setText(clean)
+    }
   }
 
   return (
@@ -110,9 +147,13 @@ export default function Chat() {
         </section>
 
         <section className="chat-messages" aria-label="Mensajes">
+          {messages.length === 0 && (
+            <div className="empty-state">TodavÃ­a no hay mensajes. EscribÃ­ para coordinar el punto.</div>
+          )}
+
           {messages.map((message) => (
-            <div key={message.id} className={message.from === 'me' ? 'bubble me' : 'bubble'}>
-              {message.text}
+            <div key={message.id} className={message.sender_id === user?.id ? 'bubble me' : 'bubble'}>
+              {message.body}
             </div>
           ))}
         </section>

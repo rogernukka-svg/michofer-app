@@ -22,7 +22,12 @@ const routes = {
   '/admin': Admin,
 }
 
-const Component = routes[window.location.pathname] || App
+const currentPath = window.location.pathname
+const Component = routes[currentPath] || App
+const routeName = currentPath === '/' ? 'home' : currentPath.replace('/', '')
+
+document.body.dataset.route = routeName
+document.body.classList.add(`route-${routeName}`)
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

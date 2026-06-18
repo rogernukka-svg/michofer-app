@@ -7,3 +7,126 @@ export const supabase = createClient(
   supabaseUrl,
   supabaseAnonKey
 )
+
+export function upsertOwnProfile({ fullName, role, avatarUrl, email }) {
+  return supabase.rpc('upsert_own_profile', {
+    p_full_name: fullName || null,
+    p_role: role || 'passenger',
+    p_avatar_url: avatarUrl || null,
+    p_email: email || null,
+  })
+}
+
+export function getOwnProfile() {
+  return supabase.rpc('get_own_profile')
+}
+
+export function getProfilePreviewByEmail(email) {
+  return supabase.rpc('get_profile_preview_by_email', {
+    lookup_email: email || '',
+  })
+}
+
+export function upsertOwnDriverProfile({ fullName, avatarUrl, email }) {
+  return supabase.rpc('upsert_own_driver_profile', {
+    p_full_name: fullName || null,
+    p_avatar_url: avatarUrl || null,
+    p_email: email || null,
+  })
+}
+
+export function getOwnDriverProfile() {
+  return supabase.rpc('get_own_driver_profile')
+}
+
+export function getAvailableDrivers() {
+  return supabase.rpc('get_available_drivers')
+}
+
+function isLocalBrowser() {
+  if (typeof window === 'undefined') return false
+  return ['localhost', '127.0.0.1'].includes(window.location.hostname)
+}
+
+export async function getAvailableDriversViaLocalProxy() {
+  if (!isLocalBrowser()) {
+    return {
+      data: null,
+      error: new Error('Local Supabase proxy is only available on localhost'),
+    }
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData?.session?.access_token || supabaseAnonKey
+  const response = await fetch('/supabase-proxy/rest/v1/rpc/get_available_drivers', {
+    method: 'POST',
+    headers: {
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  })
+
+  if (!response.ok) {
+    let details = ''
+    try {
+      details = await response.text()
+    } catch {
+      details = response.statusText
+    }
+
+    return {
+      data: null,
+      error: new Error(`Supabase proxy failed (${response.status}): ${details || response.statusText}`),
+    }
+  }
+
+  return {
+    data: await response.json(),
+    error: null,
+  }
+}
+
+export function requestTrip({
+  driverId,
+  destinationText,
+  destinationLat,
+  destinationLng,
+  pickupLat,
+  pickupLng,
+  driverLat,
+  driverLng,
+  routeKm,
+  price,
+  paymentMethod,
+  womenMode,
+}) {
+  return supabase.rpc('request_trip', {
+    p_driver_id: driverId,
+    p_destination_text: destinationText,
+    p_destination_lat: Number.isFinite(Number(destinationLat)) ? Number(destinationLat) : null,
+    p_destination_lng: Number.isFinite(Number(destinationLng)) ? Number(destinationLng) : null,
+    p_pickup_lat: Number.isFinite(Number(pickupLat)) ? Number(pickupLat) : null,
+    p_pickup_lng: Number.isFinite(Number(pickupLng)) ? Number(pickupLng) : null,
+    p_driver_lat: Number.isFinite(Number(driverLat)) ? Number(driverLat) : null,
+    p_driver_lng: Number.isFinite(Number(driverLng)) ? Number(driverLng) : null,
+    p_route_km: Number.isFinite(Number(routeKm)) ? Number(routeKm) : null,
+    p_price: Number.isFinite(Number(price)) ? Number(price) : null,
+    p_payment_method: paymentMethod || 'cash',
+    p_women_mode: Boolean(womenMode),
+  })
+}
+
+export function getOwnDriverTrips() {
+  return supabase.rpc('get_own_driver_trips')
+}
+
+export function updateOwnDriverStatus({ isOnline, isAvailable, lat, lng }) {
+  return supabase.rpc('update_own_driver_status', {
+    p_is_online: Boolean(isOnline),
+    p_is_available: Boolean(isAvailable),
+    p_lat: Number.isFinite(Number(lat)) ? Number(lat) : null,
+    p_lng: Number.isFinite(Number(lng)) ? Number(lng) : null,
+  })
+}

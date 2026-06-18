@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { getOwnProfile, supabase, upsertOwnProfile } from '../lib/supabase'
 import logo from '../assets/logo.png'
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase()
+}
+
+function isAvatarImage(value) {
+  const photo = String(value || '')
+  return photo.startsWith('http') || photo.startsWith('data:image') || photo.startsWith('blob:')
 }
 
 function getStoredRoleForEmail(email) {
@@ -22,6 +27,119 @@ function resolveRole(user, profile, email) {
   )
 }
 
+async function findStoredAvatarUrl(userId) {
+  if (!userId) return ''
+
+  const { data, error } = await supabase.storage
+    .from('avatars')
+    .list(userId, {
+      limit: 20,
+      sortBy: { column: 'created_at', order: 'desc' },
+    })
+
+  if (error || !data?.length) return ''
+
+  const latest = data
+    .filter((item) => item.name && !item.name.endsWith('/'))
+    .sort((a, b) => {
+      const dateA = new Date(a.updated_at || a.created_at || 0).getTime()
+      const dateB = new Date(b.updated_at || b.created_at || 0).getTime()
+      return dateB - dateA
+    })[0]
+
+  if (!latest) return ''
+
+  const { data: publicUrlData } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(`${userId}/${latest.name}`)
+
+  return publicUrlData?.publicUrl || ''
+}
+
+function cacheProfile({ email, fullName, role, avatarUrl }) {
+  if (email) localStorage.setItem('michofer_last_email', email)
+  if (fullName) localStorage.setItem('michofer_last_name', fullName)
+  if (role) localStorage.setItem('michofer_last_role', role)
+
+  if (avatarUrl) {
+    localStorage.setItem('michofer_last_photo', avatarUrl)
+  }
+}
+
+function goToRole(role) {
+  window.location.href = role === 'driver' ? '/driver' : '/client'
+}
+
+function dataUrlToFile(dataUrl, filename, fallbackType = 'image/jpeg') {
+  const [header, data] = String(dataUrl || '').split(',')
+  const mime = header?.match(/data:(.*?);base64/)?.[1] || fallbackType
+  const binary = atob(data || '')
+  const bytes = new Uint8Array(binary.length)
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+
+  return new File([bytes], filename, { type: mime })
+}
+
+async function uploadPendingRegistrationAvatar(user, email) {
+  const raw = localStorage.getItem('michofer_pending_registration')
+  if (!raw || !user?.id) return null
+
+  let pending
+  try {
+    pending = JSON.parse(raw)
+  } catch {
+    localStorage.removeItem('michofer_pending_registration')
+    return null
+  }
+
+  if (normalizeEmail(pending.email) !== normalizeEmail(email) || !pending.avatarDataUrl) {
+    return null
+  }
+
+  const file = dataUrlToFile(
+    pending.avatarDataUrl,
+    pending.avatarName || `michofer-avatar-${Date.now()}.jpg`,
+    pending.avatarType || 'image/jpeg'
+  )
+  const fileExt = file.name.split('.').pop() || 'jpg'
+  const filePath = `${user.id}/avatar-${Date.now()}.${fileExt}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    console.error('PENDING AVATAR UPLOAD ERROR:', uploadError)
+    localStorage.removeItem('michofer_pending_registration')
+    return {
+      avatarUrl: pending.avatarDataUrl,
+      fullName: pending.fullName || '',
+      role: pending.role || '',
+    }
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(filePath)
+
+  const avatarUrl = publicUrlData?.publicUrl || ''
+  if (!avatarUrl) return null
+
+  localStorage.removeItem('michofer_pending_registration')
+
+  return {
+    avatarUrl,
+    fullName: pending.fullName || '',
+    role: pending.role || '',
+  }
+}
+
 export default function Login() {
   const [step, setStep] = useState('welcome')
   const [email, setEmail] = useState('')
@@ -32,27 +150,96 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const emailFromUrl = params.get('email')
+    let alive = true
 
-    const savedEmail = localStorage.getItem('michofer_last_email')
-    const savedName = localStorage.getItem('michofer_last_name')
-    const savedRole = localStorage.getItem('michofer_last_role')
-    const savedPhoto = localStorage.getItem('michofer_last_photo')
+    async function initLogin() {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const sessionUser = sessionData?.session?.user
 
-    const finalEmail = emailFromUrl || savedEmail
+      if (sessionUser) {
+        const cleanEmail = normalizeEmail(sessionUser.email)
+        const { data: profile, error: profileError } = await getOwnProfile()
 
-    if (finalEmail) {
-      setEmail(finalEmail)
+        if (profileError) {
+          console.warn('PROFILE SESSION LOAD ERROR:', profileError)
+        }
 
-      setKnownUser({
-        email: finalEmail,
-        name: savedName || '',
-        role: savedRole || '',
-        photo: savedPhoto || '',
-      })
+        const pendingUpload = !profile?.avatar_url
+          ? await uploadPendingRegistrationAvatar(sessionUser, cleanEmail)
+          : null
+        const storedAvatar = !profile?.avatar_url && !pendingUpload?.avatarUrl
+          ? await findStoredAvatarUrl(sessionUser.id)
+          : ''
+        const role = pendingUpload?.role || resolveRole(sessionUser, profile, cleanEmail)
+        const fullName =
+          profile?.full_name ||
+          pendingUpload?.fullName ||
+          sessionUser.user_metadata?.full_name ||
+          localStorage.getItem('michofer_last_name') ||
+          ''
+        const avatarUrl =
+          profile?.avatar_url ||
+          pendingUpload?.avatarUrl ||
+          storedAvatar ||
+          sessionUser.user_metadata?.avatar_url ||
+          ''
 
-      setStep('password')
+        cacheProfile({ email: cleanEmail, fullName, role, avatarUrl })
+
+        if ((!profile || !profile.avatar_url) && !profileError) {
+          await upsertOwnProfile({
+            email: cleanEmail,
+            fullName,
+            role: pendingUpload?.role || role,
+            avatarUrl,
+          })
+        }
+
+        if (pendingUpload?.avatarUrl || pendingUpload?.fullName || pendingUpload?.role) {
+          await supabase.auth.updateUser({
+            data: {
+              full_name: fullName,
+              avatar_url: avatarUrl,
+              role,
+            },
+          })
+        }
+
+        goToRole(role)
+        return
+      }
+
+      if (!alive) return
+
+      const params = new URLSearchParams(window.location.search)
+      const emailFromUrl = params.get('email')
+
+      const savedEmail = localStorage.getItem('michofer_last_email')
+      const savedName = localStorage.getItem('michofer_last_name')
+      const savedRole = localStorage.getItem('michofer_last_role')
+      const savedPhoto = localStorage.getItem('michofer_last_photo')
+
+      const finalEmail = emailFromUrl || savedEmail
+
+      if (finalEmail) {
+        setEmail(finalEmail)
+
+        setKnownUser({
+          email: finalEmail,
+          name: savedName || '',
+          role: savedRole || '',
+          photo: savedPhoto || '',
+        })
+
+        setStep('password')
+        loadProfilePreview(finalEmail)
+      }
+    }
+
+    initLogin()
+
+    return () => {
+      alive = false
     }
   }, [])
 
@@ -82,7 +269,48 @@ export default function Login() {
     return ''
   }, [step, knownUser])
 
-  function handleEmailNext(e) {
+  async function loadProfilePreview(value) {
+    const cleanEmail = normalizeEmail(value)
+    if (!cleanEmail) return null
+
+    const { data, error } = await supabase.rpc('get_profile_preview_by_email', {
+      lookup_email: cleanEmail,
+    })
+
+    if (error) {
+      console.warn('PROFILE PREVIEW LOAD ERROR:', error)
+      return null
+    }
+
+    const preview = Array.isArray(data) ? data[0] : data
+    if (!preview) return null
+
+    const nextKnownUser = {
+      email: cleanEmail,
+      name: preview.full_name || '',
+      role: preview.role || '',
+      photo: preview.avatar_url || '',
+    }
+
+    setKnownUser((current) => ({
+      ...(current || {}),
+      ...nextKnownUser,
+      name: nextKnownUser.name || current?.name || '',
+      role: nextKnownUser.role || current?.role || '',
+      photo: nextKnownUser.photo || current?.photo || '',
+    }))
+
+    cacheProfile({
+      email: cleanEmail,
+      fullName: preview.full_name,
+      role: preview.role,
+      avatarUrl: preview.avatar_url,
+    })
+
+    return nextKnownUser
+  }
+
+  async function handleEmailNext(e) {
     e.preventDefault()
     setErrorMessage('')
 
@@ -94,7 +322,14 @@ export default function Login() {
     }
 
     setEmail(cleanEmail)
+    setKnownUser({
+      email: cleanEmail,
+      name: '',
+      role: '',
+      photo: '',
+    })
     setStep('password')
+    loadProfilePreview(cleanEmail)
   }
 
   async function handleLogin(e) {
@@ -128,49 +363,44 @@ export default function Login() {
       }
 
       const user = data.user
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle()
+      const { data: profile, error: profileError } = await getOwnProfile()
 
       if (profileError) {
         console.warn('PROFILE LOAD ERROR:', profileError)
       }
 
-      const role = resolveRole(user, profile, cleanEmail)
-      const fullName = profile?.full_name || user?.user_metadata?.full_name || ''
-      const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || ''
+      const pendingUpload = !profile?.avatar_url
+        ? await uploadPendingRegistrationAvatar(user, cleanEmail)
+        : null
+      const role = pendingUpload?.role || resolveRole(user, profile, cleanEmail)
+      const fullName = profile?.full_name || pendingUpload?.fullName || user?.user_metadata?.full_name || ''
+      const storedAvatar = !profile?.avatar_url && !pendingUpload?.avatarUrl
+        ? await findStoredAvatarUrl(user.id)
+        : ''
+      const avatarUrl = profile?.avatar_url || pendingUpload?.avatarUrl || storedAvatar || user?.user_metadata?.avatar_url || ''
 
-      localStorage.setItem('michofer_last_email', cleanEmail)
-      localStorage.setItem('michofer_last_name', fullName)
-      localStorage.setItem('michofer_last_role', role)
+      cacheProfile({ email: cleanEmail, fullName, role, avatarUrl })
 
-      if (avatarUrl) {
-        localStorage.setItem('michofer_last_photo', avatarUrl)
-      } else {
-        localStorage.removeItem('michofer_last_photo')
+      if ((!profile || !profile.avatar_url) && !profileError) {
+        await upsertOwnProfile({
+          email: cleanEmail,
+          fullName,
+          role,
+          avatarUrl,
+        })
       }
 
-      if (!profile && !profileError) {
-        await supabase.from('profiles').upsert(
-          {
-            id: user.id,
+      if (pendingUpload?.avatarUrl || pendingUpload?.fullName || pendingUpload?.role) {
+        await supabase.auth.updateUser({
+          data: {
             full_name: fullName,
-            role,
             avatar_url: avatarUrl,
-            updated_at: new Date().toISOString(),
+            role,
           },
-          { onConflict: 'id' }
-        )
+        })
       }
 
-      if (role === 'driver') {
-        window.location.href = '/driver'
-        return
-      }
-
-      window.location.href = '/client'
+      goToRole(role)
     } catch (err) {
       console.error(err)
       setErrorMessage('No se pudo iniciar sesión. Revisá la conexión con Supabase.')
@@ -192,7 +422,7 @@ export default function Login() {
 
           {step === 'password' && (
             <div className="login-user-avatar-fallback">
-              {knownUser?.photo?.startsWith('http') ? (
+              {isAvatarImage(knownUser?.photo) ? (
                 <img src={knownUser.photo} alt="Usuario" />
               ) : (
                 <span>{knownUser?.name?.charAt(0)?.toUpperCase() || 'U'}</span>

@@ -1,11 +1,30 @@
-import {
-  ArrowRight,
-  CheckCircle2,
-  Heart,
-  MapPin,
-  ShieldCheck,
-} from 'lucide-react'
+import { ArrowRight, Heart } from 'lucide-react'
+import InteractiveRouteMap from './components/InteractiveRouteMap.jsx'
+import alexAvatar from './assets/roger-nunez-client.jpeg'
 import logo from './assets/logo.png'
+import rogerAvatar from './assets/alex-gonzalez-driver.jpeg'
+
+const alexLocation = {
+  id: 'alex-gonzalez',
+  name: 'Alex Gonzalez',
+  lat: -25.5166,
+  lng: -54.6262,
+  avatar: alexAvatar,
+}
+
+const rogerLocation = {
+  id: 'roger-nunez',
+  name: 'Roger Nunez',
+  lat: -25.5098,
+  lng: -54.6128,
+  avatar: rogerAvatar,
+}
+
+function homeRoutePadding() {
+  return window.innerWidth >= 900
+    ? { top: 110, bottom: 110, left: 500, right: 120 }
+    : { top: 112, bottom: 390, left: 34, right: 34 }
+}
 
 export default function App() {
   return (
@@ -17,57 +36,42 @@ export default function App() {
         </header>
 
         <section className="home-map" aria-label="Vista de mapa MiChofer">
-          <iframe
-            className="home-real-map"
-            title="Mapa real MiChofer"
-            src="https://www.openstreetmap.org/export/embed.html?bbox=-54.6267%2C-25.5267%2C-54.6067%2C-25.5067&layer=mapnik"
+          <InteractiveRouteMap
+            origin={alexLocation}
+            destination={rogerLocation}
+            destinationText="Roger Nunez"
+            drivers={[]}
+            selectedDriver={null}
+            onSelectDriver={() => {}}
+            onChooseDriver={() => {}}
+            onRefreshLocation={() => {}}
+            fitPadding={homeRoutePadding}
+            mapInteractive={false}
+            animateCamera={false}
           />
-          <div className="home-map-tint" />
-
-          <svg className="home-route" viewBox="0 0 320 360" aria-hidden="true">
-            <path
-              className="route-halo"
-              d="M70 296 L108 252 L146 220 L146 174 L164 144 L204 126 L236 104 L258 74"
-            />
-            <path
-              className="route-base"
-              d="M70 296 L108 252 L146 220 L146 174 L164 144 L204 126 L236 104 L258 74"
-            />
-            <path
-              className="route-line"
-              d="M70 296 L108 252 L146 220 L146 174 L164 144 L204 126 L236 104 L258 74"
-            />
-            <circle className="route-dot origin-dot" cx="70" cy="296" r="7" />
-            <circle className="route-dot destination-dot" cx="258" cy="74" r="7" />
-          </svg>
-
-          <div className="map-marker marker-origin">
-            <MapPin size={18} />
-          </div>
-
-          <div className="map-marker marker-destination">
-            <CheckCircle2 size={18} />
-          </div>
 
           <article className="home-driver-card driver-a">
-            <div className="avatar-initial">C</div>
+            <img className="home-card-avatar" src={alexAvatar} alt="Alex Gonzalez" />
             <div>
-              <strong>Carlos</strong>
-              <span>Verificado · 3 min</span>
+              <strong>Alex Gonzalez</strong>
+              <span>Chofer - 3 min</span>
             </div>
           </article>
 
-          <div className="home-woman-chip">
-            <Heart size={15} />
-            Modo Mujer
-          </div>
+          <article className="home-client-card">
+            <img className="home-card-avatar" src={rogerAvatar} alt="Roger Nunez" />
+            <div>
+              <strong>Roger Nunez</strong>
+              <span>Cliente esperando</span>
+            </div>
+          </article>
         </section>
 
         <section className="home-sheet">
           <p className="eyebrow">MI CHOFER</p>
-          <h1>Vos elegís quién te lleva.</h1>
+          <h1>Vos elegis quien te lleva.</h1>
           <p className="muted">
-            Choferes verificados cerca tuyo. Y si preferís, también podés viajar con una conductora.
+            Choferes verificados cerca tuyo. Ves quien conduce antes de confirmar.
           </p>
 
           <div className="home-actions">
@@ -79,11 +83,6 @@ export default function App() {
               Modo Mujer
             </a>
           </div>
-
-          <p className="home-note">
-            <ShieldCheck size={15} />
-            Sin asignación automática: elegís antes de solicitar.
-          </p>
         </section>
       </section>
     </main>

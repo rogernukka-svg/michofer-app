@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, upsertOwnDriverProfile, upsertOwnProfile } from '../lib/supabase'
 import logo from '../assets/logo.png'
 
 const CAMERA_CONSTRAINTS = [
@@ -49,6 +49,92 @@ function makeCameraErrorMessage(error) {
   }
 
   return 'No pude abrir la cámara. Probá de nuevo o subí una foto desde tu equipo.'
+}
+
+function getSupabaseErrorMessage(error) {
+  return (
+    error?.message ||
+    error?.error_description ||
+    error?.details ||
+    'Error desconocido'
+  )
+}
+
+function getSignupErrorMessage(error) {
+  const message = getSupabaseErrorMessage(error)
+  const normalized = message.toLowerCase()
+
+  if (normalized.includes('email rate limit')) {
+    return 'Supabase bloqueó nuevos correos por límite de email. Esperá el cooldown o desactivá Confirm email en Authentication > Providers > Email para probar en desarrollo.'
+  }
+
+  if (normalized.includes('already registered') || normalized.includes('already exists')) {
+    return 'Ese correo ya tiene cuenta. Entrá desde Login con ese correo.'
+  }
+
+  if (normalized.includes('password')) {
+    return message
+  }
+
+  if (message === 'Failed to fetch') {
+    return 'No pude conectar con Supabase. Revisá la conexión, el Project URL en .env y reiniciá Vite.'
+  }
+
+  return message || 'No se pudo crear la cuenta.'
+}
+
+function getStorageUploadErrorMessage(error) {
+  const message = getSupabaseErrorMessage(error)
+  const normalized = message.toLowerCase()
+
+  if (normalized.includes('database schema is invalid or incompatible')) {
+    return 'Storage rechazó la foto por policies/schema del bucket avatars. Ejecutá supabase/fix_avatar_storage_policies.sql en Supabase SQL Editor y probá de nuevo.'
+  }
+
+  if (normalized.includes('row-level security') || normalized.includes('violates row-level security')) {
+    return 'Storage bloqueó la foto por RLS. Ejecutá supabase/fix_avatar_storage_policies.sql y verificá que estés logueado.'
+  }
+
+  return `No pude subir la foto a Supabase Storage: ${message}`
+}
+
+function shouldFallbackAvatarToProfile(error) {
+  const message = getSupabaseErrorMessage(error).toLowerCase()
+  return (
+    message.includes('database schema is invalid or incompatible') ||
+    message.includes('row-level security') ||
+    message.includes('violates row-level security')
+  )
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function savePendingRegistration({ email, fullName, role, photoFile }) {
+  const avatarDataUrl = await readFileAsDataUrl(photoFile)
+
+  localStorage.setItem(
+    'michofer_pending_registration',
+    JSON.stringify({
+      email,
+      fullName,
+      role,
+      avatarDataUrl,
+      avatarName: photoFile.name || `michofer-avatar-${Date.now()}.jpg`,
+      avatarType: photoFile.type || 'image/jpeg',
+      createdAt: Date.now(),
+    })
+  )
+
+  localStorage.setItem('michofer_last_email', email)
+  localStorage.setItem('michofer_last_name', fullName)
+  localStorage.setItem('michofer_last_role', role || 'passenger')
 }
 
 export default function Register() {
@@ -378,6 +464,13 @@ export default function Register() {
 
       if (error) {
         console.error('SUPABASE SIGNUP ERROR:', error)
+        const preciseSignupMessage = getSignupErrorMessage(error)
+
+        if (preciseSignupMessage !== getSupabaseErrorMessage(error)) {
+          setErrorMessage(preciseSignupMessage)
+          setStep('password')
+          return
+        }
 
         setErrorMessage(
           error.message === 'Failed to fetch'
@@ -392,7 +485,32 @@ export default function Register() {
       }
 
       const userId = data.user?.id
+      let activeSession = data.session || null
       let avatarUrl = ''
+
+      if (userId && !activeSession) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        })
+
+        if (signInError) {
+          console.error('SUPABASE SIGNIN AFTER SIGNUP ERROR:', signInError)
+          await savePendingRegistration({
+            email: cleanEmail,
+            fullName,
+            role,
+            photoFile,
+          })
+          setErrorMessage(
+            'La cuenta se creÃ³, pero todavÃ­a no pude activar este dispositivo para subir la foto. EntrÃ¡ desde Login y volvÃ© a completar la foto si hace falta.'
+          )
+          setStep('password')
+          return
+        }
+
+        activeSession = signInData.session || null
+      }
 
       if (userId && photoFile) {
         const fileExt = photoFile.name.split('.').pop() || 'jpg'
@@ -406,7 +524,21 @@ export default function Register() {
           })
 
         if (uploadError) {
-          console.error(uploadError)
+          console.error('AVATAR UPLOAD ERROR:', uploadError)
+          if (shouldFallbackAvatarToProfile(uploadError)) {
+            avatarUrl = await readFileAsDataUrl(photoFile)
+          } else {
+          setErrorMessage(getStorageUploadErrorMessage(uploadError))
+          setStep('photo')
+          return null
+          }
+          if (!avatarUrl) {
+          setErrorMessage(
+            `La cuenta se creÃ³, pero no pude subir la foto a Supabase Storage: ${getSupabaseErrorMessage(uploadError)}`
+          )
+          setStep('photo')
+          return
+          }
         } else {
           const { data: publicUrlData } = supabase.storage
             .from('avatars')
@@ -416,18 +548,45 @@ export default function Register() {
         }
       }
 
+      if (!avatarUrl) {
+        setErrorMessage('No pude guardar la foto del perfil. ProbÃ¡ cambiar la foto y continuar de nuevo.')
+        setStep('photo')
+        return
+      }
+
       if (userId) {
-        await supabase.from('profiles').upsert(
-          {
-            id: userId,
-            full_name: fullName,
-            role,
-            avatar_url: avatarUrl,
+        const { error: profileError } = await upsertOwnProfile({
+          fullName,
+          role,
+          avatarUrl,
+          email: cleanEmail,
+        })
+
+        if (profileError) {
+          console.error('PROFILE UPSERT ERROR:', profileError)
+          setErrorMessage(
+            `La foto subiÃ³, pero no pude guardar tu perfil: ${getSupabaseErrorMessage(profileError)}`
+          )
+          setStep('password')
+          return
+        }
+
+        if (role === 'driver') {
+          const { error: driverProfileError } = await upsertOwnDriverProfile({
+            fullName,
+            avatarUrl,
             email: cleanEmail,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'id' }
-        )
+          })
+
+          if (driverProfileError) {
+            console.error('DRIVER PROFILE UPSERT ERROR:', driverProfileError)
+            setErrorMessage(
+              `Tu cuenta se creÃ³, pero no pude guardar el perfil de chofer: ${getSupabaseErrorMessage(driverProfileError)}`
+            )
+            setStep('password')
+            return
+          }
+        }
       }
 
       localStorage.setItem('michofer_last_email', cleanEmail)
