@@ -1,0 +1,23 @@
+{
+  "name": "MiChofer",
+  "short_name": "MiChofer",
+  "description": "Pedí tu viaje o manejá con MiChofer.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#ef0012",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/og-image.png",
+      "sizes": "2048x455",
+      "type": "image/png"
+    }
+  ]
+}
