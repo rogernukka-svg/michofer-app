@@ -7159,3 +7159,202 @@ body.route-driver .driver-command-row a {
     font-size: 20px;
   }
 }
+
+/* Compact premium pass: calmer scale across laptop, tablet and phone */
+body.route-home .home-header {
+  top: max(14px, env(safe-area-inset-top, 0px)) !important;
+  left: max(18px, env(safe-area-inset-left, 0px)) !important;
+  right: max(18px, env(safe-area-inset-right, 0px)) !important;
+}
+
+body.route-home .home-header img {
+  width: clamp(92px, 22vw, 124px) !important;
+  padding: 7px 11px !important;
+  border-radius: 16px !important;
+}
+
+body.route-home .home-header a {
+  min-height: 42px !important;
+  padding: 0 17px !important;
+  font-size: 13px !important;
+}
+
+body.route-home .home-driver-card,
+body.route-home .home-client-card {
+  min-width: 0 !important;
+  max-width: min(54vw, 214px) !important;
+  padding: 9px 11px !important;
+  border-radius: 20px !important;
+  gap: 9px !important;
+}
+
+body.route-home .home-card-avatar {
+  width: 42px !important;
+  height: 42px !important;
+  flex: 0 0 42px !important;
+}
+
+body.route-home .home-driver-card strong,
+body.route-home .home-client-card strong {
+  font-size: clamp(12px, 3.1vw, 15px) !important;
+  line-height: 1.05 !important;
+  white-space: nowrap;
+}
+
+body.route-home .home-driver-card span,
+body.route-home .home-client-card span {
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+  white-space: nowrap;
+}
+
+body.route-home .home-driver-card {
+  left: clamp(20px, 5vw, 42px) !important;
+  top: clamp(126px, 21dvh, 188px) !important;
+}
+
+body.route-home .home-client-card {
+  right: clamp(18px, 6vw, 78px) !important;
+  top: clamp(196px, 32dvh, 286px) !important;
+}
+
+body.route-home .home-sheet {
+  width: min(calc(100% - 36px), 384px) !important;
+  bottom: max(18px, env(safe-area-inset-bottom, 0px)) !important;
+  padding: clamp(18px, 4.6vw, 24px) !important;
+  border-radius: 26px !important;
+}
+
+body.route-home .home-sheet .eyebrow {
+  font-size: 11px !important;
+  letter-spacing: 0.11em !important;
+}
+
+body.route-home .home-sheet h1 {
+  max-width: 9.6ch !important;
+  margin-top: 9px !important;
+  font-size: clamp(36px, 8.4vw, 48px) !important;
+  line-height: 0.97 !important;
+}
+
+body.route-home .home-sheet .muted {
+  max-width: 300px !important;
+  margin-top: 12px !important;
+  font-size: clamp(13px, 3.4vw, 15px) !important;
+  line-height: 1.32 !important;
+}
+
+body.route-home .home-actions {
+  margin-top: 18px !important;
+  gap: 9px !important;
+}
+
+body.route-home .home-actions .main-btn,
+body.route-home .home-actions .secondary-btn {
+  min-height: 52px !important;
+  border-radius: 20px !important;
+  font-size: 15px !important;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  width: min(100%, 390px) !important;
+  gap: clamp(10px, 1.9dvh, 17px) !important;
+}
+
+body.route-login .login-panel::before,
+body.route-registro .login-panel::before {
+  left: clamp(18px, 5vw, 26px) !important;
+  right: clamp(18px, 5vw, 26px) !important;
+  top: clamp(16px, 3.6dvh, 34px) !important;
+  bottom: clamp(16px, 3.6dvh, 30px) !important;
+  border-radius: 28px !important;
+}
+
+body.route-login .login-hero-logo,
+body.route-registro .login-hero-logo {
+  width: clamp(70px, 10.5dvh, 96px) !important;
+  height: clamp(70px, 10.5dvh, 96px) !important;
+  border-radius: 24px !important;
+}
+
+body.route-login .login-user-avatar-fallback {
+  width: clamp(76px, 12dvh, 96px) !important;
+  height: clamp(76px, 12dvh, 96px) !important;
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  max-width: min(100%, 9.8ch) !important;
+  font-size: clamp(30px, 5.2dvh, 44px) !important;
+  line-height: 1 !important;
+  overflow-wrap: anywhere;
+}
+
+body.route-login .login-subtitle,
+body.route-registro .login-subtitle {
+  max-width: 290px !important;
+  font-size: clamp(13px, 1.9dvh, 15px) !important;
+}
+
+body.route-login .login-step-form,
+body.route-registro .login-step-form,
+body.route-login .login-error-message,
+body.route-registro .login-error-message {
+  width: min(100%, 318px) !important;
+}
+
+body.route-login .login-step-form input,
+body.route-login .password-box input,
+body.route-registro .login-step-form input,
+body.route-registro .password-box input,
+body.route-login .login-recognized-pill,
+body.route-registro .login-recognized-pill,
+body.route-login .login-main-btn,
+body.route-registro .login-main-btn {
+  height: clamp(48px, 6.2dvh, 56px) !important;
+  border-radius: 18px !important;
+  font-size: 14px !important;
+}
+
+@media (min-width: 720px) and (max-height: 780px) {
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    justify-content: center !important;
+  }
+
+  body.route-login .login-panel h1,
+  body.route-registro .login-panel h1 {
+    font-size: 38px !important;
+  }
+}
+
+@media (max-width: 380px), (max-height: 680px) {
+  body.route-home .home-sheet {
+    width: min(calc(100% - 28px), 360px) !important;
+    padding: 16px !important;
+    border-radius: 24px !important;
+  }
+
+  body.route-home .home-sheet h1 {
+    font-size: 34px !important;
+  }
+
+  body.route-home .home-sheet .muted {
+    font-size: 13px !important;
+  }
+
+  body.route-home .home-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.route-home .home-actions .secondary-btn {
+    display: none !important;
+  }
+
+  body.route-login .login-hero-logo,
+  body.route-registro .login-hero-logo {
+    width: 66px !important;
+    height: 66px !important;
+  }
+}

@@ -8,6 +8,10 @@ const MAPBOX_JS = 'https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js'
 const MAPBOX_CSS = 'https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css'
 
 function loadMapbox() {
+  if (!MAPBOX_TOKEN) {
+    return Promise.reject(new Error('Missing Mapbox token'))
+  }
+
   if (window.mapboxgl) return Promise.resolve(window.mapboxgl)
 
   return new Promise((resolve, reject) => {
