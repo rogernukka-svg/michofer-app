@@ -9,14 +9,14 @@
   "theme_color": "#ef0012",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/favicon.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/og-image.png",
-      "sizes": "2048x455",
+      "src": "/apple-touch-icon.png",
+      "sizes": "1254x1254",
       "type": "image/png"
     }
   ]
