@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import InstallMiChoferButton from '../components/InstallMiChoferButton.jsx'
-import { getOwnProfile, signInWithGoogle, supabase, upsertOwnProfile } from '../lib/supabase'
+import {
+  getOwnProfile,
+  signInWithGoogle,
+  supabase,
+  upsertOwnDriverProfile,
+  upsertOwnProfile,
+} from '../lib/supabase'
 import logo from '../assets/logo.png'
 
 function normalizeEmail(value) {
@@ -24,8 +30,35 @@ function resolveRole(user, profile, email) {
     profile?.role ||
     user?.user_metadata?.role ||
     getStoredRoleForEmail(email) ||
-    'passenger'
+    ''
   )
+}
+
+function getRoleConfirmationKey(email) {
+  return `michofer_role_confirmed_${normalizeEmail(email)}`
+}
+
+function hasConfirmedRole(email, user) {
+  if (user?.user_metadata?.role_confirmed === true) return true
+  if (!email) return false
+  return localStorage.getItem(getRoleConfirmationKey(email)) === 'true'
+}
+
+function markRoleConfirmed(email) {
+  if (!email) return
+  localStorage.setItem(getRoleConfirmationKey(email), 'true')
+}
+
+function isGoogleUser(user) {
+  const providers = user?.app_metadata?.providers || []
+  return user?.app_metadata?.provider === 'google' || providers.includes('google')
+}
+
+function shouldAskForRole({ user, profile, role, email, pendingRole }) {
+  if (pendingRole) return false
+  if (!role) return true
+  if (role === 'driver') return false
+  return isGoogleUser(user) && !hasConfirmedRole(email, user) && !profile?.phone
 }
 
 async function findStoredAvatarUrl(userId) {
@@ -157,6 +190,19 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [knownUser, setKnownUser] = useState(null)
+  const [sessionUser, setSessionUser] = useState(null)
+  const [profileDraft, setProfileDraft] = useState({
+    fullName: '',
+    avatarUrl: '',
+  })
+  const [driverDetails, setDriverDetails] = useState({
+    phone: '',
+    carBrand: '',
+    carModel: '',
+    carColor: '',
+    plate: '',
+    vehicleYear: '',
+  })
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
@@ -194,13 +240,39 @@ export default function Login() {
           sessionUser.user_metadata?.avatar_url ||
           ''
 
+        const needsRoleChoice = shouldAskForRole({
+          user: sessionUser,
+          profile,
+          role,
+          email: cleanEmail,
+          pendingRole: pendingUpload?.role,
+        })
+
+        if (needsRoleChoice) {
+          if (!alive) return
+
+          setSessionUser(sessionUser)
+          setEmail(cleanEmail)
+          setKnownUser({
+            email: cleanEmail,
+            name: fullName,
+            role: role || '',
+            photo: avatarUrl,
+          })
+          setProfileDraft({ fullName, avatarUrl })
+          cacheProfile({ email: cleanEmail, fullName, avatarUrl })
+          setStep('role')
+          return
+        }
+
         cacheProfile({ email: cleanEmail, fullName, role, avatarUrl })
+        markRoleConfirmed(cleanEmail)
 
         if ((!profile || !profile.avatar_url) && !profileError) {
           await upsertOwnProfile({
             email: cleanEmail,
             fullName,
-            role: pendingUpload?.role || role,
+            role: pendingUpload?.role || role || 'passenger',
             avatarUrl,
           })
         }
@@ -210,12 +282,13 @@ export default function Login() {
             data: {
               full_name: fullName,
               avatar_url: avatarUrl,
-              role,
+              role: role || 'passenger',
+              role_confirmed: true,
             },
           })
         }
 
-        goToRole(role)
+        goToRole(role || 'passenger')
         return
       }
 
@@ -262,6 +335,8 @@ export default function Login() {
     if (step === 'welcome') return 'Movilidad conectada.'
     if (step === 'email') return 'Entrar con correo'
     if (step === 'password') return 'Tu clave'
+    if (step === 'role') return 'Elegi tu perfil'
+    if (step === 'driverDetails') return 'Datos de chofer'
     if (step === 'loading') return 'Entrando...'
 
     return 'MiChofer'
@@ -269,12 +344,14 @@ export default function Login() {
 
   const subtitle = useMemo(() => {
     if (knownUser?.email && step === 'password') {
-      return 'Tu dispositivo ya está registrado.'
+      return 'Tu dispositivo ya esta registrado.'
     }
 
-    if (step === 'welcome') return 'Acceso rápido, claro y seguro.'
-    if (step === 'email') return 'Usá tu correo y clave de MiChofer.'
-    if (step === 'password') return 'Último paso y seguimos.'
+    if (step === 'welcome') return 'Acceso rapido, claro y seguro.'
+    if (step === 'email') return 'Usa tu correo y clave de MiChofer.'
+    if (step === 'password') return 'Ultimo paso y seguimos.'
+    if (step === 'role') return 'Google ya valido tu identidad. Ahora elegi como vas a usar MiChofer.'
+    if (step === 'driverDetails') return 'Estos datos ayudan al pasajero a identificarte antes del viaje.'
     if (step === 'loading') return 'Verificando acceso.'
 
     return ''
@@ -321,6 +398,162 @@ export default function Login() {
     return nextKnownUser
   }
 
+  function getActiveIdentity() {
+    const cleanEmail = normalizeEmail(email || sessionUser?.email || knownUser?.email)
+    const fallbackName = cleanEmail ? cleanEmail.split('@')[0] : ''
+    const fullName = String(
+      profileDraft.fullName ||
+      knownUser?.name ||
+      sessionUser?.user_metadata?.full_name ||
+      fallbackName
+    ).trim()
+    const avatarUrl =
+      profileDraft.avatarUrl ||
+      knownUser?.photo ||
+      sessionUser?.user_metadata?.avatar_url ||
+      ''
+
+    return { cleanEmail, fullName, avatarUrl }
+  }
+
+  function updateDriverDetail(field, value) {
+    setDriverDetails((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
+
+  async function saveRoleAndEnter(nextRole, details = null) {
+    setErrorMessage('')
+
+    let activeUser = sessionUser
+    if (!activeUser) {
+      const { data: sessionData } = await supabase.auth.getSession()
+      activeUser = sessionData?.session?.user || null
+      setSessionUser(activeUser)
+    }
+
+    if (!activeUser) {
+      setErrorMessage('Volvemos a iniciar con Google para confirmar tu cuenta.')
+      setStep('welcome')
+      return
+    }
+
+    const { cleanEmail, fullName, avatarUrl } = getActiveIdentity()
+    if (!cleanEmail) {
+      setErrorMessage('No pude leer el correo de tu cuenta.')
+      setStep('role')
+      return
+    }
+
+    try {
+      setBusy(true)
+      setStep('loading')
+
+      const { error: profileError } = await upsertOwnProfile({
+        email: cleanEmail,
+        fullName,
+        role: nextRole,
+        avatarUrl,
+      })
+
+      if (profileError) throw profileError
+
+      const { error: userUpdateError } = await supabase.auth.updateUser({
+        data: {
+          full_name: fullName,
+          avatar_url: avatarUrl,
+          role: nextRole,
+          role_confirmed: true,
+        },
+      })
+
+      if (userUpdateError) throw userUpdateError
+
+      if (nextRole === 'driver') {
+        const { error: driverProfileError } = await upsertOwnDriverProfile({
+          fullName,
+          avatarUrl,
+          email: cleanEmail,
+        })
+
+        if (driverProfileError) throw driverProfileError
+
+        const { error: driverDetailsError } = await supabase
+          .from('driver_profiles')
+          .update({
+            phone: details.phone,
+            car_brand: details.carBrand,
+            car_model: details.carModel,
+            car_color: details.carColor || null,
+            plate: details.plate,
+            vehicle_year: details.vehicleYear,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', activeUser.id)
+
+        if (driverDetailsError) throw driverDetailsError
+      }
+
+      cacheProfile({ email: cleanEmail, fullName, role: nextRole, avatarUrl })
+      markRoleConfirmed(cleanEmail)
+      goToRole(nextRole)
+    } catch (err) {
+      console.error('ROLE SAVE ERROR:', err)
+      setErrorMessage(
+        nextRole === 'driver'
+          ? 'No pude guardar tus datos de chofer. Revisa los campos e intenta de nuevo.'
+          : 'No pude guardar tu perfil. Intenta de nuevo.'
+      )
+      setStep(nextRole === 'driver' ? 'driverDetails' : 'role')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function handleRoleChoice(nextRole) {
+    if (nextRole === 'driver') {
+      setErrorMessage('')
+      setStep('driverDetails')
+      return
+    }
+
+    saveRoleAndEnter('passenger')
+  }
+
+  function handleDriverDetailsSubmit(e) {
+    e.preventDefault()
+    setErrorMessage('')
+
+    const phone = driverDetails.phone.trim()
+    const carBrand = driverDetails.carBrand.trim()
+    const carModel = driverDetails.carModel.trim()
+    const carColor = driverDetails.carColor.trim()
+    const plate = driverDetails.plate.trim().toUpperCase()
+    const vehicleYearText = driverDetails.vehicleYear.trim()
+    const vehicleYear = vehicleYearText ? Number(vehicleYearText) : null
+    const currentYear = new Date().getFullYear()
+
+    if (!phone || !carBrand || !carModel || !plate) {
+      setErrorMessage('Completa telefono, marca, modelo y chapa del auto.')
+      return
+    }
+
+    if (vehicleYear && (Number.isNaN(vehicleYear) || vehicleYear < 1990 || vehicleYear > currentYear + 1)) {
+      setErrorMessage('Revisa el anio del vehiculo.')
+      return
+    }
+
+    saveRoleAndEnter('driver', {
+      phone,
+      carBrand,
+      carModel,
+      carColor,
+      plate,
+      vehicleYear,
+    })
+  }
+
   async function handleEmailNext(e) {
     e.preventDefault()
     setErrorMessage('')
@@ -328,7 +561,7 @@ export default function Login() {
     const cleanEmail = normalizeEmail(email)
 
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      setErrorMessage('Poné un correo válido.')
+      setErrorMessage('Pone un correo valido.')
       return
     }
 
@@ -350,7 +583,7 @@ export default function Login() {
     const cleanEmail = normalizeEmail(email)
 
     if (!cleanEmail || !password) {
-      setErrorMessage('Completá tu correo y clave.')
+      setErrorMessage('Completa tu correo y clave.')
       return
     }
 
@@ -366,7 +599,7 @@ export default function Login() {
       if (error) {
         setErrorMessage(
           error.message === 'Failed to fetch'
-            ? 'No pude conectar con Supabase. Revisá el Project URL en .env y reiniciá Vite.'
+            ? 'No pude conectar con Supabase. Revisa el Project URL en .env y reinicia Vite.'
             : error.message
         )
         setStep('password')
@@ -390,7 +623,22 @@ export default function Login() {
         : ''
       const avatarUrl = profile?.avatar_url || pendingUpload?.avatarUrl || storedAvatar || user?.user_metadata?.avatar_url || ''
 
+      if (!role) {
+        setSessionUser(user)
+        setKnownUser({
+          email: cleanEmail,
+          name: fullName,
+          role: '',
+          photo: avatarUrl,
+        })
+        setProfileDraft({ fullName, avatarUrl })
+        cacheProfile({ email: cleanEmail, fullName, avatarUrl })
+        setStep('role')
+        return
+      }
+
       cacheProfile({ email: cleanEmail, fullName, role, avatarUrl })
+      markRoleConfirmed(cleanEmail)
 
       if ((!profile || !profile.avatar_url) && !profileError) {
         await upsertOwnProfile({
@@ -407,6 +655,7 @@ export default function Login() {
             full_name: fullName,
             avatar_url: avatarUrl,
             role,
+            role_confirmed: true,
           },
         })
       }
@@ -414,7 +663,7 @@ export default function Login() {
       goToRole(role)
     } catch (err) {
       console.error(err)
-      setErrorMessage('No se pudo iniciar sesión. Revisá la conexión con Supabase.')
+      setErrorMessage('No se pudo iniciar sesion. Revisa la conexion con Supabase.')
       setStep('password')
     } finally {
       setBusy(false)
@@ -436,7 +685,7 @@ export default function Login() {
       }
     } catch (err) {
       console.error(err)
-      setErrorMessage('No pude iniciar con Google. Revisá la configuración en Supabase.')
+      setErrorMessage('No pude iniciar con Google. Revisa la configuracion en Supabase.')
       setStep('welcome')
     } finally {
       setBusy(false)
@@ -453,7 +702,7 @@ export default function Login() {
 
           <div className="login-spacer" />
 
-          {step === 'password' && (
+          {['password', 'role', 'driverDetails'].includes(step) && knownUser?.email && (
             <div className="login-user-avatar-fallback">
               {isAvatarImage(knownUser?.photo) ? (
                 <img src={knownUser.photo} alt="Usuario" />
@@ -520,7 +769,7 @@ export default function Login() {
                 className="login-text-btn"
                 onClick={() => setStep('welcome')}
               >
-                ← Atrás
+                {'<-'} Atras
               </button>
             </form>
           )}
@@ -560,7 +809,114 @@ export default function Login() {
                 className="login-text-btn"
                 onClick={() => setStep('email')}
               >
-                ← Cambiar correo
+                {'<-'} Cambiar correo
+              </button>
+            </form>
+          )}
+
+          {step === 'role' && (
+            <div className="login-step-form auth-role-form">
+              <div className="login-recognized-pill">{email}</div>
+
+              <button
+                type="button"
+                className="login-choice-btn auth-role-choice"
+                onClick={() => handleRoleChoice('passenger')}
+                disabled={busy}
+              >
+                Necesito viajar
+              </button>
+
+              <button
+                type="button"
+                className="login-choice-btn auth-role-choice"
+                onClick={() => handleRoleChoice('driver')}
+                disabled={busy}
+              >
+                Soy chofer
+              </button>
+
+              <button
+                type="button"
+                className="login-text-btn"
+                onClick={async () => {
+                  await supabase.auth.signOut()
+                  localStorage.removeItem('michofer_last_email')
+                  localStorage.removeItem('michofer_last_name')
+                  localStorage.removeItem('michofer_last_photo')
+                  localStorage.removeItem('michofer_last_role')
+                  setSessionUser(null)
+                  setKnownUser(null)
+                  setEmail('')
+                  setPassword('')
+                  setStep('welcome')
+                }}
+              >
+                Usar otra cuenta
+              </button>
+            </div>
+          )}
+
+          {step === 'driverDetails' && (
+            <form className="login-step-form driver-onboarding-form" onSubmit={handleDriverDetailsSubmit}>
+              <input
+                autoFocus
+                placeholder="Telefono"
+                type="tel"
+                autoComplete="tel"
+                value={driverDetails.phone}
+                onChange={(e) => updateDriverDetail('phone', e.target.value)}
+              />
+
+              <input
+                placeholder="Marca del auto"
+                autoComplete="off"
+                value={driverDetails.carBrand}
+                onChange={(e) => updateDriverDetail('carBrand', e.target.value)}
+              />
+
+              <input
+                placeholder="Modelo"
+                autoComplete="off"
+                value={driverDetails.carModel}
+                onChange={(e) => updateDriverDetail('carModel', e.target.value)}
+              />
+
+              <input
+                placeholder="Color"
+                autoComplete="off"
+                value={driverDetails.carColor}
+                onChange={(e) => updateDriverDetail('carColor', e.target.value)}
+              />
+
+              <input
+                placeholder="Chapa / matricula"
+                autoComplete="off"
+                value={driverDetails.plate}
+                onChange={(e) => updateDriverDetail('plate', e.target.value)}
+              />
+
+              <input
+                placeholder="Anio del vehiculo"
+                inputMode="numeric"
+                value={driverDetails.vehicleYear}
+                onChange={(e) => updateDriverDetail('vehicleYear', e.target.value)}
+              />
+
+              <button
+                className="login-main-btn"
+                disabled={busy}
+                type="submit"
+              >
+                {busy ? 'Guardando...' : 'Guardar y entrar'}
+              </button>
+
+              <button
+                type="button"
+                className="login-text-btn"
+                onClick={() => setStep('role')}
+              >
+                {'<-'} Atras
               </button>
             </form>
           )}

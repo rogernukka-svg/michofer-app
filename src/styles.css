@@ -8407,3 +8407,67 @@ body.route-driver .empty-state {
     min-height: 50px !important;
   }
 }
+
+body.route-login .login-panel {
+  overflow-y: auto !important;
+  scrollbar-width: none;
+}
+
+body.route-login .login-panel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+body.route-login .auth-role-form {
+  gap: 11px !important;
+}
+
+body.route-login .auth-role-choice {
+  justify-content: center !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04)),
+    rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+
+body.route-login .auth-role-choice:first-of-type {
+  background: #f7f8fa !important;
+  color: #111820 !important;
+  border-color: rgba(255, 255, 255, 0.74) !important;
+}
+
+body.route-login .driver-onboarding-form {
+  max-width: 340px !important;
+  gap: 8px !important;
+}
+
+body.route-login .driver-onboarding-form input {
+  min-height: 44px !important;
+  border-radius: 15px !important;
+  padding: 0 15px !important;
+  font-size: 13px !important;
+}
+
+body.route-login .driver-onboarding-form .login-main-btn {
+  min-height: 48px !important;
+  margin-top: 2px !important;
+}
+
+body.route-login .driver-onboarding-form .login-text-btn {
+  margin-top: 0 !important;
+}
+
+@media (max-height: 720px) {
+  body.route-login .driver-onboarding-form {
+    gap: 7px !important;
+  }
+
+  body.route-login .driver-onboarding-form input {
+    min-height: 42px !important;
+  }
+
+  body.route-login .driver-onboarding-form .login-main-btn {
+    min-height: 46px !important;
+  }
+}
