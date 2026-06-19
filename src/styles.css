@@ -8038,3 +8038,101 @@ body.route-registro .login-error-message {
     min-height: 54px !important;
   }
 }
+
+/* Auth polish fix: keep autofill and mobile panel visually separated */
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  background:
+    linear-gradient(180deg, rgba(47, 54, 60, 0.98) 0%, rgba(20, 25, 30, 0.99) 48%, rgba(5, 7, 10, 1) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+body.route-login .login-step-form input,
+body.route-login .password-box input,
+body.route-registro .login-step-form input,
+body.route-registro .password-box input,
+body.route-login .login-recognized-pill,
+body.route-registro .login-recognized-pill {
+  background:
+    linear-gradient(180deg, rgba(82, 91, 98, 0.86), rgba(41, 48, 54, 0.94)) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+}
+
+body.route-login .login-step-form input:-webkit-autofill,
+body.route-login .password-box input:-webkit-autofill,
+body.route-registro .login-step-form input:-webkit-autofill,
+body.route-registro .password-box input:-webkit-autofill,
+body.route-login .login-step-form input:-webkit-autofill:hover,
+body.route-login .password-box input:-webkit-autofill:hover,
+body.route-registro .login-step-form input:-webkit-autofill:hover,
+body.route-registro .password-box input:-webkit-autofill:hover,
+body.route-login .login-step-form input:-webkit-autofill:focus,
+body.route-login .password-box input:-webkit-autofill:focus,
+body.route-registro .login-step-form input:-webkit-autofill:focus,
+body.route-registro .password-box input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  box-shadow:
+    0 0 0 1000px #303840 inset,
+    0 14px 34px rgba(0, 0, 0, 0.2) !important;
+  transition: background-color 9999s ease-out 0s !important;
+}
+
+body.route-login .password-box input,
+body.route-registro .password-box input {
+  padding-right: 92px !important;
+}
+
+body.route-login .password-toggle,
+body.route-registro .password-toggle {
+  top: 7px !important;
+  right: 7px !important;
+  width: 78px !important;
+  height: calc(100% - 14px) !important;
+  min-width: 78px !important;
+  border-radius: 17px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background:
+    linear-gradient(180deg, #10161c 0%, #06090d 100%) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  text-shadow:
+    0 2px 0 rgba(227, 6, 19, 0.36),
+    0 18px 42px rgba(0, 0, 0, 0.34) !important;
+}
+
+@media (max-width: 430px) {
+  body.route-login .login-screen,
+  body.route-registro .login-screen {
+    padding: 7px !important;
+  }
+
+  body.route-login .login-phone,
+  body.route-registro .login-phone {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    width: 100% !important;
+    min-height: calc(100svh - 14px) !important;
+    border-radius: 28px !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.16) !important;
+  }
+}
