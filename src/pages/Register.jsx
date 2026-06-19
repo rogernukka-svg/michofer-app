@@ -117,7 +117,7 @@ function readFileAsDataUrl(file) {
 }
 
 async function savePendingRegistration({ email, fullName, role, photoFile }) {
-  const avatarDataUrl = await readFileAsDataUrl(photoFile)
+  const avatarDataUrl = photoFile ? await readFileAsDataUrl(photoFile) : ''
 
   localStorage.setItem(
     'michofer_pending_registration',
@@ -126,8 +126,8 @@ async function savePendingRegistration({ email, fullName, role, photoFile }) {
       fullName,
       role,
       avatarDataUrl,
-      avatarName: photoFile.name || `michofer-avatar-${Date.now()}.jpg`,
-      avatarType: photoFile.type || 'image/jpeg',
+      avatarName: photoFile?.name || `michofer-avatar-${Date.now()}.jpg`,
+      avatarType: photoFile?.type || 'image/jpeg',
       createdAt: Date.now(),
     })
   )
@@ -190,24 +190,28 @@ export default function Register() {
     if (step === 'start') return 'Crea tu cuenta.'
     if (step === 'name') return 'Tu nombre'
     if (step === 'role') return '¿Cómo usarás michofer?'
-    if (step === 'photo') return 'Queremos conocerte'
+    if (step === 'photo') return role === 'driver' ? 'Verificación de chofer' : 'Tu perfil'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Creá tu clave'
     if (step === 'loading') return 'Creando cuenta...'
 
     return 'MiChofer'
-  }, [step, knownUser])
+  }, [step, knownUser, role])
 
   const subtitle = useMemo(() => {
     if (knownUser?.email && step === 'start') return 'Este dispositivo ya usó MiChofer.'
     if (step === 'start') return 'Entrá con Google o completá tus datos.'
     if (step === 'name') return 'Decinos cómo querés aparecer.'
     if (step === 'role') return 'Elegí tu experiencia.'
-    if (step === 'photo') return 'Tu foto ayuda a generar confianza.'
+    if (step === 'photo') {
+      return role === 'driver'
+        ? 'Tu foto ayuda a que el pasajero viaje con confianza.'
+        : 'Podés agregar una foto ahora o seguir sin cargarla.'
+    }
     if (step === 'email') return 'Con este correo vas a entrar.'
     if (step === 'password') return 'Rápido, simple y seguro.'
     return ''
-  }, [step, knownUser])
+  }, [step, knownUser, role])
 
   function stopCameraStream() {
     if (streamRef.current) {
@@ -440,8 +444,14 @@ export default function Register() {
 
     const cleanEmail = normalizeEmail(email)
 
-    if (!photoFile) {
-      setErrorMessage('Sacá o subí tu foto para continuar.')
+    if (!role) {
+      setErrorMessage('Elegí si vas a viajar o manejar.')
+      setStep('role')
+      return
+    }
+
+    if (role === 'driver' && !photoFile) {
+      setErrorMessage('Sacá o subí tu foto para continuar como chofer.')
       return
     }
 
@@ -506,7 +516,7 @@ export default function Register() {
             photoFile,
           })
           setErrorMessage(
-            'La cuenta se creÃ³, pero todavÃ­a no pude activar este dispositivo para subir la foto. EntrÃ¡ desde Login y volvÃ© a completar la foto si hace falta.'
+            'La cuenta se creó, pero todavía no pude activar este dispositivo para subir la foto. Entrá desde Login y volvé a completar la foto si hace falta.'
           )
           setStep('password')
           return
@@ -537,7 +547,7 @@ export default function Register() {
           }
           if (!avatarUrl) {
           setErrorMessage(
-            `La cuenta se creÃ³, pero no pude subir la foto a Supabase Storage: ${getSupabaseErrorMessage(uploadError)}`
+            `La cuenta se creó, pero no pude subir la foto a Supabase Storage: ${getSupabaseErrorMessage(uploadError)}`
           )
           setStep('photo')
           return
@@ -551,8 +561,8 @@ export default function Register() {
         }
       }
 
-      if (!avatarUrl) {
-        setErrorMessage('No pude guardar la foto del perfil. ProbÃ¡ cambiar la foto y continuar de nuevo.')
+      if (!avatarUrl && role === 'driver') {
+        setErrorMessage('No pude guardar la foto del perfil. Probá cambiar la foto y continuar de nuevo.')
         setStep('photo')
         return
       }
@@ -568,7 +578,7 @@ export default function Register() {
         if (profileError) {
           console.error('PROFILE UPSERT ERROR:', profileError)
           setErrorMessage(
-            `La foto subiÃ³, pero no pude guardar tu perfil: ${getSupabaseErrorMessage(profileError)}`
+            `La foto subió, pero no pude guardar tu perfil: ${getSupabaseErrorMessage(profileError)}`
           )
           setStep('password')
           return
@@ -584,7 +594,7 @@ export default function Register() {
           if (driverProfileError) {
             console.error('DRIVER PROFILE UPSERT ERROR:', driverProfileError)
             setErrorMessage(
-              `Tu cuenta se creÃ³, pero no pude guardar el perfil de chofer: ${getSupabaseErrorMessage(driverProfileError)}`
+              `Tu cuenta se creó, pero no pude guardar el perfil de chofer: ${getSupabaseErrorMessage(driverProfileError)}`
             )
             setStep('password')
             return
@@ -640,7 +650,7 @@ export default function Register() {
       }
     } catch (err) {
       console.error(err)
-      setErrorMessage('No pude registrar con Google. RevisÃ¡ la configuraciÃ³n en Supabase.')
+      setErrorMessage('No pude registrar con Google. Revisá la configuración en Supabase.')
       setStep('start')
     } finally {
       setBusy(false)
@@ -769,10 +779,12 @@ export default function Register() {
                 <div className="register-photo-box">
                   <span className="photo-icon">📷</span>
 
-                  <strong>Verificación facial</strong>
+                  <strong>{role === 'driver' ? 'Verificación facial' : 'Foto opcional'}</strong>
 
                   <small>
-                    Usá la cámara frontal. Sin kepis, lentes oscuros ni rostro tapado.
+                    {role === 'driver'
+                      ? 'Usá la cámara frontal. Sin kepis, lentes oscuros ni rostro tapado.'
+                      : 'Si preferís, podés cargarla después desde tu perfil.'}
                   </small>
 
                   <button
@@ -790,6 +802,16 @@ export default function Register() {
                   >
                     Subir foto
                   </button>
+
+                  {role === 'passenger' && (
+                    <button
+                      type="button"
+                      className="login-text-btn"
+                      onClick={() => setStep('email')}
+                    >
+                      Omitir por ahora
+                    </button>
+                  )}
                 </div>
               )}
 

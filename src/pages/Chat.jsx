@@ -148,7 +148,7 @@ export default function Chat() {
 
         <section className="chat-messages" aria-label="Mensajes">
           {messages.length === 0 && (
-            <div className="empty-state">TodavÃ­a no hay mensajes. EscribÃ­ para coordinar el punto.</div>
+            <div className="empty-state">Todavía no hay mensajes. Escribí para coordinar el punto.</div>
           )}
 
           {messages.map((message) => (

@@ -8136,3 +8136,274 @@ body.route-registro .login-panel h1 {
     border-right: 1px solid rgba(255, 255, 255, 0.16) !important;
   }
 }
+
+/* Product polish pass: calmer scale, clearer hierarchy, one MiChofer identity */
+body.route-home *,
+body.route-login *,
+body.route-registro *,
+body.route-client *,
+body.route-driver *,
+body.route-chat *,
+body.route-viajes *,
+body.route-admin * {
+  letter-spacing: 0 !important;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  width: min(calc(100vw - 18px), 392px) !important;
+  min-height: min(690px, calc(100svh - 18px)) !important;
+  gap: clamp(9px, 1.8svh, 13px) !important;
+  padding: clamp(24px, 4.4svh, 34px) clamp(22px, 5vw, 28px) !important;
+  border-radius: 28px !important;
+  background:
+    radial-gradient(circle at 50% 4%, rgba(255, 255, 255, 0.09), transparent 25%),
+    linear-gradient(180deg, rgba(38, 45, 51, 0.98) 0%, rgba(16, 21, 26, 0.99) 52%, rgba(5, 7, 10, 1) 100%) !important;
+}
+
+body.route-login .login-hero-logo,
+body.route-registro .login-hero-logo {
+  width: clamp(64px, 10svh, 78px) !important;
+  height: clamp(64px, 10svh, 78px) !important;
+  border-radius: 21px !important;
+  margin-bottom: 4px !important;
+}
+
+body.route-login .login-hero-logo img,
+body.route-registro .login-hero-logo img {
+  width: 76% !important;
+  height: 76% !important;
+}
+
+body.route-login .login-user-avatar-fallback,
+body.route-registro .login-user-avatar-fallback {
+  width: 76px !important;
+  height: 76px !important;
+  margin: 2px auto 4px !important;
+  font-size: 34px !important;
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  max-width: 12ch !important;
+  font-size: clamp(29px, 7.6vw, 36px) !important;
+  line-height: 1.02 !important;
+  font-weight: 850 !important;
+  text-shadow: 0 14px 34px rgba(0, 0, 0, 0.32) !important;
+}
+
+body.route-login .login-subtitle,
+body.route-registro .login-subtitle {
+  max-width: 300px !important;
+  margin-bottom: 6px !important;
+  font-size: clamp(12.5px, 3.4vw, 14px) !important;
+  line-height: 1.42 !important;
+  font-weight: 700 !important;
+  color: rgba(255, 255, 255, 0.68) !important;
+}
+
+body.route-login .auth-action-stack,
+body.route-registro .auth-action-stack,
+body.route-login .login-step-form,
+body.route-registro .login-step-form {
+  max-width: 340px !important;
+  gap: 10px !important;
+}
+
+body.route-login .login-google-btn,
+body.route-registro .login-google-btn,
+body.route-login .login-main-btn,
+body.route-registro .login-main-btn,
+body.route-login .login-choice-btn,
+body.route-registro .login-choice-btn,
+body.route-login .login-secondary-btn,
+body.route-registro .login-secondary-btn {
+  min-height: 52px !important;
+  border-radius: 18px !important;
+  font-size: clamp(13.5px, 3.6vw, 15px) !important;
+  font-weight: 820 !important;
+}
+
+body.route-login .login-google-btn,
+body.route-registro .login-google-btn {
+  gap: 10px !important;
+  color: #101820 !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22) !important;
+}
+
+body.route-login .google-mark,
+body.route-registro .google-mark {
+  width: 24px !important;
+  height: 24px !important;
+  flex-basis: 24px !important;
+}
+
+body.route-login .google-mark::after,
+body.route-registro .google-mark::after {
+  font-size: 16px !important;
+}
+
+body.route-login .login-step-form input,
+body.route-login .password-box input,
+body.route-registro .login-step-form input,
+body.route-registro .password-box input,
+body.route-login .login-recognized-pill,
+body.route-registro .login-recognized-pill {
+  min-height: 52px !important;
+  border-radius: 18px !important;
+  font-size: clamp(13.5px, 3.7vw, 15px) !important;
+  font-weight: 760 !important;
+}
+
+body.route-login .password-box input,
+body.route-registro .password-box input {
+  padding-right: 82px !important;
+}
+
+body.route-login .password-toggle,
+body.route-registro .password-toggle {
+  top: 6px !important;
+  right: 6px !important;
+  width: 66px !important;
+  min-width: 66px !important;
+  height: calc(100% - 12px) !important;
+  border-radius: 15px !important;
+  font-size: 12px !important;
+}
+
+body.route-login .login-create-link,
+body.route-registro .login-create-link,
+body.route-login .login-text-btn,
+body.route-registro .login-text-btn {
+  min-height: 38px !important;
+  padding: 0 17px !important;
+  font-size: clamp(12.5px, 3.4vw, 14px) !important;
+  font-weight: 790 !important;
+}
+
+body.route-registro .register-photo-box {
+  gap: 10px !important;
+  padding: 16px !important;
+  border-radius: 22px !important;
+}
+
+body.route-registro .register-photo-box strong {
+  font-size: 15px !important;
+}
+
+body.route-registro .register-photo-box small {
+  font-size: 12px !important;
+  line-height: 1.38 !important;
+}
+
+body.route-home .home-sheet {
+  gap: 12px !important;
+}
+
+body.route-home .home-sheet h1 {
+  max-width: 11ch !important;
+  font-size: clamp(32px, 7.5vw, 48px) !important;
+  line-height: 1.02 !important;
+  font-weight: 860 !important;
+}
+
+body.route-home .home-sheet .muted {
+  max-width: 340px !important;
+  font-size: clamp(13px, 3.4vw, 15px) !important;
+  line-height: 1.48 !important;
+}
+
+body.route-home .home-actions .main-btn,
+body.route-home .home-actions .secondary-btn,
+body.route-client .request-btn,
+body.route-client .driver-side button,
+body.route-driver .driver-command-row button,
+body.route-driver .driver-command-row a,
+body.route-driver .driver-live-actions button,
+body.route-driver .driver-live-actions a,
+body.route-driver .logout-button {
+  min-height: 48px !important;
+  border-radius: 16px !important;
+  font-size: 13px !important;
+  font-weight: 780 !important;
+}
+
+body.route-client .destination-card label,
+body.route-client .sheet-heading .eyebrow,
+body.route-driver .driver-hero span,
+body.route-driver .driver-live-sheet span,
+body.route-driver .driver-turn-card span {
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+body.route-client .destination-card strong,
+body.route-client .sheet-heading h1,
+body.route-driver .driver-hero h1,
+body.route-driver .active-flow-card h2,
+body.route-driver .driver-live-sheet strong,
+body.route-driver .driver-turn-card strong,
+.simple-page-header h1 {
+  font-size: clamp(20px, 5.2vw, 28px) !important;
+  line-height: 1.12 !important;
+  font-weight: 850 !important;
+}
+
+body.route-client .driver-card,
+body.route-client .selected-map-card,
+body.route-client .route-summary,
+body.route-driver .driver-section,
+body.route-driver .driver-trip-card,
+body.route-driver .driver-intel-card,
+body.route-driver .active-flow-card {
+  border-radius: 20px !important;
+}
+
+body.route-client .driver-card strong,
+body.route-client .driver-name-row strong,
+body.route-driver .driver-intel-card strong {
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+
+body.route-client .driver-info > span,
+body.route-client .driver-meta small,
+body.route-driver .driver-trip-card p,
+body.route-driver .active-flow-card p,
+body.route-driver .driver-intel-card span,
+body.route-driver .notice-card,
+body.route-driver .empty-state {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+@media (max-width: 430px) {
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    min-height: calc(100svh - 14px) !important;
+    padding:
+      max(24px, env(safe-area-inset-top, 0px))
+      22px
+      max(22px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.route-login .login-panel h1,
+  body.route-registro .login-panel h1 {
+    font-size: clamp(28px, 7.8vw, 34px) !important;
+  }
+
+  body.route-login .login-google-btn,
+  body.route-registro .login-google-btn,
+  body.route-login .login-main-btn,
+  body.route-registro .login-main-btn,
+  body.route-login .login-choice-btn,
+  body.route-registro .login-choice-btn,
+  body.route-login .login-step-form input,
+  body.route-login .password-box input,
+  body.route-registro .login-step-form input,
+  body.route-registro .password-box input,
+  body.route-login .login-recognized-pill,
+  body.route-registro .login-recognized-pill {
+    min-height: 50px !important;
+  }
+}

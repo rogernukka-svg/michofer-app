@@ -96,8 +96,17 @@ async function uploadPendingRegistrationAvatar(user, email) {
     return null
   }
 
-  if (normalizeEmail(pending.email) !== normalizeEmail(email) || !pending.avatarDataUrl) {
+  if (normalizeEmail(pending.email) !== normalizeEmail(email)) {
     return null
+  }
+
+  if (!pending.avatarDataUrl) {
+    localStorage.removeItem('michofer_pending_registration')
+    return {
+      avatarUrl: '',
+      fullName: pending.fullName || '',
+      role: pending.role || '',
+    }
   }
 
   const file = dataUrlToFile(
@@ -427,7 +436,7 @@ export default function Login() {
       }
     } catch (err) {
       console.error(err)
-      setErrorMessage('No pude iniciar con Google. RevisÃ¡ la configuraciÃ³n en Supabase.')
+      setErrorMessage('No pude iniciar con Google. Revisá la configuración en Supabase.')
       setStep('welcome')
     } finally {
       setBusy(false)

@@ -1,9 +1,9 @@
 import { ArrowRight, Heart } from 'lucide-react'
 import InstallMiChoferButton from './components/InstallMiChoferButton.jsx'
 import InteractiveRouteMap from './components/InteractiveRouteMap.jsx'
-import alexAvatar from './assets/roger-nunez-client.jpeg'
+import alexAvatar from './assets/alex-gonzalez-driver.jpeg'
 import logo from './assets/logo.png'
-import rogerAvatar from './assets/alex-gonzalez-driver.jpeg'
+import rogerAvatar from './assets/roger-nunez-client.jpeg'
 
 const alexLocation = {
   id: 'alex-gonzalez',
@@ -73,9 +73,9 @@ export default function App() {
 
         <section className="home-sheet">
           <p className="eyebrow">MI CHOFER</p>
-          <h1>Vos elegis quien te lleva.</h1>
+          <h1>Elegí quién te lleva.</h1>
           <p className="muted">
-            Choferes verificados cerca tuyo. Ves quien conduce antes de confirmar.
+            Choferes verificados cerca tuyo. Mirá quién conduce antes de confirmar.
           </p>
 
           <div className="home-actions">
