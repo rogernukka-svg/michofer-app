@@ -246,11 +246,12 @@ export default function Login() {
 
   const title = useMemo(() => {
     if (knownUser?.email && step === 'password') {
-      return `Hola ${knownUser.name?.split(' ')[0] || ''}`
+      const firstName = knownUser.name?.split(' ')[0] || ''
+      return firstName ? `Hola ${firstName}` : 'Hola'
     }
 
     if (step === 'welcome') return 'Movilidad conectada.'
-    if (step === 'email') return 'Tu correo'
+    if (step === 'email') return 'Entrar con correo'
     if (step === 'password') return 'Tu clave'
     if (step === 'loading') return 'Entrando...'
 
@@ -262,8 +263,8 @@ export default function Login() {
       return 'Tu dispositivo ya está registrado.'
     }
 
-    if (step === 'welcome') return 'Respuesta rápida. Presencia clara.'
-    if (step === 'email') return 'Primero identifiquemos tu cuenta.'
+    if (step === 'welcome') return 'Acceso rápido, claro y seguro.'
+    if (step === 'email') return 'Usá tu correo y clave de MiChofer.'
     if (step === 'password') return 'Último paso y seguimos.'
     if (step === 'loading') return 'Verificando acceso.'
 
@@ -464,30 +465,31 @@ export default function Login() {
           )}
 
           {step === 'welcome' && (
-            <>
+            <div className="auth-action-stack">
               <button
-                className="login-main-btn"
-                onClick={() => setStep('email')}
+                type="button"
+                className="login-google-btn login-google-btn-primary"
+                onClick={handleGoogleAuth}
+                disabled={busy}
               >
-                Continuar
+                <span className="google-mark" aria-hidden="true" />
+                {busy ? 'Conectando...' : 'Entrar con Google'}
               </button>
 
               <button
                 type="button"
-                className="login-google-btn"
-                onClick={handleGoogleAuth}
-                disabled={busy}
+                className="login-main-btn auth-mail-btn"
+                onClick={() => setStep('email')}
               >
-                <span>G</span>
-                {busy ? 'Conectando...' : 'Continuar con Google'}
+                Entrar con correo
               </button>
 
-              <InstallMiChoferButton className="login-install-btn" />
-
               <a className="login-create-link" href="/registro">
-                Crear cuenta
+                Crear cuenta nueva
               </a>
-            </>
+
+              <InstallMiChoferButton className="login-install-btn" />
+            </div>
           )}
 
           {step === 'email' && (

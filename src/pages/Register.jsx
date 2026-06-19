@@ -138,7 +138,7 @@ async function savePendingRegistration({ email, fullName, role, photoFile }) {
 }
 
 export default function Register() {
-  const [step, setStep] = useState('name')
+  const [step, setStep] = useState('start')
   const [fullName, setFullName] = useState('')
   const [role, setRole] = useState('')
   const [email, setEmail] = useState('')
@@ -182,11 +182,13 @@ export default function Register() {
   }, [photoPreview])
 
   const title = useMemo(() => {
-    if (knownUser?.email && step === 'name') {
-      return `Hola ${knownUser.name?.split(' ')[0] || ''}`
+    if (knownUser?.email && step === 'start') {
+      const firstName = knownUser.name?.split(' ')[0] || ''
+      return firstName ? `Hola ${firstName}` : 'Bienvenido'
     }
 
-    if (step === 'name') return 'Empecemos rápido.'
+    if (step === 'start') return 'Crea tu cuenta.'
+    if (step === 'name') return 'Tu nombre'
     if (step === 'role') return '¿Cómo usarás michofer?'
     if (step === 'photo') return 'Queremos conocerte'
     if (step === 'email') return 'Tu correo'
@@ -197,8 +199,9 @@ export default function Register() {
   }, [step, knownUser])
 
   const subtitle = useMemo(() => {
-    if (knownUser?.email && step === 'name') return 'Este dispositivo ya usó MiChofer.'
-    if (step === 'name') return 'Tu movilidad empieza acá.'
+    if (knownUser?.email && step === 'start') return 'Este dispositivo ya usó MiChofer.'
+    if (step === 'start') return 'Entrá con Google o completá tus datos.'
+    if (step === 'name') return 'Decinos cómo querés aparecer.'
     if (step === 'role') return 'Elegí tu experiencia.'
     if (step === 'photo') return 'Tu foto ayuda a generar confianza.'
     if (step === 'email') return 'Con este correo vas a entrar.'
@@ -633,12 +636,12 @@ export default function Register() {
 
       if (error) {
         setErrorMessage(error.message || 'No pude registrar con Google.')
-        setStep('name')
+        setStep('start')
       }
     } catch (err) {
       console.error(err)
       setErrorMessage('No pude registrar con Google. RevisÃ¡ la configuraciÃ³n en Supabase.')
-      setStep('name')
+      setStep('start')
     } finally {
       setBusy(false)
     }
@@ -664,31 +667,47 @@ export default function Register() {
             </div>
           )}
 
-          {knownUser?.email && step === 'name' && (
-            <button
-              type="button"
-              className="login-main-btn"
-              onClick={() => {
-                window.location.href =
-                  '/login?email=' + encodeURIComponent(knownUser.email)
-              }}
-            >
-              Sí, soy yo
-            </button>
+          {step === 'start' && (
+            <div className="auth-action-stack">
+              {knownUser?.email && (
+                <button
+                  type="button"
+                  className="login-main-btn"
+                  onClick={() => {
+                    window.location.href =
+                      '/login?email=' + encodeURIComponent(knownUser.email)
+                  }}
+                >
+                  Sí, soy yo
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="login-google-btn login-google-btn-primary"
+                onClick={handleGoogleRegister}
+                disabled={busy}
+              >
+                <span className="google-mark" aria-hidden="true" />
+                {busy ? 'Conectando...' : 'Registrarme con Google'}
+              </button>
+
+              <button
+                type="button"
+                className="login-main-btn auth-mail-btn"
+                onClick={() => setStep('name')}
+              >
+                Crear con correo
+              </button>
+
+              <a className="login-create-link" href="/login">
+                Ya tengo cuenta
+              </a>
+            </div>
           )}
 
           {step === 'name' && (
             <form className="login-step-form" onSubmit={nextFromName}>
-              <button
-                type="button"
-                className="login-google-btn"
-                onClick={handleGoogleRegister}
-                disabled={busy}
-              >
-                <span>G</span>
-                {busy ? 'Conectando...' : 'Continuar con Google'}
-              </button>
-
               <input
                 autoFocus
                 placeholder="Tu nombre"
@@ -698,6 +717,14 @@ export default function Register() {
 
               <button className="login-main-btn" type="submit">
                 Continuar
+              </button>
+
+              <button
+                type="button"
+                className="login-text-btn"
+                onClick={() => setStep('start')}
+              >
+                ← Atrás
               </button>
             </form>
           )}
