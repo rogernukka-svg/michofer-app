@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import InstallMiChoferButton from '../components/InstallMiChoferButton.jsx'
-import { getOwnProfile, supabase, upsertOwnProfile } from '../lib/supabase'
+import { getOwnProfile, signInWithGoogle, supabase, upsertOwnProfile } from '../lib/supabase'
 import logo from '../assets/logo.png'
 
 function normalizeEmail(value) {
@@ -411,6 +411,28 @@ export default function Login() {
     }
   }
 
+  async function handleGoogleAuth() {
+    setErrorMessage('')
+
+    try {
+      setBusy(true)
+      setStep('loading')
+
+      const { error } = await signInWithGoogle()
+
+      if (error) {
+        setErrorMessage(error.message || 'No pude iniciar con Google.')
+        setStep('welcome')
+      }
+    } catch (err) {
+      console.error(err)
+      setErrorMessage('No pude iniciar con Google. RevisÃ¡ la configuraciÃ³n en Supabase.')
+      setStep('welcome')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="login-screen">
       <div className="login-phone">
@@ -448,6 +470,16 @@ export default function Login() {
                 onClick={() => setStep('email')}
               >
                 Continuar
+              </button>
+
+              <button
+                type="button"
+                className="login-google-btn"
+                onClick={handleGoogleAuth}
+                disabled={busy}
+              >
+                <span>G</span>
+                {busy ? 'Conectando...' : 'Continuar con Google'}
               </button>
 
               <InstallMiChoferButton className="login-install-btn" />

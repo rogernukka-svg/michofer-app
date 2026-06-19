@@ -8,6 +8,23 @@ export const supabase = createClient(
   supabaseAnonKey
 )
 
+export function signInWithGoogle() {
+  const redirectTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/login`
+      : undefined
+
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+      queryParams: {
+        prompt: 'select_account',
+      },
+    },
+  })
+}
+
 export function upsertOwnProfile({ fullName, role, avatarUrl, email }) {
   return supabase.rpc('upsert_own_profile', {
     p_full_name: fullName || null,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase, upsertOwnDriverProfile, upsertOwnProfile } from '../lib/supabase'
+import { signInWithGoogle, supabase, upsertOwnDriverProfile, upsertOwnProfile } from '../lib/supabase'
 import logo from '../assets/logo.png'
 
 const CAMERA_CONSTRAINTS = [
@@ -622,6 +622,28 @@ export default function Register() {
     }
   }
 
+  async function handleGoogleRegister() {
+    setErrorMessage('')
+
+    try {
+      setBusy(true)
+      setStep('loading')
+
+      const { error } = await signInWithGoogle()
+
+      if (error) {
+        setErrorMessage(error.message || 'No pude registrar con Google.')
+        setStep('name')
+      }
+    } catch (err) {
+      console.error(err)
+      setErrorMessage('No pude registrar con Google. RevisÃ¡ la configuraciÃ³n en Supabase.')
+      setStep('name')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="login-screen">
       <div className="login-phone">
@@ -657,6 +679,16 @@ export default function Register() {
 
           {step === 'name' && (
             <form className="login-step-form" onSubmit={nextFromName}>
+              <button
+                type="button"
+                className="login-google-btn"
+                onClick={handleGoogleRegister}
+                disabled={busy}
+              >
+                <span>G</span>
+                {busy ? 'Conectando...' : 'Continuar con Google'}
+              </button>
+
               <input
                 autoFocus
                 placeholder="Tu nombre"
