@@ -6,6 +6,7 @@ const MAPBOX_TOKEN =
   import.meta.env.VITE_MAPBOX_TOKEN || ''
 const MAPBOX_JS = 'https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js'
 const MAPBOX_CSS = 'https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css'
+const MAP_STYLE = 'mapbox://styles/mapbox/dark-v11'
 
 function loadMapbox() {
   if (!MAPBOX_TOKEN) {
@@ -208,6 +209,38 @@ function makeRouteFeature(points) {
   }
 }
 
+function makeTrafficRouteFeature(routeData, fallbackPoints) {
+  const coordinates = routeData?.geometry?.coordinates || []
+  const congestion = routeData?.legs?.flatMap((leg) => leg.annotation?.congestion || []) || []
+
+  if (coordinates.length < 2) return makeRouteFeature(fallbackPoints)
+
+  if (!congestion.length) {
+    return {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates,
+      },
+      properties: {},
+    }
+  }
+
+  return {
+    type: 'FeatureCollection',
+    features: coordinates.slice(0, -1).map((coordinate, index) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [coordinate, coordinates[index + 1]],
+      },
+      properties: {
+        congestion: congestion[index] || 'unknown',
+      },
+    })),
+  }
+}
+
 function createMarkerElement(className, content) {
   const element = document.createElement('button')
   element.type = 'button'
@@ -234,7 +267,7 @@ export default function InteractiveRouteMap({
   onRouteUpdate,
 }) {
   const [is3d, setIs3d] = useState(true)
-  const [showTraffic, setShowTraffic] = useState(true)
+  const [showTraffic, setShowTraffic] = useState(false)
   const [mapReady, setMapReady] = useState(false)
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
@@ -281,7 +314,7 @@ export default function InteractiveRouteMap({
         mapboxgl.accessToken = MAPBOX_TOKEN
         const map = new mapboxgl.Map({
           container: mapContainerRef.current,
-          style: 'mapbox://styles/mapbox/navigation-night-v1',
+          style: MAP_STYLE,
           center: toLngLat(isValidCoord(origin) ? origin : { lat: -25.5167, lng: -54.6167 }),
           zoom: navigationMode ? 18.2 : 14.1,
           pitch: is3d ? (navigationMode ? 72 : 64) : 0,
@@ -331,7 +364,21 @@ export default function InteractiveRouteMap({
             source: 'michofer-route',
             layout: { 'line-cap': 'round', 'line-join': 'round' },
             paint: {
-              'line-color': '#1f7aff',
+              'line-color': [
+                'match',
+                ['get', 'congestion'],
+                'low',
+                '#22c55e',
+                'moderate',
+                '#f59e0b',
+                'heavy',
+                '#f97316',
+                'severe',
+                '#ef233c',
+                'unknown',
+                '#38bdf8',
+                '#1f7aff',
+              ],
               'line-width': 5,
             },
           })
@@ -523,7 +570,8 @@ export default function InteractiveRouteMap({
 
     const coordinates = waypoints.map((point) => toLngLat(point).join(',')).join(';')
     const routeProfile = showTraffic ? 'driving-traffic' : 'driving'
-    const url = `https://api.mapbox.com/directions/v5/mapbox/${routeProfile}/${coordinates}?geometries=geojson&overview=full&steps=true&language=es&access_token=${MAPBOX_TOKEN}`
+    const annotations = showTraffic ? '&annotations=congestion' : ''
+    const url = `https://api.mapbox.com/directions/v5/mapbox/${routeProfile}/${coordinates}?geometries=geojson&overview=full&steps=true${annotations}&language=es&access_token=${MAPBOX_TOKEN}`
 
     fetch(url)
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error('Directions failed'))))
@@ -533,7 +581,9 @@ export default function InteractiveRouteMap({
         const route = routeData?.geometry
         map.getSource('michofer-route').setData(
           route
-            ? { type: 'Feature', geometry: route, properties: {} }
+            ? showTraffic
+              ? makeTrafficRouteFeature(routeData, waypoints)
+              : { type: 'Feature', geometry: route, properties: {} }
             : makeRouteFeature(waypoints)
         )
         onRouteUpdate?.({
@@ -588,6 +638,7 @@ export default function InteractiveRouteMap({
           type="button"
           className={showTraffic ? 'active' : ''}
           onClick={() => setShowTraffic((value) => !value)}
+          title={destination ? 'Calcular ruta con trafico' : 'Elegi destino para calcular trafico'}
         >
           <Navigation size={16} />
           Trafico
