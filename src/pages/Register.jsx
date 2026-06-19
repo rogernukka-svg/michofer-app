@@ -189,7 +189,7 @@ export default function Register() {
 
     if (step === 'start') return 'Crea tu cuenta.'
     if (step === 'name') return 'Tu nombre'
-    if (step === 'role') return '¿Cómo usarás michofer?'
+    if (step === 'role') return 'Como queres usar MiChofer'
     if (step === 'photo') return role === 'driver' ? 'Verificación de chofer' : 'Tu perfil'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Creá tu clave'
@@ -202,7 +202,7 @@ export default function Register() {
     if (knownUser?.email && step === 'start') return 'Este dispositivo ya usó MiChofer.'
     if (step === 'start') return 'Entrá con Google o completá tus datos.'
     if (step === 'name') return 'Decinos cómo querés aparecer.'
-    if (step === 'role') return 'Elegí tu experiencia.'
+    if (step === 'role') return 'Elegi si vas a viajar o manejar.'
     if (step === 'photo') {
       return role === 'driver'
         ? 'Tu foto ayuda a que el pasajero viaje con confianza.'
@@ -746,7 +746,7 @@ export default function Register() {
                 className="login-choice-btn"
                 onClick={() => nextFromRole('passenger')}
               >
-                Necesito viajar
+                Viajar como pasajero
               </button>
 
               <button
@@ -754,7 +754,7 @@ export default function Register() {
                 className="login-choice-btn"
                 onClick={() => nextFromRole('driver')}
               >
-                Soy chofer
+                Registrarme como chofer
               </button>
 
               <button

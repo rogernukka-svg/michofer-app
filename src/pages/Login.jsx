@@ -335,7 +335,7 @@ export default function Login() {
     if (step === 'welcome') return 'Movilidad conectada.'
     if (step === 'email') return 'Entrar con correo'
     if (step === 'password') return 'Tu clave'
-    if (step === 'role') return 'Elegi tu perfil'
+    if (step === 'role') return 'Como queres usar MiChofer'
     if (step === 'driverDetails') return 'Datos de chofer'
     if (step === 'loading') return 'Entrando...'
 
@@ -351,7 +351,7 @@ export default function Login() {
     if (step === 'email') return 'Usa tu correo y clave de MiChofer.'
     if (step === 'password') return 'Ultimo paso y seguimos.'
     if (step === 'role') return 'Google ya valido tu identidad. Ahora elegi como vas a usar MiChofer.'
-    if (step === 'driverDetails') return 'Estos datos ayudan al pasajero a identificarte antes del viaje.'
+    if (step === 'driverDetails') return 'Carga tus datos. Admin aprueba tu perfil antes de que recibas viajes.'
     if (step === 'loading') return 'Verificando acceso.'
 
     return ''
@@ -824,7 +824,7 @@ export default function Login() {
                 onClick={() => handleRoleChoice('passenger')}
                 disabled={busy}
               >
-                Necesito viajar
+                Viajar como pasajero
               </button>
 
               <button
@@ -833,7 +833,7 @@ export default function Login() {
                 onClick={() => handleRoleChoice('driver')}
                 disabled={busy}
               >
-                Soy chofer
+                Registrarme como chofer
               </button>
 
               <button
@@ -908,7 +908,7 @@ export default function Login() {
                 disabled={busy}
                 type="submit"
               >
-                {busy ? 'Guardando...' : 'Guardar y entrar'}
+                {busy ? 'Guardando...' : 'Enviar perfil'}
               </button>
 
               <button

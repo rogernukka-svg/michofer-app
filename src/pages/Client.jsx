@@ -21,9 +21,19 @@ import {
   getOwnProfile,
   getProfilePreviewByEmail,
   requestTrip,
+  requestWomenMode,
   supabase,
   upsertOwnProfile,
 } from '../lib/supabase'
+import {
+  RIDE_CATEGORY_OPTIONS,
+  canUseWomenMode,
+  getRideCategoryDbCode,
+  getRideCategoryMeta,
+  getWomenModeStatus,
+  isWomenDriver,
+  matchesRideCategory,
+} from '../lib/rideCategories'
 import {
   getPlaceSearchText,
   getPlaceSubtitle,
@@ -133,10 +143,6 @@ async function findStoredAvatarUrl(userId) {
   return publicUrlData?.publicUrl || ''
 }
 
-function isWomenDriver(driver) {
-  return driver?.women_mode || driver?.gender === 'female' || driver?.gender === 'mujer'
-}
-
 function normalizeDriver(driver, location) {
   const lat = Number(driver.lat)
   const lng = Number(driver.lng)
@@ -189,6 +195,8 @@ export default function Client() {
   const [message, setMessage] = useState('')
   const [showMenu, setShowMenu] = useState(false)
   const [showDriverChooser, setShowDriverChooser] = useState(false)
+  const [categorySheet, setCategorySheet] = useState(null)
+  const [womenRequesting, setWomenRequesting] = useState(false)
   const [activeTrip, setActiveTrip] = useState(null)
   const [activeTripDriver, setActiveTripDriver] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
@@ -206,6 +214,8 @@ export default function Client() {
   )
   const routePrice = useMemo(() => estimatePrice(routeKm), [routeKm])
   const accountEmail = user?.email || profile?.email || localStorage.getItem('michofer_last_email') || ''
+  const selectedModeMeta = useMemo(() => getRideCategoryMeta(mode), [mode])
+  const womenModeStatus = getWomenModeStatus(profile)
   const destinationSuggestions = useMemo(
     () => searchLocalPlaces(destination, localPlaces, 6),
     [destination, localPlaces]
@@ -347,7 +357,7 @@ export default function Client() {
   }, [activeTrip?.id, user?.id])
 
   const visibleDrivers = useMemo(() => {
-    const filtered = mode === 'women' ? drivers.filter(isWomenDriver) : [...drivers]
+    const filtered = drivers.filter((driver) => matchesRideCategory(driver, mode))
 
     if (sort === 'rating') {
       filtered.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
@@ -370,7 +380,7 @@ export default function Client() {
 
     setSelectedDriver(null)
     setMessage('Ese chofer ya no está disponible. Elegí otro.')
-  }, [drivers, mode, sort])
+  }, [selectedDriver, visibleDrivers])
 
   async function init() {
     setLoading(true)
@@ -754,7 +764,8 @@ export default function Client() {
       routeKm,
       price: routePrice,
       paymentMethod,
-      womenMode: mode === 'women',
+      womenMode: mode === 'ella',
+      rideCategory: getRideCategoryDbCode(mode),
     })
     setRequesting(false)
 
@@ -765,6 +776,52 @@ export default function Client() {
 
     setActiveTrip(data)
     setActiveTripDriver(selectedDriver)
+  }
+
+  function handleModeSelect(nextMode) {
+    if (nextMode === 'ella' && !canUseWomenMode(profile)) {
+      setCategorySheet(getRideCategoryMeta('ella'))
+      return
+    }
+
+    setMode(nextMode)
+    setSelectedDriver(null)
+    setMessage('')
+  }
+
+  async function handleWomenModeRequest() {
+    if (!user) {
+      window.location.href = '/login'
+      return
+    }
+
+    if (canUseWomenMode(profile)) {
+      setMode('ella')
+      setSelectedDriver(null)
+      setCategorySheet(null)
+      return
+    }
+
+    try {
+      setWomenRequesting(true)
+      const { data, error } = await requestWomenMode('woman')
+
+      if (error) throw error
+
+      setProfile((current) => ({
+        ...(current || {}),
+        ...(data || {}),
+        women_mode_requested: true,
+        women_mode_status: data?.women_mode_status || 'requested',
+      }))
+      setCategorySheet(null)
+      setMessage('Solicitud enviada. MiChofer Ella se activa cuando admin verifica tu perfil.')
+    } catch (error) {
+      console.error('WOMEN MODE REQUEST ERROR:', error)
+      setMessage('No pude solicitar MiChofer Ella. Revisa que hayas corrido la migracion nueva en Supabase.')
+    } finally {
+      setWomenRequesting(false)
+    }
   }
 
   function chooseDestinationSuggestion(place) {
@@ -821,7 +878,7 @@ export default function Client() {
 
   return (
     <main className="app-shell">
-      <section className={mode === 'women' ? 'phone client-phone women-client-mode' : 'phone client-phone'}>
+      <section className={mode === 'ella' ? 'phone client-phone women-client-mode' : 'phone client-phone'}>
         <header className="client-top premium-map-header">
           <section className="map-search-bar" aria-label="Elegir destino">
             <MapPin className="map-search-icon" size={18} />
@@ -946,13 +1003,18 @@ export default function Client() {
 
         {!showMenu && !showDriverChooser && !selectedDriver && !activeTrip && (
           <div className="client-bottom-quickbar" aria-label="Acciones rápidas del cliente">
-            <button type="button" className={mode === 'all' ? 'active' : ''} onClick={() => setMode('all')}>
-              Todos
-            </button>
-
-            <button type="button" className={mode === 'women' ? 'active women' : 'women'} onClick={() => setMode('women')}>
-              Solo para ellas
-            </button>
+            <div className="ride-category-strip">
+              {RIDE_CATEGORY_OPTIONS.map((category) => (
+                <button
+                  key={category.code}
+                  type="button"
+                  className={mode === category.code ? `active ${category.code}` : category.code}
+                  onClick={() => handleModeSelect(category.code)}
+                >
+                  {category.shortLabel}
+                </button>
+              ))}
+            </div>
 
             <button
               type="button"
@@ -1033,13 +1095,15 @@ export default function Client() {
               </div>
 
               <div className="filters-row">
-                <button className={mode === 'all' ? 'active' : ''} onClick={() => setMode('all')}>
-                  Todos
-                </button>
-
-                <button className={mode === 'women' ? 'active' : ''} onClick={() => setMode('women')}>
-                  Solo para ellas
-                </button>
+                {RIDE_CATEGORY_OPTIONS.map((category) => (
+                  <button
+                    key={category.code}
+                    className={mode === category.code ? `active ${category.code}` : category.code}
+                    onClick={() => handleModeSelect(category.code)}
+                  >
+                    {category.shortLabel}
+                  </button>
+                ))}
 
                 <button className={sort === 'rating' ? 'active icon-text' : 'icon-text'} onClick={() => setSort('rating')}>
                   <SlidersHorizontal size={16} />
@@ -1052,10 +1116,13 @@ export default function Client() {
                 </button>
               </div>
 
-              {mode === 'women' && (
+              {mode !== 'all' && (
                 <div className="safety-message">
                   <ShieldCheck size={17} />
-                  Viajes con más confianza: elegí choferes mujeres disponibles cerca.
+                  <span>
+                    <strong>{selectedModeMeta.title}</strong>
+                    {selectedModeMeta.description}
+                  </span>
                 </div>
               )}
 
@@ -1071,8 +1138,8 @@ export default function Client() {
                 <div className="empty-state">Cargando choferes verificados...</div>
               ) : visibleDrivers.length === 0 ? (
                 <div className="empty-state">
-                  {mode === 'women'
-                    ? 'No hay choferes mujeres disponibles cerca en este momento. Podés ampliar el radio o volver a ver todos los choferes.'
+                  {mode === 'ella'
+                    ? 'No hay conductoras verificadas para MiChofer Ella cerca en este momento. Podes volver a Todos.'
                     : 'No hay choferes disponibles ahora. Probá otro filtro.'}
                 </div>
               ) : (
@@ -1092,7 +1159,7 @@ export default function Client() {
                         <div className="driver-name-row">
                           <strong>{driver.name}</strong>
                           {driver.verified && <CheckCircle2 size={16} />}
-                          {isWomenDriver(driver) && <em>Solo para ellas</em>}
+                          {isWomenDriver(driver) && <em>Ella</em>}
                         </div>
 
                         {driver.vehicle && <span>{driver.vehicle}</span>}
@@ -1147,6 +1214,52 @@ export default function Client() {
                   <ChevronRight size={20} />
                 </button>
               )}
+            </section>
+          </div>
+        )}
+
+        {categorySheet && (
+          <div className="category-mode-backdrop" onClick={() => setCategorySheet(null)}>
+            <section className="category-mode-sheet" onClick={(event) => event.stopPropagation()}>
+              <div className="sheet-handle" />
+              <p className="eyebrow">MODO DE VIAJE</p>
+              <h2>{categorySheet.title}</h2>
+              <p>{categorySheet.description}</p>
+
+              {categorySheet.bullets?.length > 0 && (
+                <ul className="category-proof-list">
+                  {categorySheet.bullets.map((item) => (
+                    <li key={item}>
+                      <ShieldCheck size={15} />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {categorySheet.code === 'ella' && womenModeStatus === 'requested' && (
+                <div className="notice-card">Tu solicitud de MiChofer Ella esta en revision.</div>
+              )}
+
+              <button
+                type="button"
+                className="main-btn request-btn"
+                onClick={categorySheet.code === 'ella' ? handleWomenModeRequest : () => handleModeSelect(categorySheet.code)}
+                disabled={womenRequesting || (categorySheet.code === 'ella' && womenModeStatus === 'requested')}
+              >
+                {categorySheet.code === 'ella'
+                  ? womenModeStatus === 'requested'
+                    ? 'En revision'
+                    : womenRequesting
+                      ? 'Enviando...'
+                      : 'Solicitar verificacion'
+                  : categorySheet.cta}
+                <ChevronRight size={20} />
+              </button>
+
+              <button type="button" className="login-text-btn" onClick={() => setCategorySheet(null)}>
+                Cerrar
+              </button>
             </section>
           </div>
         )}

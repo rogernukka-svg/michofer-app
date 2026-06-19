@@ -60,6 +60,35 @@ export function getAvailableDrivers() {
   return supabase.rpc('get_available_drivers')
 }
 
+export function requestWomenMode(genderIdentity = 'woman') {
+  return supabase.rpc('request_women_mode', {
+    p_gender_identity: genderIdentity || 'woman',
+  })
+}
+
+export function requestDriverCategory(categoryCode) {
+  return supabase.rpc('request_driver_category', {
+    p_category_code: categoryCode,
+  })
+}
+
+export function adminReviewDriverCategory({ workerId, categoryCode, decision, reason }) {
+  return supabase.rpc('admin_review_driver_category', {
+    p_worker_id: workerId,
+    p_category_code: categoryCode,
+    p_decision: decision,
+    p_reason: reason || null,
+  })
+}
+
+export function adminReviewWomenMode({ userId, decision, reason }) {
+  return supabase.rpc('admin_review_women_mode', {
+    p_user_id: userId,
+    p_decision: decision,
+    p_reason: reason || null,
+  })
+}
+
 function isLocalBrowser() {
   if (typeof window === 'undefined') return false
   return ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -105,7 +134,16 @@ export async function getAvailableDriversViaLocalProxy() {
   }
 }
 
-export function requestTrip({
+function isMissingRideCategoryArg(error) {
+  const message = String(error?.message || error?.details || '').toLowerCase()
+  return (
+    error?.code === 'PGRST202' ||
+    message.includes('p_ride_category') ||
+    message.includes('could not find the function')
+  )
+}
+
+export async function requestTrip({
   driverId,
   destinationText,
   destinationLat,
@@ -118,8 +156,9 @@ export function requestTrip({
   price,
   paymentMethod,
   womenMode,
+  rideCategory,
 }) {
-  return supabase.rpc('request_trip', {
+  const payload = {
     p_driver_id: driverId,
     p_destination_text: destinationText,
     p_destination_lat: Number.isFinite(Number(destinationLat)) ? Number(destinationLat) : null,
@@ -132,7 +171,18 @@ export function requestTrip({
     p_price: Number.isFinite(Number(price)) ? Number(price) : null,
     p_payment_method: paymentMethod || 'cash',
     p_women_mode: Boolean(womenMode),
+  }
+
+  const result = await supabase.rpc('request_trip', {
+    ...payload,
+    p_ride_category: rideCategory || (womenMode ? 'ella' : 'auto_standard'),
   })
+
+  if (result.error && isMissingRideCategoryArg(result.error)) {
+    return supabase.rpc('request_trip', payload)
+  }
+
+  return result
 }
 
 export function getOwnDriverTrips() {

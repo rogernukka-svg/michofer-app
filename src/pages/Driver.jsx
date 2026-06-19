@@ -20,10 +20,16 @@ import {
   getOwnDriverTrips,
   getOwnDriverProfile,
   getOwnProfile,
+  requestDriverCategory,
   supabase,
   updateOwnDriverStatus,
   upsertOwnDriverProfile,
 } from '../lib/supabase'
+import {
+  DRIVER_CATEGORY_ACTIONS,
+  categoryStatusLabel,
+  getDriverCategoryStatus,
+} from '../lib/rideCategories'
 
 const ACTIVE_STATUSES = ['pending', 'accepted', 'arriving', 'in_progress']
 const LOCATION_STATUSES = ['accepted', 'arriving', 'in_progress']
@@ -91,6 +97,24 @@ function navigationCopy(status) {
   return ['Preparando ruta', 'Viaje activo']
 }
 
+function normalizeTextArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean).map((item) => String(item).trim())
+  if (!value) return []
+
+  return String(value)
+    .replace(/[{}"]/g, '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function verificationCopy(status, approved) {
+  if (approved) return ['Perfil aprobado', 'Ya podes recibir viajes.']
+  if (status === 'rejected') return ['Perfil rechazado', 'Corregi tus datos y volve a enviar la revision.']
+  if (status === 'submitted') return ['Perfil en revision', 'Admin revisa tus datos antes de activar viajes.']
+  return ['Perfil incompleto', 'Carga tus datos y documentos para empezar.']
+}
+
 export default function Driver() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -119,7 +143,9 @@ export default function Driver() {
     }
   }, [user?.id])
 
-  const approved = true
+  const verificationStatus = driverProfile?.verification_status || 'incomplete'
+  const approved = driverProfile?.verified === true && verificationStatus === 'approved'
+  const [verificationTitle, verificationSubtitle] = verificationCopy(verificationStatus, approved)
   const isOnline = driverProfile?.is_online === true
   const isAvailable = driverProfile?.is_available === true
   const hasDriverLocation =
@@ -233,16 +259,6 @@ export default function Driver() {
       })
 
       if (updatedDriver) driverData = updatedDriver
-    }
-
-    if (driverData?.user_id && driverData.verified !== true) {
-      const { data: approvedDriver } = await upsertOwnDriverProfile({
-        fullName: driverData.full_name || fallbackName,
-        avatarUrl: driverData.avatar_url || fallbackAvatar,
-        email: driverData.email || currentUser.email,
-      })
-
-      if (approvedDriver) driverData = approvedDriver
     }
 
     setDriverProfile(driverData || null)
@@ -381,6 +397,41 @@ export default function Driver() {
     }
   }
 
+  async function requestCategory(categoryCode) {
+    if (!driverProfile?.user_id) {
+      setMessage('Primero guarda tu perfil de chofer.')
+      return
+    }
+
+    if (!approved) {
+      setMessage('Primero admin debe aprobar tu perfil base. Despues podes activar mas categorias.')
+      return
+    }
+
+    const { data, error } = await requestDriverCategory(categoryCode)
+
+    if (error) {
+      console.error('DRIVER CATEGORY REQUEST ERROR:', error)
+      setMessage('No pude solicitar esa categoria. Ejecuta supabase/michofer_mobility_foundation.sql y recarga.')
+      return
+    }
+
+    setDriverProfile((current) => {
+      const requested = normalizeTextArray(current?.requested_categories)
+      const nextRequested = requested.includes(categoryCode) ? requested : [...requested, categoryCode]
+
+      return {
+        ...(current || {}),
+        requested_categories: nextRequested,
+        women_driver_requested: categoryCode === 'ella' ? true : current?.women_driver_requested,
+        women_driver_status: categoryCode === 'ella' ? 'requested' : current?.women_driver_status,
+        premium_status: categoryCode === 'premium' ? 'requested' : current?.premium_status,
+      }
+    })
+
+    setMessage(data?.status === 'approved' ? 'Categoria ya aprobada.' : 'Solicitud enviada. Admin la revisa antes de activarla.')
+  }
+
   async function updateTrip(trip, status) {
     const location = await getCurrentLocation()
     const { error } = await supabase
@@ -498,7 +549,7 @@ export default function Driver() {
               </div>
               <div className={approved ? 'verify-badge ok' : 'verify-badge'}>
                 <ShieldCheck size={18} />
-                Perfil listo
+                {verificationTitle}
               </div>
             </section>
 
@@ -509,6 +560,7 @@ export default function Driver() {
                 type="button"
                 className={isOnline ? 'status-tile active online-action' : 'status-tile online-action'}
                 onClick={() => updateAvailability(!isOnline, !isOnline)}
+                disabled={!approved}
               >
                 {isOnline ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
                 <span>{isOnline ? 'Conectado' : 'Conectarme'}</span>
@@ -518,7 +570,7 @@ export default function Driver() {
                 type="button"
                 className={isReceivingTrips ? 'status-tile active red' : 'status-tile'}
                 onClick={() => updateAvailability(true, !isAvailable)}
-                disabled={!isOnline && !isAvailable}
+                disabled={!approved || (!isOnline && !isAvailable)}
               >
                 <CarFront size={26} />
                 <span>{isReceivingTrips ? 'Recibiendo viajes' : isAvailable ? 'Calibrando' : 'Recibir viajes'}</span>
@@ -531,6 +583,8 @@ export default function Driver() {
                 <strong>
                   {focusTrip
                     ? statusLabel(focusTrip.status)
+                    : !approved
+                      ? verificationSubtitle
                     : isReceivingTrips
                       ? 'Esperando solicitud'
                       : isOnline && !hasDriverLocation
@@ -567,6 +621,43 @@ export default function Driver() {
                     <CarFront size={16} /> Ir al destino
                   </a>
                 )}
+              </div>
+            </section>
+
+            <section className="driver-category-panel">
+              <div className="section-title compact">
+                <h2>Tus categorias</h2>
+                <span>{approved ? 'Activas y pendientes' : 'Bloqueadas hasta aprobacion'}</span>
+              </div>
+
+              <div className="driver-category-grid">
+                {DRIVER_CATEGORY_ACTIONS.map((category) => {
+                  const status = getDriverCategoryStatus(driverProfile, category.code)
+                  const disabled = !approved || status === 'approved' || status === 'requested'
+
+                  return (
+                    <article key={category.code} className={`driver-category-card ${status}`}>
+                      <div>
+                        <strong>{category.title}</strong>
+                        <p>{category.description}</p>
+                      </div>
+
+                      <span className="driver-category-status">{categoryStatusLabel(status)}</span>
+
+                      <button
+                        type="button"
+                        onClick={() => requestCategory(category.code)}
+                        disabled={disabled}
+                      >
+                        {status === 'approved'
+                          ? 'Aprobada'
+                          : status === 'requested'
+                            ? 'En revision'
+                            : category.button}
+                      </button>
+                    </article>
+                  )
+                })}
               </div>
             </section>
 

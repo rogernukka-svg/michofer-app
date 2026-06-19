@@ -10,7 +10,8 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { adminReviewDriverCategory, adminReviewWomenMode, supabase } from '../lib/supabase'
+import { categoryStatusLabel, getRideCategoryMeta } from '../lib/rideCategories'
 
 const DOCUMENT_LABELS = {
   driver_license: 'Licencia de conducir',
@@ -47,6 +48,8 @@ export default function Admin() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState('submitted')
   const [expandedDocs, setExpandedDocs] = useState({})
+  const [categoryRequests, setCategoryRequests] = useState([])
+  const [womenRequests, setWomenRequests] = useState([])
 
   useEffect(() => {
     loadDrivers()
@@ -110,6 +113,31 @@ export default function Admin() {
       setMessage('No pude cargar choferes. Revisá permisos RLS de admin.')
       setLoading(false)
       return
+    }
+
+    const { data: categoryData, error: categoryError } = await supabase
+      .from('category_approval_requests')
+      .select('*')
+      .order('updated_at', { ascending: false })
+
+    if (categoryError) {
+      console.warn('ADMIN CATEGORY REQUESTS LOAD ERROR:', categoryError)
+      setCategoryRequests([])
+    } else {
+      setCategoryRequests(categoryData || [])
+    }
+
+    const { data: womenData, error: womenError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('women_mode_status', 'requested')
+      .order('updated_at', { ascending: false })
+
+    if (womenError) {
+      console.warn('ADMIN WOMEN REQUESTS LOAD ERROR:', womenError)
+      setWomenRequests([])
+    } else {
+      setWomenRequests(womenData || [])
     }
 
     if (!data?.length) {
@@ -213,6 +241,45 @@ export default function Admin() {
     setMessage(approved ? 'Chofer aprobado. Ya puede comenzar viajes.' : 'Chofer rechazado. Queda bloqueado para recibir viajes.')
   }
 
+  async function updateCategoryRequest(request, decision) {
+    setMessage('')
+
+    const { error } = await adminReviewDriverCategory({
+      workerId: request.worker_id,
+      categoryCode: request.category_code,
+      decision,
+      reason: decision === 'approved' ? null : 'Rechazado desde panel admin',
+    })
+
+    if (error) {
+      console.error('ADMIN CATEGORY REVIEW ERROR:', error)
+      setMessage('No pude revisar la categoria. Ejecuta supabase/michofer_mobility_foundation.sql y revisa permisos admin.')
+      return
+    }
+
+    setMessage(decision === 'approved' ? 'Categoria aprobada.' : 'Categoria rechazada.')
+    await loadDrivers()
+  }
+
+  async function updateWomenRequest(profileRequest, decision) {
+    setMessage('')
+
+    const { error } = await adminReviewWomenMode({
+      userId: profileRequest.id,
+      decision,
+      reason: decision === 'approved' ? null : 'Rechazado desde panel admin',
+    })
+
+    if (error) {
+      console.error('ADMIN WOMEN REVIEW ERROR:', error)
+      setMessage('No pude revisar MiChofer Ella. Ejecuta supabase/michofer_mobility_foundation.sql y revisa permisos admin.')
+      return
+    }
+
+    setMessage(decision === 'approved' ? 'Acceso Ella aprobado.' : 'Acceso Ella rechazado.')
+    await loadDrivers()
+  }
+
   function filterTitle() {
     if (filterStatus === 'approved') return 'Aprobados'
     if (filterStatus === 'rejected') return 'Rechazados'
@@ -293,6 +360,87 @@ export default function Admin() {
           <strong>{adminUser?.email || 'Sin sesión'}</strong>
           <span>Rol: {adminProfile?.role || 'sin perfil visible'}</span>
         </section>
+
+        {womenRequests.length > 0 && (
+          <section className="admin-list">
+            <div className="admin-list-title">
+              <strong>MiChofer Ella pasajeras</strong>
+              <span>{womenRequests.length} pendiente{womenRequests.length === 1 ? '' : 's'}</span>
+            </div>
+
+            {womenRequests.map((request) => (
+              <article key={request.id} className="admin-driver-card admin-category-review-card">
+                <div className="admin-driver-head">
+                  <div>
+                    <span className="admin-status submitted">En revision</span>
+                    <h2>{request.full_name || request.email || 'Pasajera MiChofer'}</h2>
+                    <p>Solicito acceso a viajes con conductoras verificadas.</p>
+                  </div>
+                </div>
+
+                <div className="admin-driver-meta">
+                  <span>{request.email || 'Sin correo'}</span>
+                  <span>Genero privado</span>
+                  <span>{request.women_mode_status || 'requested'}</span>
+                </div>
+
+                <div className="admin-actions">
+                  <button className="approve" type="button" onClick={() => updateWomenRequest(request, 'approved')}>
+                    Aprobar Ella
+                  </button>
+                  <button className="reject" type="button" onClick={() => updateWomenRequest(request, 'rejected')}>
+                    Rechazar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
+        )}
+
+        {categoryRequests.filter((request) => ['requested', 'in_review'].includes(request.status)).length > 0 && (
+          <section className="admin-list">
+            <div className="admin-list-title">
+              <strong>Categorias de chofer</strong>
+              <span>
+                {categoryRequests.filter((request) => ['requested', 'in_review'].includes(request.status)).length} pendiente
+              </span>
+            </div>
+
+            {categoryRequests
+              .filter((request) => ['requested', 'in_review'].includes(request.status))
+              .map((request) => {
+                const driver = drivers.find((item) => item.user_id === request.worker_id)
+                const meta = getRideCategoryMeta(request.category_code)
+
+                return (
+                  <article key={request.id} className="admin-driver-card admin-category-review-card">
+                    <div className="admin-driver-head">
+                      <div>
+                        <span className="admin-status submitted">{categoryStatusLabel('requested')}</span>
+                        <h2>{meta.title}</h2>
+                        <p>{driver?.full_name || 'Chofer MiChofer'} quiere activar esta categoria.</p>
+                      </div>
+                    </div>
+
+                    <div className="admin-driver-meta">
+                      <span>{driver?.email || 'Sin correo visible'}</span>
+                      <span>{driver?.car_brand || 'Vehiculo'} {driver?.car_model || ''}</span>
+                      <span>{driver?.plate || 'Sin matricula'}</span>
+                    </div>
+
+                    <div className="admin-actions">
+                      <button className="approve" type="button" onClick={() => updateCategoryRequest(request, 'approved')}>
+                        Aprobar categoria
+                      </button>
+                      <button className="reject" type="button" onClick={() => updateCategoryRequest(request, 'rejected')}>
+                        Rechazar
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+          </section>
+        )}
 
         {loading ? (
           <section className="admin-empty">Cargando choferes...</section>

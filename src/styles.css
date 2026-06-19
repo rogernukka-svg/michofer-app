@@ -4618,7 +4618,7 @@ body.route-driver .logout-button {
   }
 }
 
-/* Solo para ellas: identidad rosa glass en toda la experiencia cliente */
+/* MiChofer Ella: identidad rosa glass en toda la experiencia cliente */
 body.route-client .women-client-mode::before {
   content: '';
   position: absolute;
@@ -8538,4 +8538,357 @@ body.route-client .active-trip-card {
 body.route-client .driver-panel-backdrop,
 body.route-client .side-backdrop {
   z-index: 120 !important;
+}
+
+/* MiChofer product layer: auth, ride categories, driver approvals. */
+body.route-login .login-screen,
+body.route-registro .login-screen {
+  background:
+    radial-gradient(circle at 18% 22%, rgba(169, 40, 56, 0.2), transparent 32%),
+    radial-gradient(circle at 84% 18%, rgba(28, 151, 148, 0.2), transparent 30%),
+    linear-gradient(180deg, #20262c 0%, #0b1015 54%, #06090d 100%) !important;
+}
+
+body.route-login .login-phone,
+body.route-registro .login-phone {
+  background: transparent !important;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  width: min(100%, 430px) !important;
+  min-height: min(760px, calc(100svh - 8px)) !important;
+  border-radius: clamp(24px, 7vw, 34px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02) 46%, rgba(0, 0, 0, 0.18)),
+    rgba(11, 16, 21, 0.88) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+body.route-login .login-panel::before,
+body.route-login .login-panel::after,
+body.route-registro .login-panel::before,
+body.route-registro .login-panel::after {
+  display: none !important;
+}
+
+body.route-login .login-hero-logo,
+body.route-registro .login-hero-logo {
+  width: 92px !important;
+  height: 92px !important;
+  padding: 16px !important;
+  border-radius: 25px !important;
+  background:
+    linear-gradient(145deg, #f5f6f7 0%, #cdd1d4 52%, #858c92 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.76) !important;
+  box-shadow:
+    0 18px 38px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+body.route-login .login-hero-logo img,
+body.route-registro .login-hero-logo img {
+  width: 72% !important;
+  max-height: 72% !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.24)) !important;
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  max-width: 330px !important;
+  font-size: clamp(30px, 8.2vw, 38px) !important;
+  line-height: 1.04 !important;
+  letter-spacing: 0 !important;
+  text-wrap: balance;
+}
+
+body.route-login .login-subtitle,
+body.route-registro .login-subtitle {
+  max-width: 330px !important;
+  font-size: clamp(14px, 3.5vw, 16px) !important;
+  line-height: 1.38 !important;
+  color: rgba(247, 249, 250, 0.74) !important;
+}
+
+body.route-login .auth-action-stack,
+body.route-registro .auth-action-stack,
+body.route-login .login-step-form,
+body.route-registro .login-step-form {
+  width: min(100%, 390px) !important;
+  gap: 12px !important;
+}
+
+body.route-login .login-google-btn,
+body.route-registro .login-google-btn,
+body.route-login .login-main-btn,
+body.route-registro .login-main-btn,
+body.route-login .login-choice-btn,
+body.route-registro .login-choice-btn {
+  min-height: 58px !important;
+  border-radius: 22px !important;
+  font-size: 15px !important;
+  font-weight: 820 !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-login .login-google-btn,
+body.route-registro .login-google-btn {
+  background: #f7f8fa !important;
+  color: #101820 !important;
+  border-color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body.route-login .google-mark,
+body.route-registro .google-mark {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.route-login .login-main-btn.auth-mail-btn,
+body.route-registro .login-main-btn.auth-mail-btn,
+body.route-login .login-choice-btn,
+body.route-registro .login-choice-btn {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.045)),
+    rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.route-client .client-bottom-quickbar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(116px, 0.62fr) !important;
+  gap: 8px !important;
+  min-height: 64px !important;
+  height: auto !important;
+  padding: 8px !important;
+}
+
+body.route-client .ride-category-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+body.route-client .ride-category-strip::-webkit-scrollbar {
+  display: none;
+}
+
+body.route-client .ride-category-strip button {
+  flex: 0 0 auto;
+  min-width: 58px !important;
+  min-height: 42px !important;
+  padding: 0 12px !important;
+  border-radius: 17px !important;
+  white-space: nowrap;
+}
+
+body.route-client .ride-category-strip button.active {
+  background: #f7f8fa !important;
+  color: #111820 !important;
+}
+
+body.route-client .client-bottom-quickbar .primary-destination-chip {
+  min-width: 116px !important;
+  min-height: 42px !important;
+  border-radius: 17px !important;
+  padding: 0 12px !important;
+}
+
+body.route-client .category-mode-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 150;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+  background: rgba(2, 5, 8, 0.42);
+  backdrop-filter: blur(14px);
+}
+
+body.route-client .category-mode-sheet {
+  width: min(100%, 390px);
+  border-radius: 26px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    linear-gradient(180deg, rgba(32, 39, 46, 0.98), rgba(11, 16, 21, 0.98));
+  color: #f7f8fa;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+body.route-client .category-mode-sheet span {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+  font-weight: 840;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.route-client .category-mode-sheet h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+body.route-client .category-mode-sheet p {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+body.route-client .category-proof-list {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+
+body.route-client .category-proof-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 15px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+body.route-client .category-mode-sheet button {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 17px;
+}
+
+body.route-driver .driver-category-panel {
+  display: grid;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(10, 16, 22, 0.84);
+}
+
+body.route-driver .driver-category-panel header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.route-driver .driver-category-panel header strong {
+  display: block;
+  color: #f7f8fa;
+  font-size: 17px;
+}
+
+body.route-driver .driver-category-panel header p {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body.route-driver .driver-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+  gap: 10px;
+}
+
+body.route-driver .driver-category-card {
+  min-height: 148px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 18px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+body.route-driver .driver-category-card strong {
+  color: #f7f8fa;
+  font-size: 14px;
+  line-height: 1.16;
+}
+
+body.route-driver .driver-category-card p {
+  margin: 5px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body.route-driver .driver-category-status {
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 10px;
+  font-weight: 840;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+body.route-driver .driver-category-card.approved .driver-category-status {
+  background: rgba(73, 214, 155, 0.16);
+  color: #8dffd0;
+}
+
+body.route-driver .driver-category-card.requested .driver-category-status,
+body.route-driver .driver-category-card.in_review .driver-category-status {
+  background: rgba(255, 206, 99, 0.16);
+  color: #ffe0a0;
+}
+
+body.route-driver .driver-category-card.rejected .driver-category-status {
+  background: rgba(255, 91, 120, 0.14);
+  color: #ff9bad;
+}
+
+body.route-driver .driver-category-card button {
+  min-height: 40px;
+  border-radius: 14px;
+  font-size: 12px;
+}
+
+.admin-category-review-card {
+  border-color: rgba(73, 214, 155, 0.16) !important;
+  background:
+    linear-gradient(180deg, rgba(73, 214, 155, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(11, 16, 21, 0.92) !important;
+}
+
+@media (max-width: 420px) {
+  body.route-client .client-bottom-quickbar {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.route-client .ride-category-strip button {
+    min-width: 54px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
 }
