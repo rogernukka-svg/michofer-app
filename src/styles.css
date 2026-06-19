@@ -8471,3 +8471,71 @@ body.route-login .driver-onboarding-form .login-text-btn {
     min-height: 46px !important;
   }
 }
+
+/* Client live map: keep Mapbox full-screen and place every control above it. */
+body.route-client .app-shell {
+  min-height: 100svh !important;
+  height: 100svh !important;
+  overflow: hidden !important;
+  background: #071018 !important;
+}
+
+body.route-client .client-phone {
+  position: relative !important;
+  min-height: 100svh !important;
+  height: 100svh !important;
+  max-height: 100svh !important;
+  overflow: hidden !important;
+  background: #071018 !important;
+  isolation: isolate;
+}
+
+body.route-client .mobility-map,
+body.route-client .interactive-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  z-index: 0 !important;
+}
+
+body.route-client .mapbox-real-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+body.route-client .mapbox-real-map .mapboxgl-map,
+body.route-client .mapbox-real-map .mapboxgl-canvas-container,
+body.route-client .mapbox-real-map .mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+body.route-client .client-top,
+body.route-client .map-toolbar,
+body.route-client .map-locate-btn,
+body.route-client .route-summary,
+body.route-client .selected-map-card,
+body.route-client .client-bottom-quickbar,
+body.route-client .active-trip-actions {
+  position: absolute;
+  z-index: 30 !important;
+}
+
+body.route-client .active-trip-card {
+  position: relative;
+  z-index: 30 !important;
+}
+
+body.route-client .driver-panel-backdrop,
+body.route-client .side-backdrop {
+  z-index: 120 !important;
+}
