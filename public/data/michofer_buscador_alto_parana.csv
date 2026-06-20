@@ -1295,373 +1295,373 @@ id,nombre_oficial,alias_busqueda,categoria,ciudad,tipo_busqueda,prioridad,lat,ln
 1294,Gobernacion de Alto Parana,gobernacion alto parana,punto_referencia,Alto Parana,poi,92,,,curado_local/manual,
 1295,Gobernacion de Alto Parana,gobernacion de alto parana,punto_referencia,Alto Parana,poi,92,,,curado_local/manual,
 1296,Gobernacion de Alto Parana,gobernaciondealtoparana,punto_referencia,Alto Parana,poi,92,,,curado_local/manual,
-1297,Biggie,biggie ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1297,Biggie,biggie ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1298,Biggie,biggie,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1299,Biggie,biggie presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1299,Biggie,biggie presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1300,Biggie,biggie,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1301,Biggie,biggie hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1301,Biggie,biggie hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1302,Biggie,biggie,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1303,Biggie,biggie minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1303,Biggie,biggie minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1304,Biggie,biggie,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1305,Superseis,superseis ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1305,Superseis,superseis ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1306,Superseis,superseis,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1307,Superseis,superseis presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1307,Superseis,superseis presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1308,Superseis,superseis,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1309,Superseis,superseis hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1309,Superseis,superseis hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1310,Superseis,superseis,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1311,Superseis,superseis minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1311,Superseis,superseis minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1312,Superseis,superseis,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1313,Stock,stock ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1313,Stock,stock ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1314,Stock,stock,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1315,Stock,stock presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1315,Stock,stock presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1316,Stock,stock,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1317,Stock,stock hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1317,Stock,stock hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1318,Stock,stock,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1319,Stock,stock minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1319,Stock,stock minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1320,Stock,stock,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1321,Fortis,fortis ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1321,Fortis,fortis ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1322,Fortis,fortis,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1323,Fortis,fortis presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1323,Fortis,fortis presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1324,Fortis,fortis,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1325,Fortis,fortis hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1325,Fortis,fortis hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1326,Fortis,fortis,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1327,Fortis,fortis minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1327,Fortis,fortis minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1328,Fortis,fortis,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1329,Salemma,salemma ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1329,Salemma,salemma ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1330,Salemma,salemma,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1331,Salemma,salemma presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1331,Salemma,salemma presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1332,Salemma,salemma,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1333,Salemma,salemma hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1333,Salemma,salemma hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1334,Salemma,salemma,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1335,Salemma,salemma minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1335,Salemma,salemma minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1336,Salemma,salemma,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1337,Gran Via,gran via ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1338,Gran Via,granvia ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1337,Gran Via,gran via ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1338,Gran Via,granvia ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1339,Gran Via,gran via,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1340,Gran Via,gran via presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1341,Gran Via,granvia presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1340,Gran Via,gran via presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1341,Gran Via,granvia presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1342,Gran Via,gran via,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1343,Gran Via,gran via hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1344,Gran Via,granvia hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1343,Gran Via,gran via hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1344,Gran Via,granvia hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1345,Gran Via,gran via,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1346,Gran Via,gran via minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1347,Gran Via,granvia minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1346,Gran Via,gran via minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1347,Gran Via,granvia minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1348,Gran Via,gran via,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1349,Burger King,burger king ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1350,Burger King,burgerking ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1349,Burger King,burger king ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1350,Burger King,burgerking ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1351,Burger King,burger king,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1352,Burger King,burger king presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1353,Burger King,burgerking presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1352,Burger King,burger king presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1353,Burger King,burgerking presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1354,Burger King,burger king,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1355,Burger King,burger king hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1356,Burger King,burgerking hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1355,Burger King,burger king hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1356,Burger King,burgerking hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1357,Burger King,burger king,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1358,Burger King,burger king minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1359,Burger King,burgerking minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1358,Burger King,burger king minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1359,Burger King,burgerking minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1360,Burger King,burger king,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1361,McDonalds,mcdonalds ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1361,McDonalds,mcdonalds ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1362,McDonalds,mcdonalds,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1363,McDonalds,mcdonalds presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1363,McDonalds,mcdonalds presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1364,McDonalds,mcdonalds,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1365,McDonalds,mcdonalds hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1365,McDonalds,mcdonalds hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1366,McDonalds,mcdonalds,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1367,McDonalds,mcdonalds minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1367,McDonalds,mcdonalds minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1368,McDonalds,mcdonalds,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1369,Pizza Hut,pizza hut ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1370,Pizza Hut,pizzahut ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1369,Pizza Hut,pizza hut ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1370,Pizza Hut,pizzahut ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1371,Pizza Hut,pizza hut,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1372,Pizza Hut,pizza hut presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1373,Pizza Hut,pizzahut presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1372,Pizza Hut,pizza hut presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1373,Pizza Hut,pizzahut presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1374,Pizza Hut,pizza hut,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1375,Pizza Hut,pizza hut hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1376,Pizza Hut,pizzahut hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1375,Pizza Hut,pizza hut hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1376,Pizza Hut,pizzahut hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1377,Pizza Hut,pizza hut,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1378,Pizza Hut,pizza hut minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1379,Pizza Hut,pizzahut minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1378,Pizza Hut,pizza hut minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1379,Pizza Hut,pizzahut minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1380,Pizza Hut,pizza hut,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1381,KFC,kfc ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1381,KFC,kfc ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1382,KFC,kfc,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1383,KFC,kfc presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1383,KFC,kfc presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1384,KFC,kfc,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1385,KFC,kfc hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1385,KFC,kfc hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1386,KFC,kfc,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1387,KFC,kfc minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1387,KFC,kfc minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1388,KFC,kfc,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1389,Havanna,havanna ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1389,Havanna,havanna ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1390,Havanna,havanna,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1391,Havanna,havanna presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1391,Havanna,havanna presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1392,Havanna,havanna,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1393,Havanna,havanna hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1393,Havanna,havanna hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1394,Havanna,havanna,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1395,Havanna,havanna minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1395,Havanna,havanna minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1396,Havanna,havanna,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1397,Farmacenter,farmacenter ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1397,Farmacenter,farmacenter ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1398,Farmacenter,farmacenter,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1399,Farmacenter,farmacenter presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1399,Farmacenter,farmacenter presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1400,Farmacenter,farmacenter,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1401,Farmacenter,farmacenter hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1401,Farmacenter,farmacenter hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1402,Farmacenter,farmacenter,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1403,Farmacenter,farmacenter minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1403,Farmacenter,farmacenter minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1404,Farmacenter,farmacenter,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1405,Punto Farma,punto farma ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1406,Punto Farma,puntofarma ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1405,Punto Farma,punto farma ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1406,Punto Farma,puntofarma ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1407,Punto Farma,punto farma,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1408,Punto Farma,punto farma presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1409,Punto Farma,puntofarma presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1408,Punto Farma,punto farma presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1409,Punto Farma,puntofarma presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1410,Punto Farma,punto farma,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1411,Punto Farma,punto farma hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1412,Punto Farma,puntofarma hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1411,Punto Farma,punto farma hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1412,Punto Farma,puntofarma hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1413,Punto Farma,punto farma,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1414,Punto Farma,punto farma minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1415,Punto Farma,puntofarma minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1414,Punto Farma,punto farma minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1415,Punto Farma,puntofarma minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1416,Punto Farma,punto farma,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1417,Farmacia Catedral,farmacia catedral ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1418,Farmacia Catedral,farmaciacatedral ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1417,Farmacia Catedral,farmacia catedral ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1418,Farmacia Catedral,farmaciacatedral ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1419,Farmacia Catedral,farmacia catedral,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1420,Farmacia Catedral,farmacia catedral presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1421,Farmacia Catedral,farmaciacatedral presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1420,Farmacia Catedral,farmacia catedral presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1421,Farmacia Catedral,farmaciacatedral presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1422,Farmacia Catedral,farmacia catedral,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1423,Farmacia Catedral,farmacia catedral hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1424,Farmacia Catedral,farmaciacatedral hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1423,Farmacia Catedral,farmacia catedral hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1424,Farmacia Catedral,farmaciacatedral hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1425,Farmacia Catedral,farmacia catedral,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1426,Farmacia Catedral,farmacia catedral minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1427,Farmacia Catedral,farmaciacatedral minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1426,Farmacia Catedral,farmacia catedral minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1427,Farmacia Catedral,farmaciacatedral minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1428,Farmacia Catedral,farmacia catedral,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1429,Petropar,petropar ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1429,Petropar,petropar ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1430,Petropar,petropar,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1431,Petropar,petropar presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1431,Petropar,petropar presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1432,Petropar,petropar,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1433,Petropar,petropar hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1433,Petropar,petropar hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1434,Petropar,petropar,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1435,Petropar,petropar minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1435,Petropar,petropar minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1436,Petropar,petropar,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1437,Copetrol,copetrol ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1437,Copetrol,copetrol ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1438,Copetrol,copetrol,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1439,Copetrol,copetrol presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1439,Copetrol,copetrol presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1440,Copetrol,copetrol,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1441,Copetrol,copetrol hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1441,Copetrol,copetrol hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1442,Copetrol,copetrol,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1443,Copetrol,copetrol minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1443,Copetrol,copetrol minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1444,Copetrol,copetrol,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1445,Petrobras,petrobras ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1445,Petrobras,petrobras ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1446,Petrobras,petrobras,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1447,Petrobras,petrobras presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1447,Petrobras,petrobras presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1448,Petrobras,petrobras,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1449,Petrobras,petrobras hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1449,Petrobras,petrobras hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1450,Petrobras,petrobras,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1451,Petrobras,petrobras minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1451,Petrobras,petrobras minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1452,Petrobras,petrobras,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1453,Shell,shell ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1453,Shell,shell ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1454,Shell,shell,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1455,Shell,shell presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1455,Shell,shell presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1456,Shell,shell,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1457,Shell,shell hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1457,Shell,shell hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1458,Shell,shell,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1459,Shell,shell minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1459,Shell,shell minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1460,Shell,shell,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1461,BR,br ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1461,BR,br ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1462,BR,br,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1463,BR,br presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1463,BR,br presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1464,BR,br,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1465,BR,br hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1465,BR,br hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1466,BR,br,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1467,BR,br minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1467,BR,br minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1468,BR,br,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1469,Puma,puma ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1469,Puma,puma ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1470,Puma,puma,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1471,Puma,puma presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1471,Puma,puma presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1472,Puma,puma,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1473,Puma,puma hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1473,Puma,puma hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1474,Puma,puma,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1475,Puma,puma minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1475,Puma,puma minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1476,Puma,puma,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1477,Enex,enex ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1477,Enex,enex ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1478,Enex,enex,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1479,Enex,enex presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1479,Enex,enex presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1480,Enex,enex,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1481,Enex,enex hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1481,Enex,enex hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1482,Enex,enex,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1483,Enex,enex minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1483,Enex,enex minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1484,Enex,enex,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1485,Banco Nacional de Fomento,banco nacional fomento ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1486,Banco Nacional de Fomento,banco nacional de fomento ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1487,Banco Nacional de Fomento,banconacionaldefomento ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1485,Banco Nacional de Fomento,banco nacional fomento ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1486,Banco Nacional de Fomento,banco nacional de fomento ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1487,Banco Nacional de Fomento,banconacionaldefomento ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1488,Banco Nacional de Fomento,banco nacional de fomento,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1489,Banco Nacional de Fomento,banco nacional fomento presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1490,Banco Nacional de Fomento,banco nacional de fomento presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1491,Banco Nacional de Fomento,banconacionaldefomento presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1489,Banco Nacional de Fomento,banco nacional fomento presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1490,Banco Nacional de Fomento,banco nacional de fomento presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1491,Banco Nacional de Fomento,banconacionaldefomento presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1492,Banco Nacional de Fomento,banco nacional de fomento,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1493,Banco Nacional de Fomento,banco nacional fomento hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1494,Banco Nacional de Fomento,banco nacional de fomento hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1495,Banco Nacional de Fomento,banconacionaldefomento hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1493,Banco Nacional de Fomento,banco nacional fomento hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1494,Banco Nacional de Fomento,banco nacional de fomento hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1495,Banco Nacional de Fomento,banconacionaldefomento hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1496,Banco Nacional de Fomento,banco nacional de fomento,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1497,Banco Nacional de Fomento,banco nacional fomento minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1498,Banco Nacional de Fomento,banco nacional de fomento minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1499,Banco Nacional de Fomento,banconacionaldefomento minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1497,Banco Nacional de Fomento,banco nacional fomento minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1498,Banco Nacional de Fomento,banco nacional de fomento minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1499,Banco Nacional de Fomento,banconacionaldefomento minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1500,Banco Nacional de Fomento,banco nacional de fomento,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1501,Banco Continental,banco continental ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1502,Banco Continental,bancocontinental ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1501,Banco Continental,banco continental ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1502,Banco Continental,bancocontinental ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1503,Banco Continental,banco continental,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1504,Banco Continental,banco continental presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1505,Banco Continental,bancocontinental presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1504,Banco Continental,banco continental presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1505,Banco Continental,bancocontinental presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1506,Banco Continental,banco continental,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1507,Banco Continental,banco continental hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1508,Banco Continental,bancocontinental hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1507,Banco Continental,banco continental hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1508,Banco Continental,bancocontinental hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1509,Banco Continental,banco continental,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1510,Banco Continental,banco continental minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1511,Banco Continental,bancocontinental minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1510,Banco Continental,banco continental minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1511,Banco Continental,bancocontinental minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1512,Banco Continental,banco continental,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1513,Banco Familiar,banco familiar ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1514,Banco Familiar,bancofamiliar ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1513,Banco Familiar,banco familiar ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1514,Banco Familiar,bancofamiliar ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1515,Banco Familiar,banco familiar,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1516,Banco Familiar,banco familiar presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1517,Banco Familiar,bancofamiliar presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1516,Banco Familiar,banco familiar presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1517,Banco Familiar,bancofamiliar presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1518,Banco Familiar,banco familiar,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1519,Banco Familiar,banco familiar hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1520,Banco Familiar,bancofamiliar hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1519,Banco Familiar,banco familiar hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1520,Banco Familiar,bancofamiliar hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1521,Banco Familiar,banco familiar,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1522,Banco Familiar,banco familiar minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1523,Banco Familiar,bancofamiliar minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1522,Banco Familiar,banco familiar minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1523,Banco Familiar,bancofamiliar minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1524,Banco Familiar,banco familiar,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1525,Banco Itau,banco itau ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1526,Banco Itau,bancoitau ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1525,Banco Itau,banco itau ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1526,Banco Itau,bancoitau ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1527,Banco Itau,banco itau,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1528,Banco Itau,banco itau presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1529,Banco Itau,bancoitau presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1528,Banco Itau,banco itau presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1529,Banco Itau,bancoitau presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1530,Banco Itau,banco itau,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1531,Banco Itau,banco itau hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1532,Banco Itau,bancoitau hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1531,Banco Itau,banco itau hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1532,Banco Itau,bancoitau hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1533,Banco Itau,banco itau,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1534,Banco Itau,banco itau minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1535,Banco Itau,bancoitau minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1534,Banco Itau,banco itau minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1535,Banco Itau,bancoitau minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1536,Banco Itau,banco itau,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1537,Banco GNB,banco gnb ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1538,Banco GNB,bancognb ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1537,Banco GNB,banco gnb ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1538,Banco GNB,bancognb ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1539,Banco GNB,banco gnb,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1540,Banco GNB,banco gnb presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1541,Banco GNB,bancognb presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1540,Banco GNB,banco gnb presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1541,Banco GNB,bancognb presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1542,Banco GNB,banco gnb,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1543,Banco GNB,banco gnb hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1544,Banco GNB,bancognb hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1543,Banco GNB,banco gnb hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1544,Banco GNB,bancognb hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1545,Banco GNB,banco gnb,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1546,Banco GNB,banco gnb minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1547,Banco GNB,bancognb minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1546,Banco GNB,banco gnb minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1547,Banco GNB,bancognb minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1548,Banco GNB,banco gnb,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1549,Sudameris,sudameris ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1549,Sudameris,sudameris ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1550,Sudameris,sudameris,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1551,Sudameris,sudameris presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1551,Sudameris,sudameris presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1552,Sudameris,sudameris,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1553,Sudameris,sudameris hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1553,Sudameris,sudameris hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1554,Sudameris,sudameris,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1555,Sudameris,sudameris minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1555,Sudameris,sudameris minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1556,Sudameris,sudameris,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1557,Banco Atlas,banco atlas ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1558,Banco Atlas,bancoatlas ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1557,Banco Atlas,banco atlas ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1558,Banco Atlas,bancoatlas ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1559,Banco Atlas,banco atlas,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1560,Banco Atlas,banco atlas presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1561,Banco Atlas,bancoatlas presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1560,Banco Atlas,banco atlas presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1561,Banco Atlas,bancoatlas presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1562,Banco Atlas,banco atlas,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1563,Banco Atlas,banco atlas hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1564,Banco Atlas,bancoatlas hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1563,Banco Atlas,banco atlas hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1564,Banco Atlas,bancoatlas hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1565,Banco Atlas,banco atlas,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1566,Banco Atlas,banco atlas minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1567,Banco Atlas,bancoatlas minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1566,Banco Atlas,banco atlas minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1567,Banco Atlas,bancoatlas minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1568,Banco Atlas,banco atlas,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1569,Vision Banco,vision banco ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1570,Vision Banco,visionbanco ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1569,Vision Banco,vision banco ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1570,Vision Banco,visionbanco ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1571,Vision Banco,vision banco,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1572,Vision Banco,vision banco presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1573,Vision Banco,visionbanco presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1572,Vision Banco,vision banco presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1573,Vision Banco,visionbanco presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1574,Vision Banco,vision banco,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1575,Vision Banco,vision banco hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1576,Vision Banco,visionbanco hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1575,Vision Banco,vision banco hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1576,Vision Banco,visionbanco hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1577,Vision Banco,vision banco,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1578,Vision Banco,vision banco minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1579,Vision Banco,visionbanco minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1578,Vision Banco,vision banco minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1579,Vision Banco,visionbanco minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1580,Vision Banco,vision banco,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1581,Cooperativa Universitaria,cooperativa universitaria ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1582,Cooperativa Universitaria,cooperativauniversitaria ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1581,Cooperativa Universitaria,cooperativa universitaria ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1582,Cooperativa Universitaria,cooperativauniversitaria ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1583,Cooperativa Universitaria,cooperativa universitaria,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1584,Cooperativa Universitaria,cooperativa universitaria presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1585,Cooperativa Universitaria,cooperativauniversitaria presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1584,Cooperativa Universitaria,cooperativa universitaria presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1585,Cooperativa Universitaria,cooperativauniversitaria presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1586,Cooperativa Universitaria,cooperativa universitaria,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1587,Cooperativa Universitaria,cooperativa universitaria hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1588,Cooperativa Universitaria,cooperativauniversitaria hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1587,Cooperativa Universitaria,cooperativa universitaria hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1588,Cooperativa Universitaria,cooperativauniversitaria hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1589,Cooperativa Universitaria,cooperativa universitaria,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1590,Cooperativa Universitaria,cooperativa universitaria minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1591,Cooperativa Universitaria,cooperativauniversitaria minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1590,Cooperativa Universitaria,cooperativa universitaria minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1591,Cooperativa Universitaria,cooperativauniversitaria minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1592,Cooperativa Universitaria,cooperativa universitaria,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1593,Aqui Pago,aqui pago ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1594,Aqui Pago,aquipago ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1593,Aqui Pago,aqui pago ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1594,Aqui Pago,aquipago ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1595,Aqui Pago,aqui pago,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1596,Aqui Pago,aqui pago presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1597,Aqui Pago,aquipago presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1596,Aqui Pago,aqui pago presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1597,Aqui Pago,aquipago presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1598,Aqui Pago,aqui pago,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1599,Aqui Pago,aqui pago hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1600,Aqui Pago,aquipago hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1599,Aqui Pago,aqui pago hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1600,Aqui Pago,aquipago hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1601,Aqui Pago,aqui pago,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1602,Aqui Pago,aqui pago minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1603,Aqui Pago,aquipago minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1602,Aqui Pago,aqui pago minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1603,Aqui Pago,aquipago minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1604,Aqui Pago,aqui pago,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1605,Pago Express,pago express ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1606,Pago Express,pagoexpress ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1605,Pago Express,pago express ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1606,Pago Express,pagoexpress ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1607,Pago Express,pago express,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1608,Pago Express,pago express presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1609,Pago Express,pagoexpress presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1608,Pago Express,pago express presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1609,Pago Express,pagoexpress presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1610,Pago Express,pago express,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1611,Pago Express,pago express hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1612,Pago Express,pagoexpress hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1611,Pago Express,pago express hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1612,Pago Express,pagoexpress hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1613,Pago Express,pago express,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1614,Pago Express,pago express minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
-1615,Pago Express,pagoexpress minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1614,Pago Express,pago express minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
+1615,Pago Express,pagoexpress minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1616,Pago Express,pago express,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1617,Tigo,tigo ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1617,Tigo,tigo ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1618,Tigo,tigo,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1619,Tigo,tigo presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1619,Tigo,tigo presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1620,Tigo,tigo,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1621,Tigo,tigo hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1621,Tigo,tigo hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1622,Tigo,tigo,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1623,Tigo,tigo minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1623,Tigo,tigo minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1624,Tigo,tigo,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1625,Personal,personal ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1625,Personal,personal ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1626,Personal,personal,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1627,Personal,personal presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1627,Personal,personal presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1628,Personal,personal,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1629,Personal,personal hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1629,Personal,personal hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1630,Personal,personal,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1631,Personal,personal minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1631,Personal,personal minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1632,Personal,personal,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1633,Claro,claro ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1633,Claro,claro ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1634,Claro,claro,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1635,Claro,claro presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1635,Claro,claro presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1636,Claro,claro,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1637,Claro,claro hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1637,Claro,claro hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1638,Claro,claro,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1639,Claro,claro minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1639,Claro,claro minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1640,Claro,claro,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1641,Copaco,copaco ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1641,Copaco,copaco ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1642,Copaco,copaco,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1643,Copaco,copaco presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1643,Copaco,copaco presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1644,Copaco,copaco,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1645,Copaco,copaco hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1645,Copaco,copaco hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1646,Copaco,copaco,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1647,Copaco,copaco minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1647,Copaco,copaco minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1648,Copaco,copaco,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1649,ANDE,ande ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1649,ANDE,ande ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1650,ANDE,ande,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1651,ANDE,ande presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1651,ANDE,ande presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1652,ANDE,ande,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1653,ANDE,ande hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1653,ANDE,ande hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1654,ANDE,ande,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1655,ANDE,ande minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1655,ANDE,ande minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1656,ANDE,ande,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1657,ESSAP,essap ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1657,ESSAP,essap ciudad del este,negocio_cadena,Ciudad del Este,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1658,ESSAP,essap,negocio_cadena,Ciudad del Este,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1659,ESSAP,essap presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1659,ESSAP,essap presidente franco,negocio_cadena,Presidente Franco,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1660,ESSAP,essap,negocio_cadena,Presidente Franco,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1661,ESSAP,essap hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1661,ESSAP,essap hernandarias,negocio_cadena,Hernandarias,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1662,ESSAP,essap,negocio_cadena,Hernandarias,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
-1663,ESSAP,essap minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Mapbox/OSM
+1663,ESSAP,essap minga guazu,negocio_cadena,Minga Guazu,negocio,60,,,plantilla_geocodificar,Completar coordenadas con Google/OSM
 1664,ESSAP,essap,negocio_cadena,Minga Guazu,negocio,55,,,plantilla_geocodificar,Puede tener múltiples sucursales
 1665,La Terminal,la terminal,coloquial_general,Paraguay,coloquial,50,,,curado_local/manual,
 1666,El Centro,el centro,coloquial_general,Paraguay,coloquial,50,,,curado_local/manual,

@@ -476,6 +476,12 @@ export default function Driver() {
     <main className="app-shell">
       <section className={activeTrip && navigationTarget ? 'phone driver-phone active-navigation' : 'phone driver-phone'}>
         <header className="driver-top">
+          <div className="driver-top-status">
+            <span className={`driver-online-indicator ${isOnline ? (isReceivingTrips ? 'active' : 'standby') : 'offline'}`} />
+            <span className="driver-online-label">
+              {isOnline ? (isReceivingTrips ? 'En línea' : 'Conectado') : 'Desconectado'}
+            </span>
+          </div>
           <button type="button" onClick={init} aria-label="Actualizar">
             <RefreshCw size={20} />
           </button>
@@ -515,6 +521,9 @@ export default function Driver() {
                 <span>{statusLabel(activeTrip.status)}</span>
                 <strong>{activeTrip.destination_text || navigationDestinationText}</strong>
                 <small>{formatGs(activeTrip.price)} · {guidanceDistance}</small>
+                <p className="driver-receives-notice-driver" style={{ fontSize: '11px', color: '#10b981', margin: '4px 0 0 0', fontWeight: '800' }}>
+                  El chofer recibe el total del viaje
+                </p>
               </div>
 
               <div className="driver-live-actions">
@@ -541,15 +550,45 @@ export default function Driver() {
           </section>
         ) : (
           <>
+            {/* Mapa de fondo en modo idle (cuando hay ubicación disponible) */}
+            {hasDriverLocation && (
+              <div className="driver-idle-map">
+                <InteractiveRouteMap
+                  origin={driverPoint}
+                  destination={null}
+                  destinationText={null}
+                  clientAvatar={driverAvatar}
+                  drivers={[]}
+                  selectedDriver={null}
+                  onSelectDriver={() => {}}
+                  onChooseDriver={() => {}}
+                  onRefreshLocation={() => syncDriverLocation(null)}
+                  mapInteractive={false}
+                  animateCamera={false}
+                  showRouteSummary={false}
+                  navigationMode={false}
+                  onRouteUpdate={() => {}}
+                />
+              </div>
+            )}
+
             <section className="driver-hero">
-              <div>
+              <div className="driver-hero-main">
                 <p className="eyebrow">PANEL DE CHOFER</p>
                 <h1>{profile?.full_name || driverProfile?.full_name || 'MiChofer'}</h1>
                 <span>{driverProfile?.car_brand || 'Vehiculo'} {driverProfile?.car_model || ''}</span>
               </div>
-              <div className={approved ? 'verify-badge ok' : 'verify-badge'}>
-                <ShieldCheck size={18} />
-                {verificationTitle}
+
+              <div className="driver-hero-right">
+                <div className={`driver-hero-avatar ${isOnline ? 'online' : 'offline'}`}>
+                  {driverAvatar
+                    ? <img src={driverAvatar} alt={profile?.full_name || 'Chofer'} />
+                    : <UserRound size={28} />}
+                </div>
+                <div className={approved ? 'verify-badge ok' : 'verify-badge'}>
+                  <ShieldCheck size={14} />
+                  {verificationTitle}
+                </div>
               </div>
             </section>
 
@@ -681,21 +720,32 @@ export default function Driver() {
                       <article key={trip.id} className="driver-trip-card">
                         <div className="trip-status-line">
                           <span>Esperando tu respuesta</span>
-                          <strong>{formatGs(trip.price)}</strong>
+                          <div style={{ textAlign: 'right' }}>
+                            <strong className="trip-price-badge">{formatGs(trip.price)}</strong>
+                            <small style={{ display: 'block', fontSize: '9px', color: '#10b981', fontWeight: '800', marginTop: '2px' }}>
+                              El chofer recibe el total del viaje
+                            </small>
+                          </div>
                         </div>
                         <h2>{trip.destination_text || 'Destino solicitado'}</h2>
                         <p>
-                          <UserRound size={16} /> Cliente te eligio manualmente
+                          <UserRound size={14} /> Cliente te eligió manualmente
+                          {trip.pickup_lat && trip.pickup_lng && driverProfile?.lat && driverProfile?.lng
+                            ? ` · ${formatKm(distanceKm(
+                                { lat: driverProfile.lat, lng: driverProfile.lng },
+                                { lat: trip.pickup_lat, lng: trip.pickup_lng }
+                              ))}`
+                            : ''}
                         </p>
                         <div className="driver-actions-grid">
                           <a href={`/chat?trip=${trip.id}`}>
-                            <MessageCircle size={18} /> Chat
+                            <MessageCircle size={16} /> Chat
                           </a>
                           <button onClick={() => updateTrip(trip, 'accepted')}>
-                            <CheckCircle2 size={18} /> Aceptar
+                            <CheckCircle2 size={16} /> Aceptar
                           </button>
                           <button className="danger" onClick={() => updateTrip(trip, 'cancelled')}>
-                            <XCircle size={18} /> Rechazar
+                            <XCircle size={16} /> Rechazar
                           </button>
                         </div>
                       </article>

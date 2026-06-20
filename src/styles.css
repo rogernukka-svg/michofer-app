@@ -712,7 +712,7 @@ button {
   isolation: isolate;
 }
 
-.mapbox-real-map {
+.google-real-map {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -720,20 +720,20 @@ button {
   transition: opacity 260ms ease;
 }
 
-.mapbox-real-map.ready {
+.google-real-map.ready {
   opacity: 1;
 }
 
-.mapbox-real-map .mapboxgl-canvas {
+.google-real-map .googlegl-canvas {
   outline: 0;
 }
 
-.mapbox-real-map .mapboxgl-ctrl-bottom-right {
+.google-real-map .googlegl-ctrl-bottom-right {
   right: 10px;
   bottom: 8px;
 }
 
-.mapbox-real-map .mapboxgl-ctrl-attrib {
+.google-real-map .googlegl-ctrl-attrib {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.76);
   color: var(--gray-500);
@@ -741,7 +741,7 @@ button {
   backdrop-filter: blur(12px);
 }
 
-.mapbox-real-map::after {
+.google-real-map::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1005,14 +1005,14 @@ button {
   gap: 10px;
 }
 
-.mapbox-point-marker,
-.mapbox-driver-marker {
+.google-point-marker,
+.google-driver-marker {
   border: 0;
   padding: 0;
   cursor: pointer;
 }
 
-.mapbox-point-marker {
+.google-point-marker {
   width: 34px;
   height: 34px;
   border-radius: 999px;
@@ -1022,31 +1022,31 @@ button {
   box-shadow: 0 12px 28px rgba(5, 5, 5, 0.2);
 }
 
-.mapbox-point-marker span {
+.google-point-marker span {
   width: 13px;
   height: 13px;
   border-radius: 999px;
   background: var(--black);
 }
 
-.mapbox-point-marker.with-avatar {
+.google-point-marker.with-avatar {
   width: 48px;
   height: 48px;
   overflow: hidden;
   border: 3px solid var(--white);
 }
 
-.mapbox-point-marker.with-avatar img {
+.google-point-marker.with-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.mapbox-point-marker.destination span {
+.google-point-marker.destination span {
   background: var(--red);
 }
 
-.mapbox-driver-marker {
+.google-driver-marker {
   width: 54px;
   height: 54px;
   border-radius: 999px;
@@ -1057,19 +1057,19 @@ button {
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
-.mapbox-driver-marker.active {
+.google-driver-marker.active {
   border-color: var(--red);
   box-shadow: 0 18px 42px rgba(227, 6, 19, 0.28);
   transform: scale(1.08);
 }
 
-.mapbox-driver-marker img {
+.google-driver-marker img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.mapbox-driver-marker span {
+.google-driver-marker span {
   width: 100%;
   height: 100%;
   display: grid;
@@ -1080,7 +1080,7 @@ button {
   font-weight: 950;
 }
 
-.mapbox-navigation-marker {
+.google-navigation-marker {
   width: 92px;
   height: 92px;
   border: 0;
@@ -1094,15 +1094,15 @@ button {
   overflow: visible;
 }
 
-.mapbox-navigation-marker::before,
-.mapbox-navigation-marker::after {
+.google-navigation-marker::before,
+.google-navigation-marker::after {
   content: '';
   position: absolute;
   border-radius: 999px;
   pointer-events: none;
 }
 
-.mapbox-navigation-marker::before {
+.google-navigation-marker::before {
   inset: 2px;
   z-index: 0;
   background:
@@ -1111,7 +1111,7 @@ button {
   opacity: 0.95;
 }
 
-.mapbox-navigation-marker::after {
+.google-navigation-marker::after {
   left: 50%;
   bottom: 13px;
   z-index: 1;
@@ -1123,7 +1123,7 @@ button {
   transform: translateX(-50%);
 }
 
-.mapbox-navigation-marker .navigation-arrow {
+.google-navigation-marker .navigation-arrow {
   width: 62px;
   height: 62px;
   position: relative;
@@ -1139,14 +1139,14 @@ button {
     inset 0 -10px 14px rgba(0, 34, 114, 0.32);
 }
 
-.mapbox-navigation-marker .navigation-arrow::before,
-.mapbox-navigation-marker .navigation-arrow::after {
+.google-navigation-marker .navigation-arrow::before,
+.google-navigation-marker .navigation-arrow::after {
   content: '';
   position: absolute;
   pointer-events: none;
 }
 
-.mapbox-navigation-marker .navigation-arrow::before {
+.google-navigation-marker .navigation-arrow::before {
   left: 50%;
   top: 10px;
   width: 9px;
@@ -1156,7 +1156,7 @@ button {
   transform: translateX(-50%);
 }
 
-.mapbox-navigation-marker .navigation-arrow::after {
+.google-navigation-marker .navigation-arrow::after {
   left: 50%;
   bottom: 8px;
   width: 19px;
@@ -2011,98 +2011,109 @@ button {
 }
 
 .mobility-map {
-  height: calc(100vh - 20px);
-  min-height: 680px;
+  height: 100%;
+  min-height: 0;
 }
 
 /* =========================================================
-   MiChofer Cliente: barra inferior premium
-   Acciones abajo, mapa limpio arriba
+   MiChofer Cliente: Barra inferior premium
+   Glassmorphism oscuro. Los estilos específicos para route-client
+   se aplican más abajo con body.route-client .client-bottom-quickbar
 ========================================================= */
 
 .client-bottom-quickbar {
   position: absolute !important;
-  z-index: 90 !important;
-  left: 14px !important;
-  right: 14px !important;
-  bottom: 18px !important;
+  z-index: 80 !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: 16px !important;
 
   display: grid !important;
-  grid-template-columns: auto auto minmax(126px, 1fr);
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.52fr) !important;
+  align-items: center !important;
+  gap: 7px !important;
 
-  padding: 8px;
-  border-radius: 26px;
-  background: rgba(9, 11, 15, 0.84);
-
+  padding: 8px !important;
+  border-radius: 26px !important;
+  background:
+    linear-gradient(135deg, rgba(4, 10, 14, 0.92), rgba(12, 18, 26, 0.82)) !important;
+  border: 1px solid rgba(35, 242, 155, 0.14) !important;
   box-shadow:
-    0 26px 64px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.09);
-
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-
-  pointer-events: auto;
+    0 26px 70px rgba(0, 0, 0, 0.46),
+    0 0 34px rgba(0, 229, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: blur(22px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.15) !important;
+  pointer-events: auto !important;
 }
 
 .client-bottom-quickbar button {
-  min-height: 40px;
-  border: 0;
-  border-radius: 999px;
-  padding: 0 14px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
-
-  font-size: 12px;
-  font-weight: 950;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-  cursor: pointer;
+  min-height: 40px !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 999px !important;
+  padding: 0 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: rgba(255, 255, 255, 0.86) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+  white-space: nowrap !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 24px rgba(0, 0, 0, 0.18) !important;
+  cursor: pointer !important;
 }
 
 .client-bottom-quickbar button.active {
-  color: #050505;
-  background: #ffffff;
+  color: #041014 !important;
+  background: linear-gradient(135deg, #23f29b, #00d5ff) !important;
+  border-color: rgba(255, 255, 255, 0.30) !important;
+  box-shadow:
+    0 0 24px rgba(0, 213, 255, 0.22),
+    0 10px 28px rgba(35, 242, 155, 0.18) !important;
 }
 
 .client-bottom-quickbar button.women {
-  color: #ffdce3;
-  background: rgba(227, 6, 19, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(227, 6, 19, 0.22);
+  color: #ffdce3 !important;
+  background: rgba(227, 6, 19, 0.18) !important;
+  border-color: rgba(227, 6, 19, 0.28) !important;
 }
 
 .client-bottom-quickbar button.active.women {
-  color: #ffffff;
-  background: #b70721;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #b70721, #e30613) !important;
+  border-color: rgba(255, 100, 120, 0.4) !important;
 }
 
 .client-bottom-quickbar .primary-destination-chip {
-  justify-self: stretch;
-  color: #ffffff;
-  background: #050505;
+  justify-self: stretch !important;
+  min-height: 42px !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, #05080c, #101923) !important;
+  border: 1px solid rgba(0, 213, 255, 0.22) !important;
   box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.26),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    0 0 28px rgba(0, 213, 255, 0.12),
+    0 14px 34px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  font-weight: 950 !important;
+  font-size: 11px !important;
 }
 
 .client-bottom-quickbar .primary-destination-chip:disabled {
-  color: rgba(255, 255, 255, 0.64);
-  background: rgba(255, 255, 255, 0.12);
-  cursor: not-allowed;
+  opacity: 0.72 !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  cursor: not-allowed !important;
 }
 
 /* El mapa queda por debajo de la barra */
 .mobility-map,
 .interactive-map,
-.mapbox-real-map {
+.google-real-map {
   z-index: 1;
 }
 
@@ -2129,18 +2140,18 @@ button {
     left: 10px !important;
     right: 10px !important;
     bottom: 14px !important;
-    gap: 6px;
-    padding: 7px;
-    border-radius: 22px;
-    grid-template-columns: auto auto minmax(112px, 1fr);
+    gap: 6px !important;
+    padding: 7px !important;
+    border-radius: 22px !important;
   }
 
   .client-bottom-quickbar button {
-    min-height: 38px;
-    padding: 0 11px;
-    font-size: 11px;
+    min-height: 38px !important;
+    padding: 0 11px !important;
+    font-size: 11px !important;
   }
 }
+
 
 .map-toolbar {
   top: 154px;
@@ -3087,7 +3098,7 @@ body.route-client .mobility-map {
   border-radius: 0;
 }
 
-body.route-client .mapbox-real-map::after {
+body.route-client .google-real-map::after {
   background:
     linear-gradient(180deg, rgba(5, 5, 5, 0.12) 0%, transparent 24%, rgba(5, 5, 5, 0.1) 100%),
     linear-gradient(0deg, rgba(255, 255, 255, 0.18), transparent 38%);
@@ -3488,12 +3499,15 @@ body.route-registro .register-photo-preview {
   margin-top: 8px;
   padding: 6px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)), rgba(8, 18, 29, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.20);
   box-shadow:
-    0 22px 50px rgba(8, 12, 20, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+    0 24px 70px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(24px) saturate(1.18);
+  -webkit-backdrop-filter: blur(24px) saturate(1.18);
+  z-index: 100;
+  position: relative;
 }
 
 .destination-suggestions button {
@@ -3505,21 +3519,29 @@ body.route-registro .register-photo-preview {
   grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
   gap: 9px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   background: transparent;
-  color: #111827;
+  color: var(--glass-text, #f8fbff);
   text-align: left;
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .destination-suggestions button:hover,
 .destination-suggestions button:focus-visible {
   outline: 0;
-  background: rgba(31, 122, 255, 0.08);
+  background: rgba(31, 122, 255, 0.22);
+  transform: translateX(2px);
 }
 
 .destination-suggestions svg {
-  color: #ef0014;
+  color: #00f2fe;
+  filter: drop-shadow(0 0 4px rgba(0, 242, 254, 0.4));
+  transition: color 0.2s ease;
+}
+
+.destination-suggestions button:hover svg {
+  color: #1f7aff;
 }
 
 .destination-suggestions span {
@@ -3538,14 +3560,14 @@ body.route-registro .register-photo-preview {
 
 .destination-suggestions strong {
   font-size: 14px;
-  font-weight: 950;
-  color: #07111c;
+  font-weight: 850;
+  color: var(--glass-text, #f8fbff);
 }
 
 .destination-suggestions small {
   font-size: 11px;
-  font-weight: 850;
-  color: #667085;
+  font-weight: 700;
+  color: rgba(248, 251, 255, 0.62);
   text-transform: capitalize;
 }
 
@@ -3739,107 +3761,8 @@ body.route-registro .register-photo-preview {
     left: 14px;
   }
 }
-/* =========================================================
-   MiChofer Cliente: Quickbar inferior tipo Google Maps
-   Los filtros ya no ensucian la parte superior del mapa
-========================================================= */
-
 .map-filter-chips.premium-map-tools {
   display: none !important;
-}
-
-.client-bottom-quickbar {
-  position: absolute;
-  z-index: 42;
-  left: 14px;
-  right: 14px;
-  bottom: 18px;
-  display: grid;
-  grid-template-columns: auto auto minmax(116px, 1fr);
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 26px;
-  background: rgba(12, 14, 18, 0.78);
-  box-shadow:
-    0 22px 55px rgba(0, 0, 0, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-.client-bottom-quickbar button {
-  min-height: 40px;
-  border: 0;
-  border-radius: 999px;
-  padding: 0 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
-  font-size: 12px;
-  font-weight: 950;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.client-bottom-quickbar button.active {
-  color: #050505;
-  background: #ffffff;
-}
-
-.client-bottom-quickbar button.women {
-  color: #ffdde3;
-  background: rgba(239, 0, 20, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(239, 0, 20, 0.18);
-}
-
-.client-bottom-quickbar button.active.women {
-  color: #ffffff;
-  background: #b70721;
-}
-
-.client-bottom-quickbar .primary-destination-chip {
-  justify-self: stretch;
-  color: #ffffff;
-  background: #050505;
-  box-shadow:
-    0 10px 26px rgba(0, 0, 0, 0.22),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.client-bottom-quickbar .primary-destination-chip:disabled {
-  color: rgba(255, 255, 255, 0.62);
-  background: rgba(255, 255, 255, 0.12);
-  cursor: not-allowed;
-}
-
-.selected-map-card {
-  bottom: 82px !important;
-}
-
-.driver-panel-backdrop {
-  z-index: 70;
-}
-
-@media (max-width: 390px) {
-  .client-bottom-quickbar {
-    left: 10px;
-    right: 10px;
-    bottom: 14px;
-    gap: 6px;
-    padding: 7px;
-    border-radius: 22px;
-  }
-
-  .client-bottom-quickbar button {
-    min-height: 38px;
-    padding: 0 11px;
-    font-size: 11px;
-  }
 }
 
 /* =========================================================
@@ -3953,9 +3876,86 @@ body.route-client .request-btn {
   -webkit-backdrop-filter: blur(18px);
 }
 
-body.route-client .map-toolbar button.active,
-body.route-client .client-bottom-quickbar button.active,
-body.route-client .filters-row button.active,
+body.route-client .map-toolbar button.active {
+  background: #05070a;
+  color: #ffffff;
+}
+
+body.route-client .client-bottom-quickbar button {
+  min-height: 40px !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  border-radius: 999px !important;
+  padding: 0 13px !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 8px 20px rgba(0, 0, 0, 0.18) !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .client-bottom-quickbar button.active {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #23f29b, #00d5ff) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow:
+    0 0 24px rgba(0, 213, 255, 0.24),
+    0 10px 28px rgba(35, 242, 155, 0.18) !important;
+}
+
+body.route-client .client-bottom-quickbar button.women {
+  color: #ffdde3 !important;
+  background: rgba(239, 0, 20, 0.18) !important;
+  border-color: rgba(239, 0, 20, 0.28) !important;
+}
+
+body.route-client .client-bottom-quickbar button.active.women {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #b70721, #e30613) !important;
+  border-color: rgba(255, 100, 120, 0.4) !important;
+}
+
+body.route-client .ride-category-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 0;
+}
+
+body.route-client .ride-category-strip::-webkit-scrollbar {
+  display: none;
+}
+
+body.route-client .ride-category-strip button {
+  flex: 0 0 auto !important;
+  min-width: 52px !important;
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+
+body.route-client .ride-category-strip button.active {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #23f29b, #00d5ff) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow:
+    0 0 22px rgba(0, 213, 255, 0.22),
+    0 8px 24px rgba(35, 242, 155, 0.16) !important;
+}
+
 body.route-client .selected-map-card button,
 body.route-client .route-summary button,
 body.route-client .request-btn {
@@ -3964,20 +3964,44 @@ body.route-client .request-btn {
 }
 
 body.route-client .client-bottom-quickbar {
-  left: max(10px, env(safe-area-inset-left));
-  right: max(10px, env(safe-area-inset-right));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-  height: 58px;
-  max-width: 430px;
-  margin: 0 auto;
-  border-radius: 24px;
+  left: max(12px, env(safe-area-inset-left)) !important;
+  right: max(12px, env(safe-area-inset-right)) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+  height: auto !important;
+  min-height: 58px !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border-radius: 26px !important;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.55fr) !important;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)),
-    rgba(5, 10, 16, 0.82);
+    linear-gradient(135deg, rgba(4, 10, 14, 0.94), rgba(12, 18, 26, 0.85)) !important;
+  border: 1px solid rgba(35, 242, 155, 0.15) !important;
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.48),
+    0 0 34px rgba(0, 229, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(24px) saturate(1.18) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.18) !important;
 }
 
 body.route-client .client-bottom-quickbar .primary-destination-chip {
-  background: #05070a;
+  min-height: 42px !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, #05080c, #101923) !important;
+  border: 1px solid rgba(0, 213, 255, 0.24) !important;
+  box-shadow:
+    0 0 28px rgba(0, 213, 255, 0.13),
+    0 14px 34px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  font-weight: 950 !important;
+  font-size: 12px !important;
+}
+
+body.route-client .client-bottom-quickbar .primary-destination-chip:disabled {
+  opacity: 0.72 !important;
+  color: rgba(255, 255, 255, 0.56) !important;
 }
 
 body.route-client .driver-panel-backdrop,
@@ -4653,7 +4677,7 @@ body.route-client .women-client-mode::after {
   -webkit-backdrop-filter: blur(18px);
 }
 
-body.route-client .women-client-mode .mapbox-real-map::after {
+body.route-client .women-client-mode .google-real-map::after {
   background:
     linear-gradient(180deg, rgba(112, 14, 56, 0.18) 0%, transparent 26%, rgba(112, 14, 56, 0.22) 100%),
     radial-gradient(circle at 50% 18%, rgba(255, 126, 181, 0.22), transparent 36%);
@@ -6444,10 +6468,10 @@ body.route-home .home-client-card::after {
   display: none;
 }
 
-/* Home Mapbox: the map owns the route calculation */
+/* Home Google: the map owns the route calculation */
 body.route-home .home-map .mobility-map,
 body.route-home .home-map .interactive-map,
-body.route-home .home-map .mapbox-real-map {
+body.route-home .home-map .google-real-map {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -6467,17 +6491,17 @@ body.route-home .home-map .interactive-map {
   background-size: 38px 38px, 38px 38px, auto, auto;
 }
 
-body.route-home .home-map .mapbox-real-map {
+body.route-home .home-map .google-real-map {
   opacity: 0;
   filter: saturate(0.92) contrast(1.05);
   pointer-events: none;
 }
 
-body.route-home .home-map .mapbox-real-map.ready {
+body.route-home .home-map .google-real-map.ready {
   opacity: 0.86;
 }
 
-body.route-home .home-map .mapbox-real-map::after {
+body.route-home .home-map .google-real-map::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -6491,11 +6515,11 @@ body.route-home .home-map .map-toolbar,
 body.route-home .home-map .map-locate-btn,
 body.route-home .home-map .route-summary,
 body.route-home .home-map .map-empty-state,
-body.route-home .home-map .mapboxgl-ctrl-bottom-right {
+body.route-home .home-map .googlegl-ctrl-bottom-right {
   display: none !important;
 }
 
-body.route-home .home-map .mapbox-point-marker {
+body.route-home .home-map .google-point-marker {
   width: 18px;
   height: 18px;
   border: 3px solid rgba(255, 255, 255, 0.92);
@@ -6504,13 +6528,13 @@ body.route-home .home-map .mapbox-point-marker {
     0 14px 28px rgba(0, 0, 0, 0.24);
 }
 
-body.route-home .home-map .mapbox-point-marker.destination {
+body.route-home .home-map .google-point-marker.destination {
   box-shadow:
     0 0 0 5px rgba(227, 6, 19, 0.16),
     0 14px 28px rgba(0, 0, 0, 0.24);
 }
 
-body.route-home .home-map .mapbox-point-marker span {
+body.route-home .home-map .google-point-marker span {
   display: none;
 }
 
@@ -6739,7 +6763,7 @@ body.route-driver .driver-navigation-map {
 }
 
 body.route-driver .driver-navigation-map .mobility-map,
-body.route-driver .driver-navigation-map .mapbox-real-map {
+body.route-driver .driver-navigation-map .google-real-map {
   height: 100%;
   min-height: 0;
   border-radius: 26px;
@@ -6921,7 +6945,7 @@ body.route-driver .driver-live-cockpit {
 }
 
 body.route-driver .driver-live-cockpit .mobility-map,
-body.route-driver .driver-live-cockpit .mapbox-real-map {
+body.route-driver .driver-live-cockpit .google-real-map {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -6930,7 +6954,7 @@ body.route-driver .driver-live-cockpit .mapbox-real-map {
   border-radius: 0;
 }
 
-body.route-driver .driver-live-cockpit .mapbox-real-map::after {
+body.route-driver .driver-live-cockpit .google-real-map::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -6955,7 +6979,7 @@ body.route-driver .driver-live-cockpit .map-locate-btn {
   color: #05070a;
 }
 
-body.route-driver .driver-live-cockpit .mapboxgl-ctrl-bottom-right {
+body.route-driver .driver-live-cockpit .googlegl-ctrl-bottom-right {
   right: 10px;
   bottom: 8px;
 }
@@ -8472,7 +8496,7 @@ body.route-login .driver-onboarding-form .login-text-btn {
   }
 }
 
-/* Client live map: keep Mapbox full-screen and place every control above it. */
+/* Client live map: keep Google full-screen and place every control above it. */
 body.route-client .app-shell {
   min-height: 100svh !important;
   height: 100svh !important;
@@ -8504,7 +8528,7 @@ body.route-client .interactive-map {
   z-index: 0 !important;
 }
 
-body.route-client .mapbox-real-map {
+body.route-client .google-real-map {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -8512,9 +8536,9 @@ body.route-client .mapbox-real-map {
   min-height: 100% !important;
 }
 
-body.route-client .mapbox-real-map .mapboxgl-map,
-body.route-client .mapbox-real-map .mapboxgl-canvas-container,
-body.route-client .mapbox-real-map .mapboxgl-canvas {
+body.route-client .google-real-map .googlegl-map,
+body.route-client .google-real-map .googlegl-canvas-container,
+body.route-client .google-real-map .googlegl-canvas {
   width: 100% !important;
   height: 100% !important;
 }
@@ -8524,10 +8548,15 @@ body.route-client .map-toolbar,
 body.route-client .map-locate-btn,
 body.route-client .route-summary,
 body.route-client .selected-map-card,
-body.route-client .client-bottom-quickbar,
 body.route-client .active-trip-actions {
   position: absolute;
   z-index: 30 !important;
+}
+
+body.route-client .client-bottom-quickbar {
+  /* z-index handled by the premium quickbar block above (z-index: 80) */
+  position: absolute;
+  z-index: 80 !important;
 }
 
 body.route-client .active-trip-card {
@@ -8660,48 +8689,7 @@ body.route-registro .login-choice-btn {
   color: rgba(255, 255, 255, 0.92) !important;
 }
 
-body.route-client .client-bottom-quickbar {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(116px, 0.62fr) !important;
-  gap: 8px !important;
-  min-height: 64px !important;
-  height: auto !important;
-  padding: 8px !important;
-}
-
-body.route-client .ride-category-strip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-body.route-client .ride-category-strip::-webkit-scrollbar {
-  display: none;
-}
-
-body.route-client .ride-category-strip button {
-  flex: 0 0 auto;
-  min-width: 58px !important;
-  min-height: 42px !important;
-  padding: 0 12px !important;
-  border-radius: 17px !important;
-  white-space: nowrap;
-}
-
-body.route-client .ride-category-strip button.active {
-  background: #f7f8fa !important;
-  color: #111820 !important;
-}
-
-body.route-client .client-bottom-quickbar .primary-destination-chip {
-  min-width: 116px !important;
-  min-height: 42px !important;
-  border-radius: 17px !important;
-  padding: 0 12px !important;
-}
+/* Quickbar duplicates removed - see premium rules above (body.route-client .client-bottom-quickbar) */
 
 body.route-client .category-mode-backdrop {
   position: absolute;
@@ -8892,3 +8880,566 @@ body.route-driver .driver-category-card button {
     font-size: 12px !important;
   }
 }
+
+/* =========================================================
+   MiChofer: Markers de mapa (cliente y choferes)
+   Soluciona el bug de imagen gigante flotando sobre el mapa.
+   CRÍTICO: Sin estos estilos, el img dentro de los overlays
+   no tiene dimensiones definidas y aparece gigante.
+========================================================= */
+
+/* --- Marker del cliente --- */
+.google-client-marker {
+  width: 64px;
+  height: 64px;
+  position: relative;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.google-client-marker-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 999px;
+  border: 2px solid rgba(0, 229, 255, 0.55);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.35);
+  animation: clientPulse 2.4s ease-out infinite;
+}
+
+.google-client-marker-content {
+  position: absolute;
+  inset: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #071016;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.google-client-marker-content img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+@keyframes clientPulse {
+  0% {
+    transform: scale(0.86);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(1.22);
+    opacity: 0.18;
+  }
+  100% {
+    transform: scale(1.32);
+    opacity: 0;
+  }
+}
+
+/* --- Marker de choferes --- */
+.google-driver-marker {
+  width: 58px;
+  height: 58px;
+  position: relative;
+  transform: translate(-50%, -100%);
+  cursor: pointer;
+}
+
+.google-driver-marker-content {
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #071016;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.google-driver-marker-content img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.google-driver-marker-status {
+  display: none;
+}
+
+.google-driver-marker.online .google-driver-marker-content {
+  box-shadow:
+    0 0 0 3px rgba(35, 242, 155, 0.65),
+    0 0 22px rgba(35, 242, 155, 0.38),
+    0 14px 34px rgba(0, 0, 0, 0.38);
+}
+
+.google-driver-marker.offline .google-driver-marker-content,
+.google-driver-marker.busy .google-driver-marker-content {
+  box-shadow:
+    0 0 0 3px rgba(255, 68, 88, 0.65),
+    0 0 22px rgba(255, 68, 88, 0.32),
+    0 14px 34px rgba(0, 0, 0, 0.38);
+}
+
+.google-driver-marker.active .google-driver-marker-content {
+  transform: scale(1.08);
+}
+
+/* Importante: previene que img sueltas en overlays del mapa se muestren en tamaño natural */
+.google-real-map img:not(.google-client-marker-content img):not(.google-driver-marker-content img) {
+  max-width: none;
+  max-height: none;
+}
+
+/* Seguridad extra para img dentro de overlays de Google Maps */
+.google-client-marker img,
+.google-driver-marker img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* =========================================================
+   ETAPA 2 — MiChofer Driver Premium Visual System
+   Avatar hero, badge online/offline, trip cards premium
+========================================================= */
+
+/* --- Driver Hero: layout con avatar --- */
+body.route-driver .driver-hero {
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+body.route-driver .driver-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+body.route-driver .driver-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* --- Avatar del chofer en hero --- */
+body.route-driver .driver-hero-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+body.route-driver .driver-hero-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+body.route-driver .driver-hero-avatar.online {
+  box-shadow:
+    0 0 0 3px rgba(35, 242, 155, 0.7),
+    0 0 26px rgba(35, 242, 155, 0.42),
+    0 12px 30px rgba(0, 0, 0, 0.36);
+}
+
+body.route-driver .driver-hero-avatar.offline {
+  box-shadow:
+    0 0 0 3px rgba(255, 68, 88, 0.6),
+    0 0 20px rgba(255, 68, 88, 0.3),
+    0 12px 30px rgba(0, 0, 0, 0.36);
+}
+
+body.route-driver .driver-hero .verify-badge {
+  font-size: 10px !important;
+  padding: 5px 9px !important;
+  white-space: nowrap;
+}
+
+/* --- Driver trip-card premium --- */
+body.route-driver .driver-trip-card {
+  position: relative;
+  overflow: hidden;
+}
+
+body.route-driver .driver-trip-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(35, 242, 155, 0.5), rgba(0, 213, 255, 0.5), transparent);
+}
+
+body.route-driver .trip-status-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+body.route-driver .trip-status-line > span {
+  color: rgba(255, 255, 255, 0.62) !important;
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-driver .trip-price-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, rgba(35, 242, 155, 0.18), rgba(0, 213, 255, 0.12));
+  border: 1px solid rgba(35, 242, 155, 0.3);
+  color: #23f29b !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  white-space: nowrap;
+}
+
+body.route-driver .driver-trip-card h2 {
+  margin: 0 0 6px;
+  color: #ffffff;
+  font-size: clamp(15px, 4vw, 18px);
+  line-height: 1.15;
+  font-weight: 850;
+}
+
+body.route-driver .driver-trip-card p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+
+body.route-driver .driver-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 7px;
+}
+
+body.route-driver .driver-actions-grid button,
+body.route-driver .driver-actions-grid a {
+  min-height: 44px !important;
+  border-radius: 16px !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  text-decoration: none;
+}
+
+body.route-driver .driver-actions-grid button:not(.danger) {
+  background: linear-gradient(135deg, rgba(21, 195, 120, 0.92), rgba(12, 142, 130, 0.82)) !important;
+  border-color: rgba(35, 242, 155, 0.42) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(21, 195, 120, 0.3) !important;
+}
+
+body.route-driver .driver-actions-grid button.danger {
+  background: rgba(227, 6, 19, 0.22) !important;
+  border-color: rgba(255, 68, 88, 0.34) !important;
+  color: #ffb3bc !important;
+}
+
+/* =========================================================
+   ETAPA 2 — Card del chofer seleccionado en el mapa (cliente)
+   Rediseño premium con badge, avatar glow, métricas, botones
+========================================================= */
+
+body.route-client .driver-map-profile {
+  position: absolute !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 88px) !important;
+  z-index: 38 !important;
+  border-radius: 26px !important;
+  padding: 14px !important;
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: 1fr !important;
+  background:
+    linear-gradient(145deg, rgba(105, 196, 192, 0.22), rgba(255, 255, 255, 0.06)),
+    rgba(6, 14, 22, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.42),
+    0 0 34px rgba(0, 213, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(28px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.2) !important;
+}
+
+body.route-client .driver-map-profile .driver-profile-close {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+}
+
+body.route-client .driver-map-profile .driver-map-profile-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+body.route-client .driver-map-profile-avatar-wrap {
+  flex-shrink: 0;
+}
+
+body.route-client .driver-map-profile-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+body.route-client .driver-map-profile-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+body.route-client .driver-map-profile-avatar.online {
+  box-shadow:
+    0 0 0 3px rgba(35, 242, 155, 0.7),
+    0 0 22px rgba(35, 242, 155, 0.4);
+}
+
+body.route-client .driver-map-profile-avatar.offline {
+  box-shadow:
+    0 0 0 3px rgba(255, 68, 88, 0.6),
+    0 0 18px rgba(255, 68, 88, 0.3);
+}
+
+body.route-client .driver-map-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-right: 36px;
+}
+
+body.route-client .driver-map-profile-badge {
+  font-size: 9px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  color: rgba(105, 196, 192, 0.9) !important;
+  display: block !important;
+}
+
+body.route-client .driver-map-profile-info strong {
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 1.1;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.route-client .driver-map-profile-info small {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+  font-weight: 700;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.route-client .driver-map-profile .driver-map-profile-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+body.route-client .driver-map-profile .driver-map-profile-metrics > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 11px;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
+body.route-client .driver-map-profile .driver-map-profile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+}
+
+body.route-client .driver-map-profile .ghost-profile-btn {
+  min-height: 44px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+body.route-client .driver-map-profile .request-profile-btn {
+  min-height: 44px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(0, 213, 255, 0.3) !important;
+  background: linear-gradient(135deg, #05080c, #101923) !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  box-shadow:
+    0 0 22px rgba(0, 213, 255, 0.14),
+    0 10px 28px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+body.route-client .driver-map-profile .request-profile-btn:disabled {
+  opacity: 0.55 !important;
+}
+
+/* =========================================================
+   ETAPA 2 — Destination suggestions enriquecidas
+========================================================= */
+body.route-client .destination-suggestions button strong {
+  display: block;
+  color: var(--glass-text);
+  font-size: 14px;
+  font-weight: 850;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.route-client .destination-suggestions button small {
+  display: block;
+  margin-top: 2px;
+  color: rgba(248, 251, 255, 0.62);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================================================
+   ETAPA 3 — Detalles de ruta y tarifas automáticas
+   ========================================================= */
+.route-guidance-card {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 84px;
+  z-index: 30;
+  padding: 14px 18px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)), rgba(8, 18, 29, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  box-shadow: 
+    0 20px 45px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.route-guidance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  text-align: center;
+}
+
+.route-guidance-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.route-guidance-grid span {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(248, 251, 255, 0.55);
+}
+
+.route-guidance-grid strong {
+  font-size: 14px;
+  font-weight: 950;
+  color: var(--glass-text, #f8fbff);
+}
+
+.route-guidance-grid strong.text-highlight {
+  color: #00d5ff;
+  text-shadow: 0 0 10px rgba(0, 213, 255, 0.25);
+}
+
+.driver-receives-notice {
+  margin: 10px 0 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 800;
+  color: #10b981;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+

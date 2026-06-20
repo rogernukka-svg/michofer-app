@@ -41,10 +41,11 @@ import {
   loadLocalPlaces,
   searchLocalPlaces,
 } from '../lib/placeSearch'
+import { geocodeAddress, loadGoogleMaps } from '../lib/googleMaps'
+import { calculateFare } from '../lib/fareCalculator'
 
 const DEFAULT_CENTER = { lat: -25.5167, lng: -54.6167 }
 const ACTIVE_STATUSES = ['pending', 'accepted', 'arriving', 'in_progress']
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 const CAR_PRICE_PER_KM = 4500
 const CAR_MIN_PRICE = 12000
 
@@ -184,6 +185,9 @@ export default function Client() {
   const [destinationStatus, setDestinationStatus] = useState('idle')
   const [destinationFocused, setDestinationFocused] = useState(false)
   const [localPlaces, setLocalPlaces] = useState([])
+  const [googlePlacePredictions, setGooglePlacePredictions] = useState([])
+  const [destinationPlace, setDestinationPlace] = useState(null)
+  const [googlePlacesReady, setGooglePlacesReady] = useState(false)
   const [mode, setMode] = useState('all')
   const [sort, setSort] = useState('near')
   const [drivers, setDrivers] = useState([])
@@ -196,23 +200,81 @@ export default function Client() {
   const [showMenu, setShowMenu] = useState(false)
   const [showDriverChooser, setShowDriverChooser] = useState(false)
   const [categorySheet, setCategorySheet] = useState(null)
+  const [routeGuidance, setRouteGuidance] = useState(null)
   const [womenRequesting, setWomenRequesting] = useState(false)
   const [activeTrip, setActiveTrip] = useState(null)
   const [activeTripDriver, setActiveTripDriver] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [showAvatarPreview, setShowAvatarPreview] = useState(false)
+  const [googlePlacesError, setGooglePlacesError] = useState(null)
   const avatarInputRef = useRef(null)
+  const autocompleteServiceRef = useRef(null)
+  const placesServiceRef = useRef(null)
+  const googleMapsRef = useRef(null)
   const driversInFlightRef = useRef(false)
   const driversFailureCountRef = useRef(0)
   const driversRetryAtRef = useRef(0)
 
   const hasDestination = Boolean(destination.trim())
   const canOpenDrivers = Boolean(destinationPoint)
-  const routeKm = useMemo(
-    () => (destinationPoint ? distanceKm(clientLocation, destinationPoint) : null),
-    [clientLocation, destinationPoint]
-  )
-  const routePrice = useMemo(() => estimatePrice(routeKm), [routeKm])
+  // Lógica de cálculo de tarifas automáticas por categoría
+  const fares = useMemo(() => {
+    if (!destinationPoint || !clientLocation) return null
+
+    const distanceMeters = routeGuidance?.distance ?? (distanceKm(clientLocation, destinationPoint) * 1000)
+    const durationSeconds = routeGuidance?.duration ?? Math.max(180, (distanceMeters / 1000) * 180)
+
+    const motoFare = calculateFare('moto', distanceMeters, durationSeconds)
+    const autoStandardFare = calculateFare('auto_standard', distanceMeters, durationSeconds)
+    const comfortFare = calculateFare('comfort', distanceMeters, durationSeconds)
+    const premiumFare = calculateFare('premium', distanceMeters, durationSeconds)
+
+    return {
+      moto: motoFare.totalPassengerPays,
+      auto_standard: autoStandardFare.totalPassengerPays,
+      ella: autoStandardFare.totalPassengerPays,
+      comfort: comfortFare.totalPassengerPays,
+      premium: premiumFare.totalPassengerPays,
+      details: {
+        distanceKm: autoStandardFare.distanceKm,
+        durationMin: autoStandardFare.durationMin,
+      }
+    }
+  }, [destinationPoint, clientLocation, routeGuidance])
+
+  const currentFare = useMemo(() => {
+    if (!fares) return null
+    const catKey = mode === 'all' || mode === 'ella' ? 'auto_standard' : mode
+    return fares[catKey] ?? fares['auto_standard']
+  }, [fares, mode])
+
+  const routeKm = fares?.details?.distanceKm ?? null
+  const routePrice = currentFare
+
+  const getDriverFare = (driver) => {
+    if (!fares) return null
+    
+    // Si estamos en un modo específico (no 'all' ni 'ella'), usamos la tarifa de ese modo
+    if (mode !== 'all' && mode !== 'ella') {
+      return currentFare
+    }
+    
+    // Si el modo es 'all' o 'ella', determinamos la categoría del chofer
+    const approvedStr = String(driver.approved_categories || '')
+    const availableStr = String(driver.available_categories || '')
+    
+    const approved = approvedStr.replace(/[{}"]/g, '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+    const available = availableStr.replace(/[{}"]/g, '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+
+    const categories = [...approved, ...available]
+
+    if (categories.includes('premium')) return fares.premium
+    if (categories.includes('comfort')) return fares.comfort
+    if (categories.includes('moto') || String(driver.vehicle_type).toLowerCase() === 'moto') return fares.moto
+    return fares.auto_standard
+  }
+
+
   const accountEmail = user?.email || profile?.email || localStorage.getItem('michofer_last_email') || ''
   const selectedModeMeta = useMemo(() => getRideCategoryMeta(mode), [mode])
   const womenModeStatus = getWomenModeStatus(profile)
@@ -220,8 +282,13 @@ export default function Client() {
     () => searchLocalPlaces(destination, localPlaces, 6),
     [destination, localPlaces]
   )
+  const destinationSuggestionItems = googlePlacePredictions.length > 0 ? googlePlacePredictions : destinationSuggestions
   const bestLocalSuggestion = destinationSuggestions[0] || null
-  const showDestinationSuggestions = !activeTrip && destinationFocused && destination.trim().length > 0 && destinationSuggestions.length > 0
+  const showDestinationSuggestions =
+    !activeTrip &&
+    destinationFocused &&
+    destination.trim().length > 0 &&
+    destinationSuggestionItems.length > 0
 
   useEffect(() => {
     init()
@@ -244,51 +311,153 @@ export default function Client() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
+
+    loadGoogleMaps()
+      .then((google) => {
+        if (cancelled) return
+
+        googleMapsRef.current = google
+        setGooglePlacesReady(true)
+        setGooglePlacesError(null)
+
+        try {
+          if (google?.maps?.places?.AutocompleteService) {
+            autocompleteServiceRef.current = new google.maps.places.AutocompleteService()
+          }
+          if (google?.maps?.places?.PlacesService) {
+            placesServiceRef.current = new google.maps.places.PlacesService(document.createElement('div'))
+          }
+        } catch (error) {
+          console.warn('Google Places no disponible:', error)
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setGooglePlacesReady(false)
+          setGooglePlacesError(error)
+          console.warn('Error cargando Google Places:', error)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     const query = destination.trim()
-    const suggestedQuery = bestLocalSuggestion ? getPlaceSearchText(bestLocalSuggestion) : query
 
     if (query.length < 2) {
       setDestinationPoint(null)
       setDestinationStatus('idle')
+      setGooglePlacePredictions([])
       return undefined
     }
 
+    // Guard: si el usuario ya seleccionó un lugar de Google Places, no relanzar búsqueda
+    if (destinationPlace?.source === 'google_places') {
+      return undefined
+    }
+
+    let cancelled = false
     const controller = new AbortController()
-    const timeout = window.setTimeout(async () => {
-      setDestinationStatus('searching')
+
+    // Fallback: solo para cuando Google no devuelve resultados Y no hay sugerencias locales
+    const searchFallback = async () => {
+      if (cancelled) return
+
+      if (!query) {
+        setDestinationPoint(null)
+        setDestinationStatus('not_found')
+        return
+      }
 
       try {
-        const proximity = `${clientLocation.lng},${clientLocation.lat}`
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(suggestedQuery)}.json?limit=1&language=es&country=py&proximity=${proximity}&access_token=${MAPBOX_TOKEN}`,
-          { signal: controller.signal }
-        )
+        // Enriquecer la búsqueda con contexto geográfico de Paraguay si no viene de Google
+        const enrichedQuery = query.toLowerCase().includes('paraguay') ||
+          query.toLowerCase().includes('ciudad del este') ||
+          query.toLowerCase().includes('alto parana')
+          ? query
+          : `${query}, Paraguay`
+        const location = await geocodeAddress(enrichedQuery, controller.signal)
 
-        if (!response.ok) throw new Error('No se pudo resolver el destino')
+        if (cancelled) return
 
-        const data = await response.json()
-        const center = data?.features?.[0]?.center
-
-        if (!center) {
+        if (!location) {
           setDestinationPoint(null)
           setDestinationStatus('not_found')
           return
         }
 
-        setDestinationPoint({ lng: center[0], lat: center[1] })
+        setDestinationPoint(location)
         setDestinationStatus('ready')
+        setDestinationPlace({
+          name: query,
+          formatted_address: enrichedQuery,
+          lat: location.lat,
+          lng: location.lng,
+          place_id: null,
+          source: 'geocoder_fallback',
+        })
       } catch (error) {
         if (error.name === 'AbortError') return
         setDestinationPoint(null)
         setDestinationStatus('not_found')
       }
-    }, bestLocalSuggestion ? 250 : 450)
+    }
+
+    // Usar delay más corto siempre (el guard arriba previene ejecuciones innecesarias)
+    const timeout = window.setTimeout(() => {
+      setDestinationStatus('searching')
+      const google = googleMapsRef.current
+
+      console.log('[MiChofer Places] input:', query)
+
+      if (google && autocompleteServiceRef.current) {
+        const request = {
+          input: query,
+          componentRestrictions: { country: 'PY' },
+          location: new google.maps.LatLng(clientLocation.lat, clientLocation.lng),
+          radius: 50000,
+          // Sin 'types' restrictivo — incluir establecimientos, mercados, POIs y geocodes
+        }
+
+        autocompleteServiceRef.current.getPlacePredictions(request, (predictions, status) => {
+          if (cancelled) return
+
+          if (status === google.maps.places.PlacesServiceStatus.OK && Array.isArray(predictions) && predictions.length > 0) {
+            console.log('[MiChofer Places] Google predictions:', predictions.length, predictions[0]?.description)
+            setGooglePlacePredictions(predictions.slice(0, 6))
+            setDestinationStatus('idle')
+            return
+          }
+
+          // Google no devolvió resultados — usar fallback local si existe, si no geocoder
+          console.log('[MiChofer Places] Google Places vacío, status:', status)
+          setGooglePlacePredictions([])
+
+          if (bestLocalSuggestion) {
+            setDestinationStatus('idle')
+            return
+          }
+
+          searchFallback()
+        })
+      } else if (!bestLocalSuggestion) {
+        searchFallback()
+      } else {
+        setGooglePlacePredictions([])
+        setDestinationStatus('idle')
+      }
+    }, 400)
 
     return () => {
+      cancelled = true
       window.clearTimeout(timeout)
       controller.abort()
     }
-  }, [bestLocalSuggestion, clientLocation, destination])
+  }, [bestLocalSuggestion, clientLocation, destination, destinationPlace?.source])
 
   useEffect(() => {
     let refreshTimeout = 0
@@ -752,9 +921,14 @@ export default function Client() {
     setRequesting(true)
     setMessage('')
 
+    const destinationTextFinal = destinationPlace?.formatted_address || destinationPlace?.name || destination
+
+    console.log('[MiChofer Route] origin:', clientLocation)
+    console.log('[MiChofer Route] destination:', destinationPoint, destinationTextFinal)
+
     const { data, error } = await requestTrip({
       driverId: selectedDriver.user_id,
-      destinationText: destination,
+      destinationText: destinationTextFinal,
       destinationLat: destinationPoint.lat,
       destinationLng: destinationPoint.lng,
       pickupLat: clientLocation.lat,
@@ -824,6 +998,114 @@ export default function Client() {
     }
   }
 
+  async function chooseGoogleDestinationPrediction(prediction) {
+    if (!prediction) return
+
+    const google = googleMapsRef.current
+    // Usar la descripción completa como label visible (incluye ciudad/país)
+    const mainText = prediction.structured_formatting?.main_text || prediction.description || ''
+    const fullDescription = prediction.description || mainText
+
+    console.log('[MiChofer Places] selected:', prediction.place_id, fullDescription)
+
+    setDestination(mainText)
+    setDestinationFocused(false)
+    setSelectedDriver(null)
+    setMessage('')
+    setGooglePlacePredictions([])
+
+    if (placesServiceRef.current && prediction.place_id) {
+      return new Promise((resolve) => {
+        placesServiceRef.current.getDetails(
+          {
+            placeId: prediction.place_id,
+            fields: ['place_id', 'name', 'formatted_address', 'geometry'],
+          },
+          (placeResult, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && placeResult?.geometry?.location) {
+              const location = {
+                lat: Number(placeResult.geometry.location.lat()),
+                lng: Number(placeResult.geometry.location.lng()),
+              }
+
+              const resolvedPlace = {
+                name: placeResult.name || mainText,
+                formatted_address: placeResult.formatted_address || fullDescription,
+                lat: location.lat,
+                lng: location.lng,
+                place_id: placeResult.place_id || prediction.place_id,
+                source: 'google_places',
+              }
+
+              console.log('[MiChofer Places] destination coords:', location.lat, location.lng)
+              console.log('[MiChofer Places] formatted_address:', resolvedPlace.formatted_address)
+
+              setDestinationPoint(location)
+              setDestinationStatus('ready')
+              setDestinationPlace(resolvedPlace)
+              resolve(true)
+              return
+            }
+
+            // Fallback: PlacesService falló — intentar geocodificar con la descripción completa
+            // (incluye ciudad, ej: "Mercado de Abasto, Ciudad del Este, Paraguay")
+            if (prediction.place_id && google?.maps?.Geocoder) {
+              console.log('[MiChofer Places] PlacesService falló, usando geocoder con:', fullDescription)
+              geocodeAddress(fullDescription).then((location) => {
+                if (location) {
+                  const fallbackPlace = {
+                    name: mainText,
+                    formatted_address: fullDescription,
+                    lat: location.lat,
+                    lng: location.lng,
+                    place_id: prediction.place_id,
+                    source: 'google_places',
+                  }
+                  console.log('[MiChofer Places] destination coords (geocoder):', location.lat, location.lng)
+                  setDestinationPoint(location)
+                  setDestinationStatus('ready')
+                  setDestinationPlace(fallbackPlace)
+                } else {
+                  setDestinationPoint(null)
+                  setDestinationStatus('not_found')
+                }
+                resolve(true)
+              })
+              return
+            }
+
+            setDestinationPoint(null)
+            setDestinationStatus('not_found')
+            resolve(true)
+          }
+        )
+      })
+    }
+
+    // Sin PlacesService — geocodificar con descripción completa
+    setDestinationStatus('searching')
+    console.log('[MiChofer Places] sin PlacesService, geocodificando:', fullDescription)
+    const location = await geocodeAddress(fullDescription)
+
+    if (location) {
+      const noServicePlace = {
+        name: mainText,
+        formatted_address: fullDescription,
+        lat: location.lat,
+        lng: location.lng,
+        place_id: prediction.place_id || null,
+        source: 'google_places',
+      }
+      console.log('[MiChofer Places] destination coords (sin service):', location.lat, location.lng)
+      setDestinationPoint(location)
+      setDestinationStatus('ready')
+      setDestinationPlace(noServicePlace)
+    } else {
+      setDestinationPoint(null)
+      setDestinationStatus('not_found')
+    }
+  }
+
   function chooseDestinationSuggestion(place) {
     const title = getPlaceTitle(place)
 
@@ -831,10 +1113,18 @@ export default function Client() {
     setDestinationFocused(false)
     setSelectedDriver(null)
     setMessage('')
+    setGooglePlacePredictions([])
 
     if (Number.isFinite(place?.lat) && Number.isFinite(place?.lng)) {
       setDestinationPoint({ lat: place.lat, lng: place.lng })
       setDestinationStatus('ready')
+      setDestinationPlace({
+        name: title,
+        formatted_address: getPlaceSubtitle(place) || title,
+        lat: place.lat,
+        lng: place.lng,
+        place_id: place.id || null,
+      })
     } else {
       setDestinationStatus('searching')
     }
@@ -891,6 +1181,10 @@ export default function Client() {
                 onChange={(event) => {
                   setDestination(event.target.value)
                   setSelectedDriver(null)
+                  setGooglePlacePredictions([])
+                  setDestinationPlace(null)
+                  setDestinationPoint(null)
+                  setDestinationStatus('idle')
                   setMessage('')
                 }}
                 onFocus={() => setDestinationFocused(true)}
@@ -929,21 +1223,32 @@ export default function Client() {
 
           {showDestinationSuggestions && (
             <section className="destination-suggestions" role="listbox" aria-label="Sugerencias de destino">
-              {destinationSuggestions.map((place) => (
-                <button
-                  key={`${place.id}-${place.alias}`}
-                  type="button"
-                  role="option"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => chooseDestinationSuggestion(place)}
-                >
-                  <MapPin size={15} />
-                  <span>
-                    <strong>{getPlaceTitle(place)}</strong>
-                    <small>{getPlaceSubtitle(place)}</small>
-                  </span>
-                </button>
-              ))}
+              {destinationSuggestionItems.map((place, index) => {
+                const isGooglePlace = googlePlacePredictions.length > 0
+                const title = isGooglePlace
+                  ? place.structured_formatting?.main_text || place.description || ''
+                  : getPlaceTitle(place)
+                const subtitle = isGooglePlace
+                  // Mostrar ciudad/barrio — secondary_text contiene ciudad + país
+                  ? place.structured_formatting?.secondary_text || place.description || 'Paraguay'
+                  : getPlaceSubtitle(place)
+                const key = isGooglePlace ? `${place.place_id || index}-${title}` : `${place.id}-${place.alias}`
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="option"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => (isGooglePlace ? chooseGoogleDestinationPrediction(place) : chooseDestinationSuggestion(place))}
+                  >
+                    <MapPin size={15} />
+                    <span>
+                      <strong>{title}</strong>
+                      {subtitle && <small>{subtitle}</small>}
+                    </span>
+                  </button>
+                )
+              })}
             </section>
           )}
         </header>
@@ -984,8 +1289,45 @@ export default function Client() {
           onSelectDriver={setSelectedDriver}
           onChooseDriver={() => setShowDriverChooser(true)}
           onRefreshLocation={refreshLocation}
+          onRouteUpdate={setRouteGuidance}
           showRouteSummary={false}
         />
+
+        {destination.trim().length > 0 && !destinationPoint && (
+          <section className="route-guidance-card warning-guidance" style={{ background: 'rgba(15, 23, 42, 0.9)', border: '1px solid #eab308' }} aria-label="Aviso de destino">
+            <p style={{ margin: 0, color: '#facc15', fontWeight: '800', textAlign: 'center', fontSize: '13px' }}>
+              ⚠️ Elegí un destino de la lista para calcular precio
+            </p>
+          </section>
+        )}
+
+        {routeGuidance && fares && !activeTrip && (
+          <section className="route-guidance-card" aria-label="Detalle de ruta">
+            <div className="route-guidance-grid">
+              <div>
+                <span>Ruta</span>
+                <strong>{fares.details.distanceKm != null ? `${fares.details.distanceKm.toFixed(1)} km` : '---'}</strong>
+              </div>
+              <div>
+                <span>Duración</span>
+                <strong>{fares.details.durationMin != null ? `${Math.ceil(fares.details.durationMin)} min` : '---'}</strong>
+              </div>
+              <div>
+                <span>Categoría</span>
+                <strong style={{ textTransform: 'capitalize' }}>
+                  {mode === 'all' ? 'Auto Normal' : mode === 'ella' ? 'Ella' : mode}
+                </strong>
+              </div>
+              <div>
+                <span>Precio estimado</span>
+                <strong className="text-highlight">{currentFare ? formatGs(currentFare) : '---'}</strong>
+              </div>
+            </div>
+            <p className="driver-receives-notice">
+              El chofer recibe el total del viaje
+            </p>
+          </section>
+        )}
 
         {activeTrip && activeTripDriver && (
           <section className="active-trip-actions" aria-label="Acciones del viaje">
@@ -1004,16 +1346,24 @@ export default function Client() {
         {!showMenu && !showDriverChooser && !selectedDriver && !activeTrip && (
           <div className="client-bottom-quickbar" aria-label="Acciones rápidas del cliente">
             <div className="ride-category-strip">
-              {RIDE_CATEGORY_OPTIONS.map((category) => (
-                <button
-                  key={category.code}
-                  type="button"
-                  className={mode === category.code ? `active ${category.code}` : category.code}
-                  onClick={() => handleModeSelect(category.code)}
-                >
-                  {category.shortLabel}
-                </button>
-              ))}
+              {RIDE_CATEGORY_OPTIONS.map((category) => {
+                const catKey = category.code === 'all' || category.code === 'ella' ? 'auto_standard' : category.code
+                const fareValue = fares?.[catKey]
+                const label = fareValue 
+                  ? `${category.shortLabel} · ${Number(fareValue).toLocaleString('es-PY')} Gs.`
+                  : category.shortLabel
+
+                return (
+                  <button
+                    key={category.code}
+                    type="button"
+                    className={mode === category.code ? `active ${category.code}` : category.code}
+                    onClick={() => handleModeSelect(category.code)}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
             </div>
 
             <button
@@ -1022,7 +1372,7 @@ export default function Client() {
               onClick={() => setShowDriverChooser(true)}
               disabled={!canOpenDrivers}
             >
-              {canOpenDrivers ? `${visibleDrivers.length} choferes cerca` : 'Elegí destino'}
+              {canOpenDrivers ? `Ver choferes · ${currentFare ? formatGs(currentFare) : ''}` : 'Elegí destino'}
             </button>
           </div>
         )}
@@ -1039,37 +1389,46 @@ export default function Client() {
             </button>
 
             <div className="driver-map-profile-head">
-              <div className="driver-map-profile-avatar">
-                {selectedDriver.avatar ? (
-                  <img src={selectedDriver.avatar} alt={selectedDriver.name} />
-                ) : (
-                  <span>{firstName(selectedDriver.name).slice(0, 2).toUpperCase()}</span>
-                )}
+              <div className="driver-map-profile-avatar-wrap">
+                <div className={`driver-map-profile-avatar ${selectedDriver.available || selectedDriver.is_available ? 'online' : 'offline'}`}>
+                  {selectedDriver.avatar ? (
+                    <img src={selectedDriver.avatar} alt={selectedDriver.name} />
+                  ) : (
+                    <span>{firstName(selectedDriver.name).slice(0, 2).toUpperCase()}</span>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <span>Perfil del chofer</span>
+              <div className="driver-map-profile-info">
+                <span className="driver-map-profile-badge">PERFIL DEL CHOFER</span>
                 <strong>{selectedDriver.name}</strong>
                 {selectedDriver.vehicle && <small>{selectedDriver.vehicle}</small>}
               </div>
             </div>
 
             <div className="driver-map-profile-metrics">
-              <small>
-                <Star size={13} /> {Number(selectedDriver.rating || 5).toFixed(2)}
-              </small>
-              {selectedDriver.distance && <small>{selectedDriver.distance}</small>}
-              {selectedDriver.eta && <small>{selectedDriver.eta}</small>}
-              {routeKm && <small>{routeKm.toFixed(1)} km ruta</small>}
+              <span>
+                <Star size={12} /> {Number(selectedDriver.rating || 5).toFixed(2)}
+              </span>
+              {selectedDriver.distance && <span>{selectedDriver.distance}</span>}
+              {selectedDriver.eta && <span>{selectedDriver.eta}</span>}
+              {routeKm && <span>{routeKm.toFixed(1)} km ruta</span>}
+              {currentFare && <span className="price-metric">Precio: {formatGs(currentFare)}</span>}
             </div>
+
+            {currentFare && (
+              <p className="driver-receives-notice-inline" style={{ fontSize: '11px', color: '#10b981', margin: '4px 0 0 16px', fontWeight: '800' }}>
+                El chofer recibe el total del viaje
+              </p>
+            )}
 
             <div className="driver-map-profile-actions">
               <button type="button" className="ghost-profile-btn" onClick={() => setShowDriverChooser(true)}>
                 Ver opciones
               </button>
 
-              <button type="button" onClick={requestRide} disabled={requesting || !destinationPoint}>
-                {requesting ? 'Solicitando...' : routePrice ? formatGs(routePrice) : 'Solicitar'}
+              <button type="button" className="request-profile-btn" onClick={requestRide} disabled={requesting || !destinationPoint}>
+                {requesting ? 'Solicitando...' : currentFare ? `Solicitar · ${formatGs(currentFare)}` : 'Solicitar'}
               </button>
             </div>
           </article>
@@ -1176,7 +1535,7 @@ export default function Client() {
                       </div>
 
                       <div className="driver-side">
-                        {routePrice && <div className="driver-price">{formatGs(routePrice)}</div>}
+                        {getDriverFare(driver) && <div className="driver-price">{formatGs(getDriverFare(driver))}</div>}
 
                         <button
                           type="button"
