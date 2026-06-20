@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  CheckCircle2,
   ExternalLink,
   Eye,
   FileText,
@@ -12,6 +11,8 @@ import {
 } from 'lucide-react'
 import { adminReviewDriverCategory, adminReviewWomenMode, supabase } from '../lib/supabase'
 import { categoryStatusLabel, getRideCategoryMeta } from '../lib/rideCategories'
+
+const ADMIN_EMAILS = ['robycho@gmail.com', 'rogercho@gmail.com']
 
 const DOCUMENT_LABELS = {
   driver_license: 'Licencia de conducir',
@@ -38,6 +39,11 @@ function isPdfFile(value) {
   return /\.pdf$/i.test(String(value || ''))
 }
 
+function isAdminAccount(user, profile) {
+  const email = String(user?.email || '').toLowerCase()
+  return profile?.role === 'admin' || ADMIN_EMAILS.includes(email)
+}
+
 export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [drivers, setDrivers] = useState([])
@@ -53,6 +59,14 @@ export default function Admin() {
 
   useEffect(() => {
     loadDrivers()
+
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      loadDrivers()
+    })
+
+    return () => {
+      listener?.subscription?.unsubscribe()
+    }
   }, [])
 
   const stats = useMemo(() => {
@@ -76,17 +90,29 @@ export default function Admin() {
     })
   }, [drivers, filterStatus])
 
+  async function getCurrentUser() {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const sessionUser = sessionData?.session?.user || null
+
+    if (sessionUser) return sessionUser
+
+    const { data: authData } = await supabase.auth.getUser()
+    return authData?.user || null
+  }
+
   async function loadDrivers() {
     setLoading(true)
     setMessage('')
 
-    const { data: authData } = await supabase.auth.getUser()
-    const currentUser = authData?.user || null
+    const currentUser = await getCurrentUser()
     setAdminUser(currentUser)
 
     if (!currentUser) {
-      setMessage('No hay sesión activa. Iniciá sesión con la cuenta admin.')
       setDrivers([])
+      setCategoryRequests([])
+      setWomenRequests([])
+      setAdminProfile(null)
+      setMessage('No hay sesión activa. Iniciá sesión con robycho@gmail.com o rogercho@gmail.com y volvé a /admin.')
       setLoading(false)
       return
     }
@@ -101,7 +127,24 @@ export default function Admin() {
       console.warn('ADMIN PROFILE LOAD ERROR:', ownProfileError)
     }
 
-    setAdminProfile(ownProfile || null)
+    const fallbackAdminProfile = {
+      id: currentUser.id,
+      email: currentUser.email,
+      role: ADMIN_EMAILS.includes(String(currentUser.email || '').toLowerCase()) ? 'admin' : 'sin rol',
+      full_name: currentUser.user_metadata?.full_name || 'Admin',
+    }
+
+    const finalProfile = ownProfile || fallbackAdminProfile
+    setAdminProfile(finalProfile)
+
+    if (!isAdminAccount(currentUser, finalProfile)) {
+      setDrivers([])
+      setCategoryRequests([])
+      setWomenRequests([])
+      setMessage(`Estás logueado como ${currentUser.email}, pero su rol no es admin.`)
+      setLoading(false)
+      return
+    }
 
     const { data, error } = await supabase
       .from('driver_profiles')
@@ -110,7 +153,8 @@ export default function Admin() {
 
     if (error) {
       console.error('ADMIN DRIVER LOAD ERROR:', error)
-      setMessage('No pude cargar choferes. Revisá permisos RLS de admin.')
+      setDrivers([])
+      setMessage('Tu usuario es admin, pero RLS no está devolviendo choferes. Ejecutá las políticas SQL de admin.')
       setLoading(false)
       return
     }
@@ -141,26 +185,7 @@ export default function Admin() {
     }
 
     if (!data?.length) {
-      if (currentUser?.id) {
-        const { data: ownDriver } = await supabase
-          .from('driver_profiles')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .maybeSingle()
-
-        if (ownDriver) {
-          setDrivers([ownDriver])
-          setMessage('Solo estás viendo tu solicitud. Para revisar a todos, tu usuario debe tener role admin y las políticas RLS de admin.')
-          setLoading(false)
-          return
-        }
-      }
-
-      setMessage(
-        ownProfile?.role === 'admin'
-          ? 'Tu usuario es admin, pero RLS no está devolviendo choferes. Revisá la política SELECT de driver_profiles.'
-          : `Estás logueado como ${currentUser.email}, pero su rol no es admin.`
-      )
+      setMessage('Admin activo. Todavía no hay choferes registrados o RLS no está devolviendo registros.')
     }
 
     setDrivers(data || [])
@@ -205,6 +230,7 @@ export default function Admin() {
 
     const approved = status === 'approved'
     const reviewedAt = new Date().toISOString()
+
     const { error } = await supabase
       .from('driver_profiles')
       .update({
@@ -253,11 +279,11 @@ export default function Admin() {
 
     if (error) {
       console.error('ADMIN CATEGORY REVIEW ERROR:', error)
-      setMessage('No pude revisar la categoria. Ejecuta supabase/michofer_mobility_foundation.sql y revisa permisos admin.')
+      setMessage('No pude revisar la categoría. Revisá permisos admin.')
       return
     }
 
-    setMessage(decision === 'approved' ? 'Categoria aprobada.' : 'Categoria rechazada.')
+    setMessage(decision === 'approved' ? 'Categoría aprobada.' : 'Categoría rechazada.')
     await loadDrivers()
   }
 
@@ -272,7 +298,7 @@ export default function Admin() {
 
     if (error) {
       console.error('ADMIN WOMEN REVIEW ERROR:', error)
-      setMessage('No pude revisar MiChofer Ella. Ejecuta supabase/michofer_mobility_foundation.sql y revisa permisos admin.')
+      setMessage('No pude revisar MiChofer Ella. Revisá permisos admin.')
       return
     }
 
@@ -309,6 +335,7 @@ export default function Admin() {
             <span>En revisión</span>
             <strong>{stats.submitted}</strong>
           </div>
+
           <div>
             <UserCheck size={20} />
             <span>Aprobados</span>
@@ -361,6 +388,12 @@ export default function Admin() {
           <span>Rol: {adminProfile?.role || 'sin perfil visible'}</span>
         </section>
 
+        {!adminUser && (
+          <a className="admin-login-link" href="/login">
+            Iniciar sesión como admin
+          </a>
+        )}
+
         {womenRequests.length > 0 && (
           <section className="admin-list">
             <div className="admin-list-title">
@@ -372,15 +405,15 @@ export default function Admin() {
               <article key={request.id} className="admin-driver-card admin-category-review-card">
                 <div className="admin-driver-head">
                   <div>
-                    <span className="admin-status submitted">En revision</span>
+                    <span className="admin-status submitted">En revisión</span>
                     <h2>{request.full_name || request.email || 'Pasajera MiChofer'}</h2>
-                    <p>Solicito acceso a viajes con conductoras verificadas.</p>
+                    <p>Solicitó acceso a viajes con conductoras verificadas.</p>
                   </div>
                 </div>
 
                 <div className="admin-driver-meta">
                   <span>{request.email || 'Sin correo'}</span>
-                  <span>Genero privado</span>
+                  <span>Género privado</span>
                   <span>{request.women_mode_status || 'requested'}</span>
                 </div>
 
@@ -388,6 +421,7 @@ export default function Admin() {
                   <button className="approve" type="button" onClick={() => updateWomenRequest(request, 'approved')}>
                     Aprobar Ella
                   </button>
+
                   <button className="reject" type="button" onClick={() => updateWomenRequest(request, 'rejected')}>
                     Rechazar
                   </button>
@@ -400,7 +434,7 @@ export default function Admin() {
         {categoryRequests.filter((request) => ['requested', 'in_review'].includes(request.status)).length > 0 && (
           <section className="admin-list">
             <div className="admin-list-title">
-              <strong>Categorias de chofer</strong>
+              <strong>Categorías de chofer</strong>
               <span>
                 {categoryRequests.filter((request) => ['requested', 'in_review'].includes(request.status)).length} pendiente
               </span>
@@ -418,20 +452,21 @@ export default function Admin() {
                       <div>
                         <span className="admin-status submitted">{categoryStatusLabel('requested')}</span>
                         <h2>{meta.title}</h2>
-                        <p>{driver?.full_name || 'Chofer MiChofer'} quiere activar esta categoria.</p>
+                        <p>{driver?.full_name || 'Chofer MiChofer'} quiere activar esta categoría.</p>
                       </div>
                     </div>
 
                     <div className="admin-driver-meta">
                       <span>{driver?.email || 'Sin correo visible'}</span>
-                      <span>{driver?.car_brand || 'Vehiculo'} {driver?.car_model || ''}</span>
-                      <span>{driver?.plate || 'Sin matricula'}</span>
+                      <span>{driver?.car_brand || 'Vehículo'} {driver?.car_model || ''}</span>
+                      <span>{driver?.plate || 'Sin matrícula'}</span>
                     </div>
 
                     <div className="admin-actions">
                       <button className="approve" type="button" onClick={() => updateCategoryRequest(request, 'approved')}>
-                        Aprobar categoria
+                        Aprobar categoría
                       </button>
+
                       <button className="reject" type="button" onClick={() => updateCategoryRequest(request, 'rejected')}>
                         Rechazar
                       </button>
@@ -468,7 +503,9 @@ export default function Admin() {
                       <span className={`admin-status ${status}`}>
                         {statusLabel(status)}
                       </span>
+
                       <h2>{driver.full_name || 'Chofer MiChofer'}</h2>
+
                       <p>
                         {driver.car_brand || 'Vehículo'} {driver.car_model || ''} · {driver.plate || 'Sin matrícula'}
                       </p>
@@ -503,45 +540,41 @@ export default function Admin() {
                     )}
 
                     {showDocuments && Object.entries(DOCUMENT_LABELS).map(([key, label]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          className={documents[key] ? 'done' : ''}
-                          onClick={() => openDocument(key, documents[key])}
-                          disabled={!documents[key] || previewLoading}
-                          title={documents[key] ? 'Ver documento' : 'Documento pendiente'}
-                        >
-                          {documents[key] ? <Eye size={14} /> : <XCircle size={14} />}
-                          {label}
-                        </button>
+                      <button
+                        key={key}
+                        type="button"
+                        className={documents[key] ? 'done' : ''}
+                        onClick={() => openDocument(key, documents[key])}
+                        disabled={!documents[key] || previewLoading}
+                        title={documents[key] ? 'Ver documento' : 'Documento pendiente'}
+                      >
+                        {documents[key] ? <Eye size={14} /> : <XCircle size={14} />}
+                        {label}
+                      </button>
                     ))}
                   </div>
 
                   {status !== 'approved' && status !== 'rejected' && (
                     <div className="admin-actions">
-                      {status !== 'approved' && (
-                        <button
-                          type="button"
-                          className="approve"
-                          onClick={() => updateDriverStatus(driver, 'approved')}
-                        >
-                          Aprobar
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="approve"
+                        onClick={() => updateDriverStatus(driver, 'approved')}
+                      >
+                        Aprobar
+                      </button>
 
-                      {status !== 'rejected' && (
-                        <button
-                          type="button"
-                          className="reject"
-                          onClick={() => {
-                            if (window.confirm('Rechazar este chofer impedira que reciba viajes.')) {
-                              updateDriverStatus(driver, 'rejected')
-                            }
-                          }}
-                        >
-                          Rechazar
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="reject"
+                        onClick={() => {
+                          if (window.confirm('Rechazar este chofer impedirá que reciba viajes.')) {
+                            updateDriverStatus(driver, 'rejected')
+                          }
+                        }}
+                      >
+                        Rechazar
+                      </button>
                     </div>
                   )}
                 </article>
@@ -726,7 +759,8 @@ const adminStyles = `
 
   .admin-message,
   .admin-session,
-  .admin-empty {
+  .admin-empty,
+  .admin-login-link {
     margin-top: 14px;
     padding: 16px;
     font-weight: 900;
@@ -754,6 +788,17 @@ const adminStyles = `
   .admin-session span {
     color: #667085;
     font-size: 13px;
+  }
+
+  .admin-login-link {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 18px;
+    background: #07110f;
+    color: white;
+    text-decoration: none;
   }
 
   .admin-list {
@@ -912,10 +957,6 @@ const adminStyles = `
     font-size: 15px;
     font-weight: 950;
     cursor: pointer;
-  }
-
-  .admin-actions button:only-child {
-    grid-column: 1 / -1;
   }
 
   .admin-actions .approve {
