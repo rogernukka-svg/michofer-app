@@ -1323,9 +1323,6 @@ export default function Client() {
                 <strong className="text-highlight">{currentFare ? formatGs(currentFare) : '---'}</strong>
               </div>
             </div>
-            <p className="driver-receives-notice">
-              El chofer recibe el total del viaje
-            </p>
           </section>
         )}
 
@@ -1423,11 +1420,6 @@ export default function Client() {
               <button type="button" className="request-profile-btn" onClick={requestRide} disabled={requesting || !destinationPoint}>
                 {requesting ? 'Solicitando...' : currentFare ? `Solicitar · ${formatGs(currentFare)}` : 'Solicitar'}
               </button>
-              {currentFare && (
-                <p className="driver-receives-notice-inline" style={{ fontSize: '11px', color: '#10b981', margin: '4px 0 0 0', fontWeight: '800', textAlign: 'center', gridColumn: '1 / -1' }}>
-                  El chofer recibe el total del viaje
-                </p>
-              )}
             </div>
           </article>
         )}

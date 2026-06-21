@@ -58,6 +58,7 @@ function scoreField(query, value, weight) {
 
   const tokens = text.split(' ')
   if (tokens.some((token) => token.startsWith(query))) return weight + 44
+  if (tokens.some((token) => token.includes(query))) return weight + 30
   if (query.length >= 3 && tokens.every((token) => query.includes(token[0]))) return weight + 16
   return 0
 }
@@ -123,12 +124,15 @@ export function searchLocalPlaces(query, places, limit = 6) {
       scoreField(normalizedQuery, place.ciudad, 70) +
       scoreField(normalizedQuery, place.categoria, 26)
 
-    if (!textScore && !place.searchBlob.includes(normalizedQuery)) return
+    const blobMatch = place.searchBlob.includes(normalizedQuery)
+    if (!textScore && !blobMatch) return
+    // Bonus extra si el query aparece como substring exacto en el searchBlob
+    const blobBonus = blobMatch && textScore === 0 ? 20 : 0
 
     const categoryBoost = ['ciudad', 'punto_referencia', 'barrio_zona', 'calle_avenida'].includes(place.categoria)
       ? 28
       : 0
-    const score = textScore + Number(place.prioridad || 0) + categoryBoost
+    const score = textScore + Number(place.prioridad || 0) + categoryBoost + blobBonus
     const key = placeKey(place)
     const previous = bestByPlace.get(key)
 
