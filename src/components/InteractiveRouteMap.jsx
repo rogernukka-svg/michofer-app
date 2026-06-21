@@ -429,22 +429,25 @@ export default function InteractiveRouteMap({
 
       {!mapReady && (
         <div className="map-empty-state">
-          {mapError ? (
-            <>
-              <strong>Error cargando el mapa</strong>
-              <span>Verifica que `VITE_GOOGLE_MAPS_API_KEY` esté configurada correctamente.</span>
-            </>
-          ) : (
-            <>
-              <div className="map-loading-orbit" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <strong>Cargando mapa</strong>
-              <span>Preparando ruta en vivo</span>
-            </>
-          )}
+          <div className="map-empty-card">
+            {mapError ? (
+              <>
+                <span className="map-empty-eyebrow">Vista de viaje</span>
+                <strong>No se pudo cargar el mapa interactivo</strong>
+                <span>Revisá tu conexión o la clave de Google Maps para ver la ruta en vivo.</span>
+              </>
+            ) : (
+              <>
+                <div className="map-loading-orbit" aria-hidden="true">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <strong>Cargando mapa</strong>
+                <span>Preparando la experiencia MiChofer</span>
+              </>
+            )}
+          </div>
         </div>
       )}
 

@@ -472,23 +472,51 @@ export default function Driver() {
     await loadTrips()
   }
 
+  const driverDisplayName = profile?.full_name || driverProfile?.full_name || 'MiChofer'
+  const vehicleLabel =
+    [driverProfile?.car_brand, driverProfile?.car_model].filter(Boolean).join(' ') || 'Vehículo listo'
+  const currentModeLabel = activeTrip
+    ? 'En viaje'
+    : isReceivingTrips
+      ? 'Disponible'
+      : isOnline
+        ? 'Conectado'
+        : 'Desconectado'
+  const heroSubtitle = isReceivingTrips
+    ? 'Estás visible para pasajeros cercanos.'
+    : isOnline
+      ? 'Conectado, listo para activar solicitudes.'
+      : 'Tu cabina de control para salir a ruta.'
+  const routeHeadline = focusTrip
+    ? statusLabel(focusTrip.status)
+    : !approved
+      ? verificationSubtitle
+      : isReceivingTrips
+        ? 'Esperando una nueva solicitud'
+        : isOnline && !hasDriverLocation
+          ? 'Calibrá tu punto para aparecer'
+          : isOnline
+            ? 'Activá recibir viajes'
+            : 'Conectate para aparecer'
+
   return (
     <main className="app-shell">
-      <section className={activeTrip && navigationTarget ? 'phone driver-phone active-navigation' : 'phone driver-phone'}>
-        <header className="driver-top">
-          <div className="driver-top-status">
-            <span className={`driver-online-indicator ${isOnline ? (isReceivingTrips ? 'active' : 'standby') : 'offline'}`} />
-            <span className="driver-online-label">
-              {isOnline ? (isReceivingTrips ? 'En línea' : 'Conectado') : 'Desconectado'}
-            </span>
+      <section className={`phone driver-phone driver-v2 ${activeTrip && navigationTarget ? 'active-navigation' : ''}`}>
+        <header className="driver-v2-topbar">
+          <div className="driver-v2-topbar-left">
+            <span className={`driver-v2-dot ${isReceivingTrips ? 'online' : isOnline ? 'standby' : 'offline'}`} />
+            <div>
+              <strong>{currentModeLabel}</strong>
+              <small>{hasDriverLocation ? 'Ubicación lista' : 'Sin GPS'}</small>
+            </div>
           </div>
-          <button type="button" onClick={init} aria-label="Actualizar">
-            <RefreshCw size={20} />
+          <button type="button" className="driver-v2-refresh" onClick={init} aria-label="Actualizar">
+            <RefreshCw size={18} />
           </button>
         </header>
 
         {activeTrip && navigationTarget ? (
-          <section className="driver-live-cockpit">
+          <section className="driver-v2-nav-layout">
             <InteractiveRouteMap
               origin={driverPoint}
               destination={navigationTarget}
@@ -499,7 +527,7 @@ export default function Driver() {
               onSelectDriver={() => {}}
               onChooseDriver={() => {}}
               onRefreshLocation={() => syncDriverLocation(activeTrip)}
-              fitPadding={{ top: 118, bottom: 150, left: 42, right: 42 }}
+              fitPadding={{ top: 118, bottom: 180, left: 42, right: 42 }}
               mapInteractive={false}
               animateCamera
               showRouteSummary={false}
@@ -507,7 +535,7 @@ export default function Driver() {
               onRouteUpdate={setRouteGuidance}
             />
 
-            <article className="driver-turn-card">
+            <article className="driver-v2-turn-card">
               <span>{navigationStage}</span>
               <strong>{guidanceInstruction}</strong>
               <div>
@@ -516,33 +544,31 @@ export default function Driver() {
               </div>
             </article>
 
-            <article className="driver-live-sheet">
-              <div>
+            <article className="driver-v2-live-sheet">
+              <div className="driver-v2-live-copy">
                 <span>{statusLabel(activeTrip.status)}</span>
                 <strong>{activeTrip.destination_text || navigationDestinationText}</strong>
-                <small>{formatGs(activeTrip.price)} · {guidanceDistance}</small>
-                <p className="driver-receives-notice-driver" style={{ fontSize: '11px', color: '#10b981', margin: '4px 0 0 0', fontWeight: '800' }}>
-                  El chofer recibe el total del viaje
-                </p>
+                <p>{guidanceInstruction}</p>
+                <small>{formatGs(activeTrip.price)} · {guidanceDistance} · {guidanceEta}</small>
               </div>
 
-              <div className="driver-live-actions">
+              <div className="driver-v2-live-actions">
                 {activeTrip.status === 'accepted' && (
-                  <button className="primary-live-action" onClick={() => updateTrip(activeTrip, 'arriving')}>
+                  <button className="driver-v2-primary-btn" onClick={() => updateTrip(activeTrip, 'arriving')}>
                     <CheckCircle2 size={18} /> Llegué
                   </button>
                 )}
                 {activeTrip.status === 'arriving' && (
-                  <button className="primary-live-action" onClick={() => updateTrip(activeTrip, 'in_progress')}>
-                    <Play size={18} /> Iniciar viaje
+                  <button className="driver-v2-primary-btn" onClick={() => updateTrip(activeTrip, 'in_progress')}>
+                    <Play size={18} /> Iniciar
                   </button>
                 )}
                 {activeTrip.status === 'in_progress' && (
-                  <button className="primary-live-action" onClick={() => updateTrip(activeTrip, 'completed')}>
+                  <button className="driver-v2-primary-btn" onClick={() => updateTrip(activeTrip, 'completed')}>
                     <Square size={18} /> Finalizar
                   </button>
                 )}
-                <a href={`/chat?trip=${activeTrip.id}`} aria-label="Abrir chat">
+                <a href={`/chat?trip=${activeTrip.id}`} className="driver-v2-icon-btn" aria-label="Abrir chat">
                   <MessageCircle size={18} />
                 </a>
               </div>
@@ -550,9 +576,8 @@ export default function Driver() {
           </section>
         ) : (
           <>
-            {/* Mapa de fondo en modo idle (cuando hay ubicación disponible) */}
             {hasDriverLocation && (
-              <div className="driver-idle-map">
+              <div className="driver-v2-idle-map">
                 <InteractiveRouteMap
                   origin={driverPoint}
                   destination={null}
@@ -572,199 +597,161 @@ export default function Driver() {
               </div>
             )}
 
-            <section className="driver-hero">
-              <div className="driver-hero-main">
-                <p className="eyebrow">PANEL DE CHOFER</p>
-                <h1>{profile?.full_name || driverProfile?.full_name || 'MiChofer'}</h1>
-                <span>{driverProfile?.car_brand || 'Vehiculo'} {driverProfile?.car_model || ''}</span>
-              </div>
-
-              <div className="driver-hero-right">
-                <div className={`driver-hero-avatar ${isOnline ? 'online' : 'offline'}`}>
-                  {driverAvatar
-                    ? <img src={driverAvatar} alt={profile?.full_name || 'Chofer'} />
-                    : <UserRound size={28} />}
+            <section className="driver-v2-dashboard">
+              <section className="driver-v2-hero-card">
+                <div className="driver-v2-hero-copy">
+                  <p className="driver-v2-eyebrow">Panel de chofer</p>
+                  <h1>{driverDisplayName}</h1>
+                  <span>{vehicleLabel}</span>
+                  <p>{heroSubtitle}</p>
                 </div>
-                <div className={approved ? 'verify-badge ok' : 'verify-badge'}>
-                  <ShieldCheck size={14} />
-                  {verificationTitle}
+
+                <div className="driver-v2-hero-side">
+                  <div className={`driver-v2-avatar ${isOnline ? 'online' : 'offline'}`}>
+                    {driverAvatar ? <img src={driverAvatar} alt={driverDisplayName} /> : <UserRound size={28} />}
+                  </div>
+                  <div className={approved ? 'driver-v2-verify ok' : 'driver-v2-verify'}>
+                    <ShieldCheck size={14} /> {verificationTitle}
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {message && <div className="notice-card">{message}</div>}
+              {message && <div className="notice-card driver-v2-notice">{message}</div>}
 
-            <section className="driver-status-grid">
-              <button
-                type="button"
-                className={isOnline ? 'status-tile active online-action' : 'status-tile online-action'}
-                onClick={() => updateAvailability(!isOnline, !isOnline)}
-                disabled={!approved}
-              >
-                {isOnline ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
-                <span>{isOnline ? 'Conectado' : 'Conectarme'}</span>
-              </button>
-
-              <button
-                type="button"
-                className={isReceivingTrips ? 'status-tile active red' : 'status-tile'}
-                onClick={() => updateAvailability(true, !isAvailable)}
-                disabled={!approved || (!isOnline && !isAvailable)}
-              >
-                <CarFront size={26} />
-                <span>{isReceivingTrips ? 'Recibiendo viajes' : isAvailable ? 'Calibrando' : 'Recibir viajes'}</span>
-              </button>
-            </section>
-
-            <section className="driver-intel-card">
-              <div>
-                <span>Inteligencia de ruta</span>
-                <strong>
-                  {focusTrip
-                    ? statusLabel(focusTrip.status)
-                    : !approved
-                      ? verificationSubtitle
-                    : isReceivingTrips
-                      ? 'Esperando solicitud'
-                      : isOnline && !hasDriverLocation
-                        ? 'Calibra tu punto para aparecer'
-                        : isOnline
-                          ? 'Activa recibir viajes'
-                          : 'Conectate para aparecer'}
-                </strong>
-              </div>
-
-              <div className="driver-intel-metrics">
-                <small>
-                  <MapPin size={14} /> {hasDriverLocation ? (focusTrip ? formatKm(focusDistance) : 'Ubicacion lista') : 'Sin ubicacion'}
-                </small>
-                <small>
-                  <Clock size={14} /> {focusTrip ? estimateEta(focusDistance) : isReceivingTrips ? 'En vivo' : 'Calculando'}
-                </small>
-                <small>{focusTrip?.price ? formatGs(focusTrip.price) : 'Auto normal'}</small>
-              </div>
-
-              <div className="driver-command-row">
-                <button type="button" onClick={() => syncDriverLocation(activeTrip, true, isAvailable)}>
-                  <RefreshCw size={16} /> Calibrar punto
+              <section className="driver-v2-status-grid">
+                <button
+                  type="button"
+                  className={isOnline ? 'driver-v2-status-tile active' : 'driver-v2-status-tile'}
+                  onClick={() => updateAvailability(!isOnline, !isOnline)}
+                  disabled={!approved}
+                >
+                  {isOnline ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
+                  <div>
+                    <strong>{isOnline ? 'En línea' : 'Conectarme'}</strong>
+                    <small>{isOnline ? 'Visible en el sistema' : 'Activar panel'}</small>
+                  </div>
                 </button>
 
-                {pickupNavUrl && (
-                  <a href={pickupNavUrl} target="_blank" rel="noreferrer">
-                    <MapPin size={16} /> Ir al cliente
-                  </a>
-                )}
+                <button
+                  type="button"
+                  className={isReceivingTrips ? 'driver-v2-status-tile active accent' : 'driver-v2-status-tile'}
+                  onClick={() => updateAvailability(true, !isAvailable)}
+                  disabled={!approved || (!isOnline && !isAvailable)}
+                >
+                  <CarFront size={24} />
+                  <div>
+                    <strong>{isReceivingTrips ? 'Recibiendo' : 'Recibir viajes'}</strong>
+                    <small>{isReceivingTrips ? 'Modo activo' : !isOnline ? 'Conectate primero' : 'Activar solicitudes'}</small>
+                  </div>
+                </button>
+              </section>
 
-                {destinationNavUrl && (
-                  <a href={destinationNavUrl} target="_blank" rel="noreferrer">
-                    <CarFront size={16} /> Ir al destino
-                  </a>
-                )}
-              </div>
-            </section>
-
-            <section className="driver-category-panel">
-              <div className="section-title compact">
-                <h2>Tus categorias</h2>
-                <span>{approved ? 'Activas y pendientes' : 'Bloqueadas hasta aprobacion'}</span>
-              </div>
-
-              <div className="driver-category-grid">
-                {DRIVER_CATEGORY_ACTIONS.map((category) => {
-                  const status = getDriverCategoryStatus(driverProfile, category.code)
-                  const disabled = !approved || status === 'approved' || status === 'requested'
-
-                  return (
-                    <article key={category.code} className={`driver-category-card ${status}`}>
-                      <div>
-                        <strong>{category.title}</strong>
-                        <p>{category.description}</p>
-                      </div>
-
-                      <span className="driver-category-status">{categoryStatusLabel(status)}</span>
-
-                      <button
-                        type="button"
-                        onClick={() => requestCategory(category.code)}
-                        disabled={disabled}
-                      >
-                        {status === 'approved'
-                          ? 'Aprobada'
-                          : status === 'requested'
-                            ? 'En revision'
-                            : category.button}
-                      </button>
-                    </article>
-                  )
-                })}
-              </div>
-            </section>
-
-            {loading ? (
-              <section className="empty-state">Cargando panel...</section>
-            ) : (
-              <section className="driver-section">
-                <div className="section-title">
-                  <h2>Solicitudes entrantes</h2>
-                  <span>{pendingTrips.length}</span>
+              <section className="driver-v2-intel-card">
+                <div className="driver-v2-card-head">
+                  <div>
+                    <span>Inteligencia de ruta</span>
+                    <strong>{routeHeadline}</strong>
+                  </div>
+                  <em>{hasDriverLocation ? 'GPS OK' : 'Sin GPS'}</em>
                 </div>
 
-                {pendingTrips.length === 0 ? (
-                  <div className="empty-state">
-                    <Clock size={22} />
-                    Cuando un cliente te elija, la solicitud aparecera aca.
-                  </div>
-                ) : (
-                  <div className="request-list">
-                    {pendingTrips.map((trip) => (
-                      <article key={trip.id} className="driver-trip-card">
-                        <div className="trip-status-line">
-                          <span>Esperando tu respuesta</span>
-                          <div style={{ textAlign: 'right' }}>
-                            <strong className="trip-price-badge">{formatGs(trip.price)}</strong>
-                            <small style={{ display: 'block', fontSize: '9px', color: '#10b981', fontWeight: '800', marginTop: '2px' }}>
-                              El chofer recibe el total del viaje
-                            </small>
-                          </div>
-                        </div>
-                        <h2>{trip.destination_text || 'Destino solicitado'}</h2>
-                        <p>
-                          <UserRound size={14} /> Cliente te eligió manualmente
-                          {trip.pickup_lat && trip.pickup_lng && driverProfile?.lat && driverProfile?.lng
-                            ? ` · ${formatKm(distanceKm(
-                                { lat: driverProfile.lat, lng: driverProfile.lng },
-                                { lat: trip.pickup_lat, lng: trip.pickup_lng }
-                              ))}`
-                            : ''}
-                        </p>
-                        <div className="driver-actions-grid">
-                          <a href={`/chat?trip=${trip.id}`}>
-                            <MessageCircle size={16} /> Chat
-                          </a>
-                          <button onClick={() => updateTrip(trip, 'accepted')}>
-                            <CheckCircle2 size={16} /> Aceptar
-                          </button>
-                          <button className="danger" onClick={() => updateTrip(trip, 'cancelled')}>
-                            <XCircle size={16} /> Rechazar
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
+                <div className="driver-v2-metrics">
+                  <small><MapPin size={14} /> {hasDriverLocation ? (focusTrip ? formatKm(focusDistance) : 'Ubicación lista') : 'Sin ubicación'}</small>
+                  <small><Clock size={14} /> {focusTrip ? estimateEta(focusDistance) : isReceivingTrips ? 'En vivo' : 'Listo'}</small>
+                  <small>{focusTrip?.price ? formatGs(focusTrip.price) : 'Auto normal'}</small>
+                </div>
 
-            <button
-              className="logout-button"
-              type="button"
-              onClick={async () => {
-                await supabase.auth.signOut()
-                window.location.href = '/login'
-              }}
-            >
-              <LogOut size={18} /> Cerrar sesión
-            </button>
+                <div className="driver-v2-command-row">
+                  <button type="button" onClick={() => syncDriverLocation(activeTrip, true, isAvailable)}>
+                    <RefreshCw size={16} /> Calibrar punto
+                  </button>
+                  {pickupNavUrl && <a href={pickupNavUrl} target="_blank" rel="noreferrer"><MapPin size={16} /> Ir al cliente</a>}
+                  {destinationNavUrl && <a href={destinationNavUrl} target="_blank" rel="noreferrer"><CarFront size={16} /> Ir al destino</a>}
+                </div>
+              </section>
+
+              <section className="driver-v2-category-panel">
+                <div className="driver-v2-section-title">
+                  <h2>Tus categorías</h2>
+                  <span>{approved ? 'Activas y pendientes' : 'Bloqueadas hasta aprobación'}</span>
+                </div>
+
+                <div className="driver-v2-category-grid">
+                  {DRIVER_CATEGORY_ACTIONS.map((category) => {
+                    const status = getDriverCategoryStatus(driverProfile, category.code)
+                    const disabled = !approved || status === 'approved' || status === 'requested'
+
+                    return (
+                      <article key={category.code} className={`driver-v2-category-card ${status}`}>
+                        <div>
+                          <strong>{category.title}</strong>
+                          <p>{category.description}</p>
+                        </div>
+                        <span>{categoryStatusLabel(status)}</span>
+                        <button type="button" onClick={() => requestCategory(category.code)} disabled={disabled}>
+                          {status === 'approved' ? 'Aprobada' : status === 'requested' ? 'En revisión' : category.button}
+                        </button>
+                      </article>
+                    )
+                  })}
+                </div>
+              </section>
+
+              {loading ? (
+                <section className="empty-state driver-v2-empty">Cargando panel...</section>
+              ) : (
+                <section className="driver-v2-requests">
+                  <div className="driver-v2-section-title">
+                    <h2>Solicitudes entrantes</h2>
+                    <span>{pendingTrips.length}</span>
+                  </div>
+
+                  {pendingTrips.length === 0 ? (
+                    <div className="empty-state driver-v2-empty">
+                      <Clock size={22} />
+                      Cuando un cliente te elija, la solicitud aparecerá acá.
+                    </div>
+                  ) : (
+                    <div className="driver-v2-request-list">
+                      {pendingTrips.map((trip) => (
+                        <article key={trip.id} className="driver-v2-trip-card">
+                          <div className="driver-v2-trip-line">
+                            <span>Esperando tu respuesta</span>
+                            <strong>{formatGs(trip.price)}</strong>
+                          </div>
+                          <h2>{trip.destination_text || 'Destino solicitado'}</h2>
+                          <p>
+                            <UserRound size={14} /> Cliente te eligió manualmente
+                            {trip.pickup_lat && trip.pickup_lng && driverProfile?.lat && driverProfile?.lng
+                              ? ` · ${formatKm(distanceKm(
+                                  { lat: driverProfile.lat, lng: driverProfile.lng },
+                                  { lat: trip.pickup_lat, lng: trip.pickup_lng }
+                                ))}`
+                              : ''}
+                          </p>
+                          <div className="driver-v2-trip-actions">
+                            <a href={`/chat?trip=${trip.id}`}><MessageCircle size={16} /> Chat</a>
+                            <button onClick={() => updateTrip(trip, 'accepted')}><CheckCircle2 size={16} /> Aceptar</button>
+                            <button className="danger" onClick={() => updateTrip(trip, 'cancelled')}><XCircle size={16} /> Rechazar</button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              <button
+                className="driver-v2-logout"
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut()
+                  window.location.href = '/login'
+                }}
+              >
+                <LogOut size={18} /> Cerrar sesión
+              </button>
+            </section>
           </>
         )}
       </section>

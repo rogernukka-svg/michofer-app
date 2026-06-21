@@ -1,9 +1,9 @@
 import { ArrowRight, Heart } from 'lucide-react'
 import InstallMiChoferButton from './components/InstallMiChoferButton.jsx'
 import InteractiveRouteMap from './components/InteractiveRouteMap.jsx'
-import alexAvatar from './assets/alex-gonzalez-driver.jpeg'
+import alexAvatar from './assets/roger-nunez-client.jpeg'
 import logo from './assets/logo.png'
-import rogerAvatar from './assets/roger-nunez-client.jpeg'
+import rogerAvatar from './assets/alex-gonzalez-driver.jpeg'
 
 const alexLocation = {
   id: 'alex-gonzalez',
@@ -29,13 +29,16 @@ function homeRoutePadding() {
 
 export default function App() {
   return (
-    <main className="app-shell">
-      <section className="phone home-phone">
+    <main className="app-shell home-shell">
+      <section className="phone home-phone home-premium">
         <header className="home-header">
-          <img src={logo} alt="MiChofer" />
+          <div className="home-header-brand">
+            <img src={logo} alt="MiChofer" />
+          </div>
+
           <div className="home-header-actions">
             <InstallMiChoferButton className="home-install-btn" />
-            <a href="/login">Entrar</a>
+            <a className="home-login-link" href="/login">Entrar</a>
           </div>
         </header>
 
@@ -58,7 +61,7 @@ export default function App() {
             <img className="home-card-avatar" src={alexAvatar} alt="Alex Gonzalez" />
             <div>
               <strong>Alex Gonzalez</strong>
-              <span>Chofer - 3 min</span>
+              <span>Chofer · 3 min</span>
             </div>
           </article>
 
@@ -72,22 +75,26 @@ export default function App() {
         </section>
 
         <section className="home-sheet">
-          <p className="eyebrow">MI CHOFER</p>
-          <h1>Elegí quién te lleva.</h1>
+          <div className="home-sheet-top">
+            <p className="eyebrow">MI CHOFER</p>
+            <h1>Tu viaje, tu chofer.</h1>
+          </div>
+
           <p className="muted">
-            Choferes verificados cerca tuyo. Mirá quién conduce antes de confirmar.
+            Elegí a tu conductor entre los mejores. Sabés quién te lleva antes de subir.
           </p>
 
           <div className="home-actions">
             <a className="main-btn" href="/login">
               Empezar <ArrowRight size={20} />
             </a>
-            <InstallMiChoferButton className="home-sheet-install-btn" />
             <a className="secondary-btn woman-mode-link" href="/login">
               <Heart size={16} />
               Modo Mujer
             </a>
           </div>
+
+          <p className="home-note">Viajá con confianza. Sabés quién te lleva.</p>
         </section>
       </section>
     </main>

@@ -1168,7 +1168,7 @@ export default function Client() {
 
   return (
     <main className="app-shell">
-      <section className={mode === 'ella' ? 'phone client-phone women-client-mode' : 'phone client-phone'}>
+      <section className={`${mode === 'ella' ? 'phone client-phone women-client-mode' : 'phone client-phone'} client-premium`}>
         <header className="client-top premium-map-header">
           <section className="map-search-bar" aria-label="Elegir destino">
             <MapPin className="map-search-icon" size={18} />
@@ -1296,7 +1296,7 @@ export default function Client() {
         {destination.trim().length > 0 && !destinationPoint && (
           <section className="route-guidance-card warning-guidance" style={{ background: 'rgba(15, 23, 42, 0.9)', border: '1px solid #eab308' }} aria-label="Aviso de destino">
             <p style={{ margin: 0, color: '#facc15', fontWeight: '800', textAlign: 'center', fontSize: '13px' }}>
-              ⚠️ Elegí un destino de la lista para calcular precio
+              Tocá una sugerencia y armamos tu viaje en segundos.
             </p>
           </section>
         )}
@@ -1413,14 +1413,7 @@ export default function Client() {
               {selectedDriver.distance && <span>{selectedDriver.distance}</span>}
               {selectedDriver.eta && <span>{selectedDriver.eta}</span>}
               {routeKm && <span>{routeKm.toFixed(1)} km ruta</span>}
-              {currentFare && <span className="price-metric">Precio: {formatGs(currentFare)}</span>}
             </div>
-
-            {currentFare && (
-              <p className="driver-receives-notice-inline" style={{ fontSize: '11px', color: '#10b981', margin: '4px 0 0 16px', fontWeight: '800' }}>
-                El chofer recibe el total del viaje
-              </p>
-            )}
 
             <div className="driver-map-profile-actions">
               <button type="button" className="ghost-profile-btn" onClick={() => setShowDriverChooser(true)}>
@@ -1430,6 +1423,11 @@ export default function Client() {
               <button type="button" className="request-profile-btn" onClick={requestRide} disabled={requesting || !destinationPoint}>
                 {requesting ? 'Solicitando...' : currentFare ? `Solicitar · ${formatGs(currentFare)}` : 'Solicitar'}
               </button>
+              {currentFare && (
+                <p className="driver-receives-notice-inline" style={{ fontSize: '11px', color: '#10b981', margin: '4px 0 0 0', fontWeight: '800', textAlign: 'center', gridColumn: '1 / -1' }}>
+                  El chofer recibe el total del viaje
+                </p>
+              )}
             </div>
           </article>
         )}
