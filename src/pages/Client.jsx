@@ -1130,16 +1130,30 @@ export default function Client() {
     }
   }
 
-  async function cancelActiveTrip() {
-    if (!activeTrip?.id) return
+async function cancelActiveTrip() {
+  if (!activeTrip?.id || !user?.id) return
 
-    await supabase
-      .from('trips')
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-      .eq('id', activeTrip.id)
-
-    clearLiveTrip('Viaje cancelado. Podés elegir otro chofer.')
+  if (activeTrip.client_id !== user.id) {
+    setMessage('No podés cancelar un viaje que no pertenece a tu cuenta.')
+    return
   }
+
+  const { error } = await supabase
+    .from('trips')
+    .update({
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', activeTrip.id)
+    .eq('client_id', user.id)
+
+  if (error) {
+    setMessage('No pude cancelar el viaje.')
+    return
+  }
+
+  clearLiveTrip('Viaje cancelado. Podés elegir otro chofer.')
+}
 
   async function refreshLocation() {
     navigator.geolocation.getCurrentPosition((pos) => {
@@ -1149,21 +1163,71 @@ export default function Client() {
     })
   }
 
-  const [statusTitle, statusSub] = statusCopy(activeTrip?.status, activeTripDriver?.name || selectedDriver?.name)
-  const liveDriverPoint = activeTripDriver &&
-    Number.isFinite(Number(activeTripDriver.lat)) &&
-    Number.isFinite(Number(activeTripDriver.lng))
-    ? { ...activeTripDriver, lat: Number(activeTripDriver.lat), lng: Number(activeTripDriver.lng) }
-    : null
-  const activeTripWaitingForPickup = activeTrip && activeTrip.status !== 'in_progress'
-  const mapOrigin = activeTrip && liveDriverPoint ? liveDriverPoint : clientLocation
-  const mapDestination = activeTrip
-    ? activeTripWaitingForPickup
-      ? clientLocation
-      : destinationPoint
-    : destinationPoint
+   const [statusTitle, statusSub] = statusCopy(activeTrip?.status, activeTripDriver?.name || selectedDriver?.name)
+
+  const liveDriverPoint = useMemo(() => {
+    if (
+      !activeTripDriver ||
+      !Number.isFinite(Number(activeTripDriver.lat)) ||
+      !Number.isFinite(Number(activeTripDriver.lng))
+    ) {
+      return null
+    }
+
+    return {
+      ...activeTripDriver,
+      lat: Number(activeTripDriver.lat),
+      lng: Number(activeTripDriver.lng),
+    }
+  }, [
+    activeTripDriver?.id,
+    activeTripDriver?.user_id,
+    activeTripDriver?.lat,
+    activeTripDriver?.lng,
+    activeTripDriver?.avatar,
+    activeTripDriver?.name,
+  ])
+
+ const activeTripAcceptedByDriver = Boolean(
+  activeTrip &&
+  ['accepted', 'arriving', 'in_progress'].includes(activeTrip.status)
+)
+
+const activeTripWaitingForPickup = Boolean(
+  activeTripAcceptedByDriver && activeTrip.status !== 'in_progress'
+)
+
+const shouldTrackDriverOnMap = Boolean(
+  activeTripAcceptedByDriver && liveDriverPoint
+)
+
+const mapOrigin = useMemo(() => {
+  return shouldTrackDriverOnMap ? liveDriverPoint : clientLocation
+}, [
+  shouldTrackDriverOnMap,
+  liveDriverPoint,
+  clientLocation?.lat,
+  clientLocation?.lng,
+])
+
+const mapDestination = useMemo(() => {
+  if (!activeTripAcceptedByDriver) return destinationPoint
+  return activeTripWaitingForPickup ? clientLocation : destinationPoint
+}, [
+  activeTripAcceptedByDriver,
+  activeTripWaitingForPickup,
+  clientLocation?.lat,
+  clientLocation?.lng,
+  destinationPoint?.lat,
+  destinationPoint?.lng,
+])
+
   const mapAvatar = activeTrip && liveDriverPoint ? liveDriverPoint.avatar : profile?.avatar_url
-  const mapDrivers = activeTrip ? [] : visibleDrivers
+
+  const mapDrivers = useMemo(() => {
+    return activeTrip ? [] : visibleDrivers
+  }, [Boolean(activeTrip), visibleDrivers])
+
   const mapSelectedDriver = activeTrip ? null : selectedDriver
 
   return (
@@ -1179,14 +1243,15 @@ export default function Client() {
                 id="destination"
                 value={destination}
                 onChange={(event) => {
-                  setDestination(event.target.value)
-                  setSelectedDriver(null)
-                  setGooglePlacePredictions([])
-                  setDestinationPlace(null)
-                  setDestinationPoint(null)
-                  setDestinationStatus('idle')
-                  setMessage('')
-                }}
+  setDestination(event.target.value)
+  setSelectedDriver(null)
+  setGooglePlacePredictions([])
+  setDestinationPlace(null)
+  setDestinationPoint(null)
+  setDestinationStatus('idle')
+  setRouteGuidance(null)
+  setMessage('')
+}}
                 onFocus={() => setDestinationFocused(true)}
                 onBlur={() => window.setTimeout(() => setDestinationFocused(false), 120)}
                 placeholder="¿A dónde vas?"
@@ -1199,12 +1264,15 @@ export default function Client() {
                 className="clear-destination-btn"
                 type="button"
                 onClick={() => {
-                  setDestination('')
-                  setDestinationPoint(null)
-                  setDestinationStatus('idle')
-                  setSelectedDriver(null)
-                  setMessage('')
-                }}
+  setDestination('')
+  setDestinationPoint(null)
+  setDestinationStatus('idle')
+  setDestinationPlace(null)
+  setGooglePlacePredictions([])
+  setSelectedDriver(null)
+  setRouteGuidance(null)
+  setMessage('')
+}}
                 aria-label="Borrar destino"
               >
                 <X size={16} />
@@ -1278,20 +1346,20 @@ export default function Client() {
             </button>
           </section>
         )}
-
-        <InteractiveRouteMap
-          origin={mapOrigin}
-          destination={mapDestination}
-          destinationText={destination}
-          clientAvatar={mapAvatar}
-          drivers={mapDrivers}
-          selectedDriver={mapSelectedDriver}
-          onSelectDriver={setSelectedDriver}
-          onChooseDriver={() => setShowDriverChooser(true)}
-          onRefreshLocation={refreshLocation}
-          onRouteUpdate={setRouteGuidance}
-          showRouteSummary={false}
-        />
+<InteractiveRouteMap
+  origin={mapOrigin}
+  destination={mapDestination}
+  destinationText={destination}
+  clientAvatar={mapAvatar}
+  drivers={mapDrivers}
+  selectedDriver={mapSelectedDriver}
+  onSelectDriver={setSelectedDriver}
+  onChooseDriver={() => setShowDriverChooser(true)}
+  onRefreshLocation={refreshLocation}
+  onRouteUpdate={setRouteGuidance}
+  showRouteSummary={false}
+  showOriginCar={shouldTrackDriverOnMap}
+/>
 
         {destination.trim().length > 0 && !destinationPoint && (
           <section className="route-guidance-card warning-guidance" style={{ background: 'rgba(15, 23, 42, 0.9)', border: '1px solid #eab308' }} aria-label="Aviso de destino">

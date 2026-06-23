@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  AlertTriangle,
   ExternalLink,
   Eye,
   FileText,
@@ -14,15 +15,67 @@ import { categoryStatusLabel, getRideCategoryMeta } from '../lib/rideCategories'
 
 const ADMIN_EMAILS = ['robycho@gmail.com', 'rogercho@gmail.com']
 
-const DOCUMENT_LABELS = {
-  driver_license: 'Licencia de conducir',
-  green_card: 'Cédula verde',
-  vehicle_photo: 'Foto vehículo',
-  driver_profile_photo: 'Foto perfil',
-  criminal_record: 'Antecedentes',
-  vehicle_insurance: 'Seguro',
-  vehicle_registration: 'Registro',
-}
+const DOCUMENT_REQUIREMENTS = [
+  {
+    key: 'driver_license',
+    label: 'Licencia de conducir',
+    required: true,
+    description: 'Debe estar vigente y a nombre del conductor.',
+  },
+  {
+    key: 'identity_document',
+    label: 'Cédula / DNI',
+    required: true,
+    description: 'Documento de identidad del conductor.',
+  },
+  {
+    key: 'driver_profile_photo',
+    label: 'Foto de perfil',
+    required: true,
+    description: 'Foto clara del rostro del conductor.',
+  },
+  {
+    key: 'vehicle_photo',
+    label: 'Foto del vehículo',
+    required: true,
+    description: 'Debe verse el vehículo y la matrícula.',
+  },
+  {
+    key: 'green_card',
+    label: 'Cédula verde',
+    required: true,
+    description: 'Documento del vehículo.',
+  },
+  {
+    key: 'vehicle_insurance',
+    label: 'Seguro del vehículo',
+    required: true,
+    description: 'Póliza vigente del vehículo.',
+  },
+  {
+    key: 'vehicle_registration',
+    label: 'Registro / habilitación',
+    required: true,
+    description: 'Registro o habilitación vehicular si aplica.',
+  },
+  {
+    key: 'criminal_record',
+    label: 'Antecedentes penales',
+    required: true,
+    description: 'Certificado de no antecedentes.',
+  },
+  {
+    key: 'vehicle_inspection',
+    label: 'Inspección técnica',
+    required: false,
+    description: 'Revisión técnica o inspección vehicular.',
+  },
+]
+
+const DOCUMENT_LABELS = DOCUMENT_REQUIREMENTS.reduce((acc, item) => {
+  acc[item.key] = item.label
+  return acc
+}, {})
 
 function statusLabel(status) {
   if (status === 'approved') return 'Aprobado'
@@ -42,6 +95,24 @@ function isPdfFile(value) {
 function isAdminAccount(user, profile) {
   const email = String(user?.email || '').toLowerCase()
   return profile?.role === 'admin' || ADMIN_EMAILS.includes(email)
+}
+
+function getDocumentStats(documents = {}) {
+  const requiredDocs = DOCUMENT_REQUIREMENTS.filter((doc) => doc.required)
+  const uploadedRequiredCount = requiredDocs.filter((doc) => documents[doc.key]).length
+  const totalRequiredCount = requiredDocs.length
+  const uploadedTotalCount = DOCUMENT_REQUIREMENTS.filter((doc) => documents[doc.key]).length
+  const docsComplete = uploadedRequiredCount >= totalRequiredCount
+  const missingRequiredDocs = requiredDocs.filter((doc) => !documents[doc.key])
+
+  return {
+    requiredDocs,
+    uploadedRequiredCount,
+    totalRequiredCount,
+    uploadedTotalCount,
+    docsComplete,
+    missingRequiredDocs,
+  }
 }
 
 export default function Admin() {
@@ -73,16 +144,42 @@ export default function Admin() {
     return drivers.reduce(
       (acc, driver) => {
         const status = driver.verification_status || 'incomplete'
+        const documents = driver.documents || {}
+        const docStats = getDocumentStats(documents)
+
         acc.total += 1
         acc[status] = (acc[status] || 0) + 1
+
+        if (docStats.docsComplete) {
+          acc.docsComplete += 1
+        } else {
+          acc.docsPending += 1
+        }
+
         return acc
       },
-      { total: 0, submitted: 0, approved: 0, rejected: 0, incomplete: 0 }
+      {
+        total: 0,
+        submitted: 0,
+        approved: 0,
+        rejected: 0,
+        incomplete: 0,
+        docsComplete: 0,
+        docsPending: 0,
+      }
     )
   }, [drivers])
 
   const filteredDrivers = useMemo(() => {
     if (filterStatus === 'all') return drivers
+
+    if (filterStatus === 'docs_complete') {
+      return drivers.filter((driver) => getDocumentStats(driver.documents || {}).docsComplete)
+    }
+
+    if (filterStatus === 'docs_pending') {
+      return drivers.filter((driver) => !getDocumentStats(driver.documents || {}).docsComplete)
+    }
 
     return drivers.filter((driver) => {
       const status = driver.verification_status || 'incomplete'
@@ -196,7 +293,7 @@ export default function Admin() {
     setMessage('')
 
     if (!doc?.path) {
-      setMessage('Ese documento no tiene archivo guardado.')
+      setMessage('Ese documento todavía no fue cargado.')
       return
     }
 
@@ -229,6 +326,21 @@ export default function Admin() {
     setMessage('')
 
     const approved = status === 'approved'
+
+    if (approved) {
+      const documents = driver.documents || {}
+      const { missingRequiredDocs } = getDocumentStats(documents)
+
+      if (missingRequiredDocs.length > 0) {
+        setMessage(
+          `No se puede aprobar. Faltan documentos obligatorios: ${missingRequiredDocs
+            .map((doc) => doc.label)
+            .join(', ')}.`
+        )
+        return
+      }
+    }
+
     const reviewedAt = new Date().toISOString()
 
     const { error } = await supabase
@@ -310,6 +422,8 @@ export default function Admin() {
     if (filterStatus === 'approved') return 'Aprobados'
     if (filterStatus === 'rejected') return 'Rechazados'
     if (filterStatus === 'all') return 'Todos los choferes'
+    if (filterStatus === 'docs_complete') return 'Documentación completa'
+    if (filterStatus === 'docs_pending') return 'Documentación pendiente'
     return 'En revisión'
   }
 
@@ -322,6 +436,7 @@ export default function Admin() {
           <div>
             <p>MI CHOFER</p>
             <h1>Verificación</h1>
+            <span>Centro de control documental para choferes</span>
           </div>
 
           <button type="button" onClick={loadDrivers} aria-label="Actualizar">
@@ -340,6 +455,18 @@ export default function Admin() {
             <UserCheck size={20} />
             <span>Aprobados</span>
             <strong>{stats.approved}</strong>
+          </div>
+
+          <div>
+            <FileText size={20} />
+            <span>Docs completas</span>
+            <strong>{stats.docsComplete}</strong>
+          </div>
+
+          <div>
+            <AlertTriangle size={20} />
+            <span>Docs pendientes</span>
+            <strong>{stats.docsPending}</strong>
           </div>
         </section>
 
@@ -369,6 +496,24 @@ export default function Admin() {
           >
             Rechazados
             <strong>{stats.rejected}</strong>
+          </button>
+
+          <button
+            type="button"
+            className={filterStatus === 'docs_complete' ? 'active' : ''}
+            onClick={() => setFilterStatus('docs_complete')}
+          >
+            Docs OK
+            <strong>{stats.docsComplete}</strong>
+          </button>
+
+          <button
+            type="button"
+            className={filterStatus === 'docs_pending' ? 'active' : ''}
+            onClick={() => setFilterStatus('docs_pending')}
+          >
+            Faltan docs
+            <strong>{stats.docsPending}</strong>
           </button>
 
           <button
@@ -492,7 +637,7 @@ export default function Admin() {
 
             {filteredDrivers.map((driver) => {
               const documents = driver.documents || {}
-              const documentCount = Object.keys(documents).length
+              const docStats = getDocumentStats(documents)
               const status = driver.verification_status || 'incomplete'
               const showDocuments = status === 'submitted' || expandedDocs[driver.user_id]
 
@@ -510,18 +655,33 @@ export default function Admin() {
                         {driver.car_brand || 'Vehículo'} {driver.car_model || ''} · {driver.plate || 'Sin matrícula'}
                       </p>
                     </div>
+
+                    <div className={docStats.docsComplete ? 'admin-doc-badge ok' : 'admin-doc-badge warn'}>
+                      <FileText size={15} />
+                      {docStats.docsComplete ? 'Docs OK' : 'Faltan docs'}
+                    </div>
                   </div>
 
                   <div className="admin-driver-meta">
                     <span>{driver.phone || 'Sin teléfono'}</span>
                     <span>{driver.email || 'Sin correo'}</span>
                     <span>{driver.payout_alias || 'Sin alias'}</span>
+                    <span>{docStats.uploadedRequiredCount}/{docStats.totalRequiredCount} obligatorios</span>
                   </div>
+
+                  {!docStats.docsComplete && (
+                    <div className="admin-missing-docs">
+                      <strong>Faltan:</strong>{' '}
+                      {docStats.missingRequiredDocs.map((doc) => doc.label).join(', ')}
+                    </div>
+                  )}
 
                   <div className={showDocuments ? 'admin-docs' : 'admin-docs collapsed'}>
                     <div className="admin-doc-summary">
                       <FileText size={18} />
-                      <strong>{documentCount}/7 documentos</strong>
+                      <strong>
+                        {docStats.uploadedRequiredCount}/{docStats.totalRequiredCount} obligatorios
+                      </strong>
                     </div>
 
                     {status !== 'submitted' && (
@@ -539,19 +699,32 @@ export default function Admin() {
                       </button>
                     )}
 
-                    {showDocuments && Object.entries(DOCUMENT_LABELS).map(([key, label]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        className={documents[key] ? 'done' : ''}
-                        onClick={() => openDocument(key, documents[key])}
-                        disabled={!documents[key] || previewLoading}
-                        title={documents[key] ? 'Ver documento' : 'Documento pendiente'}
-                      >
-                        {documents[key] ? <Eye size={14} /> : <XCircle size={14} />}
-                        {label}
-                      </button>
-                    ))}
+                    {showDocuments && (
+                      <div className="admin-doc-grid">
+                        {DOCUMENT_REQUIREMENTS.map((doc) => {
+                          const uploaded = documents[doc.key]
+
+                          return (
+                            <button
+                              key={doc.key}
+                              type="button"
+                              className={uploaded ? 'admin-doc-card done' : 'admin-doc-card missing'}
+                              onClick={() => openDocument(doc.key, uploaded)}
+                              disabled={!uploaded || previewLoading}
+                              title={uploaded ? 'Ver documento' : 'Documento pendiente'}
+                            >
+                              <div className="admin-doc-card-head">
+                                {uploaded ? <Eye size={16} /> : <XCircle size={16} />}
+                                <strong>{doc.label}</strong>
+                              </div>
+
+                              <span>{doc.required ? 'Obligatorio' : 'Opcional'}</span>
+                              <p>{uploaded ? 'Documento cargado. Tocar para revisar.' : doc.description}</p>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {status !== 'approved' && status !== 'rejected' && (
@@ -640,18 +813,18 @@ const adminStyles = `
 
   .admin-shell {
     width: 100%;
-    max-width: 960px;
+    max-width: 1080px;
     min-height: 100vh;
     padding: 24px;
     background: #f5f7f6;
   }
 
   .admin-top {
-    min-height: 86px;
-    border-radius: 28px;
+    min-height: 112px;
+    border-radius: 30px;
     background: #07110f;
     color: white;
-    padding: 18px;
+    padding: 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -667,16 +840,24 @@ const adminStyles = `
 
   .admin-top h1 {
     margin: 0;
-    font-size: 32px;
+    font-size: 36px;
     line-height: 1;
     font-weight: 950;
   }
 
+  .admin-top span {
+    display: block;
+    margin-top: 9px;
+    color: rgba(255,255,255,.62);
+    font-size: 13px;
+    font-weight: 850;
+  }
+
   .admin-top button {
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
     border: 0;
-    border-radius: 18px;
+    border-radius: 20px;
     background: rgba(255,255,255,.1);
     color: white;
     display: grid;
@@ -687,7 +868,7 @@ const adminStyles = `
   .admin-stats {
     margin-top: 16px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
   }
 
@@ -726,7 +907,7 @@ const adminStyles = `
   .admin-filters {
     margin-top: 12px;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -894,6 +1075,39 @@ const adminStyles = `
     font-weight: 900;
   }
 
+  .admin-doc-badge {
+    width: fit-content;
+    min-height: 34px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 11px;
+    font-size: 12px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .admin-doc-badge.ok {
+    background: #e8f7f5;
+    color: #075e57;
+  }
+
+  .admin-doc-badge.warn {
+    background: #fff4cc;
+    color: #442d00;
+  }
+
+  .admin-missing-docs {
+    border-radius: 18px;
+    background: #fff4cc;
+    color: #442d00;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 850;
+    line-height: 1.35;
+  }
+
   .admin-docs {
     display: flex;
     flex-wrap: wrap;
@@ -905,7 +1119,7 @@ const adminStyles = `
   }
 
   .admin-doc-summary,
-  .admin-docs button {
+  .admin-docs button.toggle-docs {
     min-height: 36px;
     border-radius: 999px;
     display: flex;
@@ -921,27 +1135,74 @@ const adminStyles = `
     color: white;
   }
 
-  .admin-docs button {
+  .admin-docs button.toggle-docs {
     border: 0;
-    background: #f1f4f3;
-    color: #667085;
+    background: #ffffff;
+    color: #07110f;
+    box-shadow: inset 0 0 0 1px #dde5e2;
     cursor: pointer;
   }
 
-  .admin-docs button.done {
+  .admin-doc-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .admin-doc-card {
+    min-height: 122px;
+    border: 0;
+    border-radius: 20px;
+    padding: 12px;
+    text-align: left;
+    display: grid;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .admin-doc-card.done {
     background: #e8f7f5;
     color: #075e57;
   }
 
-  .admin-docs button.toggle-docs {
-    background: #ffffff;
-    color: #07110f;
-    box-shadow: inset 0 0 0 1px #dde5e2;
+  .admin-doc-card.missing {
+    background: #fff4cc;
+    color: #442d00;
   }
 
-  .admin-docs button:disabled {
+  .admin-doc-card:disabled {
     cursor: not-allowed;
-    opacity: .72;
+    opacity: .82;
+  }
+
+  .admin-doc-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .admin-doc-card-head strong {
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .admin-doc-card span {
+    width: fit-content;
+    border-radius: 999px;
+    background: rgba(255,255,255,.58);
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .admin-doc-card p {
+    margin: 0;
+    color: inherit;
+    opacity: .78;
+    font-size: 12px;
+    line-height: 1.25;
+    font-weight: 800;
   }
 
   .admin-actions {
@@ -1080,13 +1341,47 @@ const adminStyles = `
     font-weight: 950;
   }
 
+  @media (max-width: 860px) {
+    .admin-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-filters {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .admin-doc-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   @media (max-width: 560px) {
     .admin-shell {
       padding: 18px;
     }
 
+    .admin-top {
+      border-radius: 26px;
+    }
+
+    .admin-top h1 {
+      font-size: 30px;
+    }
+
+    .admin-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .admin-filters {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-doc-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .admin-driver-head {
+      display: grid;
     }
 
     .admin-preview {

@@ -9443,3 +9443,1264 @@ body.route-client .destination-suggestions button small {
   letter-spacing: 0.02em;
 }
 
+/* =========================================================
+   DRIVER — Cockpit mode (active trip)
+   Map-first layout matching /client visual language
+   ========================================================= */
+
+body.route-driver .driver-phone.driver-cockpit,
+body.route-driver .driver-phone.driver-idle {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  border-radius: 0 !important;
+  background: #050505 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* --- Driver cockpit: active trip full-screen map --- */
+body.route-driver .driver-cockpit {
+  position: relative;
+}
+
+body.route-driver .driver-cockpit .mobility-map,
+body.route-driver .driver-cockpit .interactive-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  z-index: 0 !important;
+}
+
+body.route-driver .driver-cockpit .google-real-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+body.route-driver .driver-cockpit .google-real-map::after {
+  display: none !important;
+}
+
+/* --- Cockpit top bar (glass) --- */
+body.route-driver .driver-cockpit-bar {
+  position: absolute !important;
+  top: max(12px, env(safe-area-inset-top, 0px)) !important;
+  left: 12px !important;
+  right: 12px !important;
+  z-index: 20 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 14px !important;
+  min-height: 48px !important;
+  border-radius: 16px !important;
+  background: rgba(7, 17, 28, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(18px) !important;
+  color: #f8fbff !important;
+}
+
+body.route-driver .driver-cockpit-bar-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+body.route-driver .driver-cockpit-bar-left strong {
+  font-size: 15px !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .driver-cockpit-dot {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 999px !important;
+  flex: 0 0 auto !important;
+  background: #667085 !important;
+}
+
+body.route-driver .driver-cockpit-dot.online { background: #22c55e !important; box-shadow: 0 0 8px rgba(34, 197, 94, 0.6) !important; }
+body.route-driver .driver-cockpit-dot.standby { background: #f59e0b !important; }
+body.route-driver .driver-cockpit-dot.offline { background: #667085 !important; }
+
+body.route-driver .driver-cockpit-refresh {
+  width: 36px !important;
+  height: 36px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  display: grid !important;
+  place-items: center !important;
+  cursor: pointer !important;
+}
+
+/* --- Cockpit turn guidance card --- */
+body.route-driver .driver-cockpit-turn {
+  position: absolute !important;
+  top: calc(env(safe-area-inset-top, 0px) + 78px) !important;
+  left: 12px !important;
+  right: 12px !important;
+  z-index: 18 !important;
+  padding: 14px 16px !important;
+  border-radius: 20px !important;
+  background: rgba(7, 17, 28, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(18px) !important;
+  color: #f8fbff !important;
+}
+
+body.route-driver .driver-cockpit-turn span {
+  display: block !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  margin-bottom: 4px !important;
+}
+
+body.route-driver .driver-cockpit-turn strong {
+  display: block !important;
+  font-size: clamp(18px, 4.6vw, 24px) !important;
+  font-weight: 950 !important;
+  line-height: 1.1 !important;
+  color: #f8fbff !important;
+}
+
+body.route-driver .driver-cockpit-turn-meta {
+  display: flex !important;
+  gap: 8px !important;
+  margin-top: 8px !important;
+}
+
+body.route-driver .driver-cockpit-turn-meta small {
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+/* --- Cockpit bottom sheet --- */
+body.route-driver .driver-cockpit-sheet {
+  position: absolute !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  z-index: 18 !important;
+  padding: 16px !important;
+  border-radius: 22px !important;
+  background: rgba(7, 17, 28, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(22px) !important;
+  color: #f8fbff !important;
+}
+
+body.route-driver .driver-cockpit-sheet-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+body.route-driver .driver-cockpit-status {
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+body.route-driver .driver-cockpit-sheet-info strong {
+  font-size: 20px !important;
+  font-weight: 950 !important;
+  line-height: 1.1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .driver-cockpit-sheet-info small {
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.route-driver .driver-cockpit-actions {
+  margin-top: 12px !important;
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+body.route-driver .driver-cockpit-primary {
+  flex: 1 !important;
+  min-height: 50px !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: #22c55e !important;
+  color: #ffffff !important;
+  padding: 0 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3) !important;
+}
+
+body.route-driver .driver-cockpit-chat {
+  width: 50px !important;
+  height: 50px !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  display: grid !important;
+  place-items: center !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  flex: 0 0 auto !important;
+}
+
+/* =========================================================
+   DRIVER — Idle mode (no active trip)
+   Map with floating controls matching /client
+   ========================================================= */
+
+/* --- Idle map full screen --- */
+body.route-driver .driver-idle {
+  position: relative;
+  background: #050505 !important;
+}
+
+body.route-driver .driver-idle .driver-idle-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0 !important;
+}
+
+body.route-driver .driver-idle .driver-idle-map .mobility-map,
+body.route-driver .driver-idle .driver-idle-map .interactive-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  border-radius: 0 !important;
+  z-index: 0 !important;
+}
+
+body.route-driver .driver-idle .driver-idle-map .google-real-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+body.route-driver .driver-idle .driver-idle-map .google-real-map::after {
+  display: none !important;
+}
+
+/* --- Idle top bar (glass) --- */
+body.route-driver .driver-idle-bar {
+  position: absolute !important;
+  top: max(12px, env(safe-area-inset-top, 0px)) !important;
+  left: 12px !important;
+  right: 12px !important;
+  z-index: 20 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 12px !important;
+  min-height: 52px !important;
+  border-radius: 18px !important;
+  background: rgba(7, 17, 28, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(20px) !important;
+  color: #f8fbff !important;
+}
+
+body.route-driver .driver-idle-avatar {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 999px !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+
+body.route-driver .driver-idle-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-driver .driver-idle-bar-center {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+body.route-driver .driver-idle-dot {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 999px !important;
+  flex: 0 0 auto !important;
+  background: #667085 !important;
+}
+
+body.route-driver .driver-idle-dot.online { background: #22c55e !important; box-shadow: 0 0 8px rgba(34, 197, 94, 0.6) !important; }
+body.route-driver .driver-idle-dot.standby { background: #f59e0b !important; }
+body.route-driver .driver-idle-dot.offline { background: #667085 !important; }
+
+body.route-driver .driver-idle-bar-center div {
+  min-width: 0 !important;
+}
+
+body.route-driver .driver-idle-bar-center strong {
+  display: block !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+  line-height: 1.2 !important;
+}
+
+body.route-driver .driver-idle-bar-center small {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  margin-top: 1px !important;
+}
+
+body.route-driver .driver-idle-refresh {
+  width: 38px !important;
+  height: 38px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  display: grid !important;
+  place-items: center !important;
+  cursor: pointer !important;
+}
+
+/* --- Message notice (glass) --- */
+body.route-driver .driver-idle-notice {
+  position: absolute !important;
+  top: calc(env(safe-area-inset-top, 0px) + 70px) !important;
+  left: 12px !important;
+  right: 12px !important;
+  z-index: 19 !important;
+  padding: 11px 14px !important;
+  border-radius: 16px !important;
+  background: rgba(7, 17, 28, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f8fbff !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+  text-align: center !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+/* --- Pending trip request card --- */
+body.route-driver .driver-idle-request {
+  position: absolute !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  z-index: 18 !important;
+}
+
+body.route-driver .driver-idle-request-card {
+  padding: 16px !important;
+  border-radius: 22px !important;
+  background: rgba(7, 17, 28, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(22px) !important;
+  color: #f8fbff !important;
+}
+
+body.route-driver .driver-idle-request-top {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+body.route-driver .driver-idle-request-top span {
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+body.route-driver .driver-idle-request-top strong {
+  font-size: 20px !important;
+  font-weight: 950 !important;
+  color: #22c55e !important;
+}
+
+body.route-driver .driver-idle-request-card h2 {
+  margin: 8px 0 0 !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+  line-height: 1.15 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .driver-idle-request-card p {
+  margin: 6px 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+body.route-driver .driver-idle-request-actions {
+  margin-top: 12px !important;
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+body.route-driver .driver-idle-accept {
+  flex: 1 !important;
+  min-height: 44px !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: #22c55e !important;
+  color: #ffffff !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+}
+
+body.route-driver .driver-idle-reject {
+  flex: 1 !important;
+  min-height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+}
+
+body.route-driver .driver-idle-chat-link {
+  width: 44px !important;
+  height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  display: grid !important;
+  place-items: center !important;
+  text-decoration: none !important;
+  flex: 0 0 auto !important;
+}
+
+/* --- Bottom controls (idle, no request) --- */
+body.route-driver .driver-idle-controls {
+  position: absolute !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  z-index: 18 !important;
+  padding: 12px !important;
+  border-radius: 22px !important;
+  background: rgba(7, 17, 28, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(22px) !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+}
+
+body.route-driver .driver-idle-btn {
+  min-height: 48px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+  transition: background 0.15s, border-color 0.15s !important;
+}
+
+body.route-driver .driver-idle-btn.active {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: rgba(34, 197, 94, 0.5) !important;
+  color: #22c55e !important;
+}
+
+body.route-driver .driver-idle-btn.active.accent {
+  color: #22c55e !important;
+}
+
+body.route-driver .driver-idle-btn.ghost {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  font-size: 11px !important;
+}
+
+body.route-driver .driver-idle-btn:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+body.route-driver .driver-idle-btn span {
+  white-space: nowrap !important;
+}
+
+body.route-driver .driver-idle-badge {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  padding: 4px 0 !important;
+}
+
+/* --- Verify warning --- */
+body.route-driver .driver-idle-verify-warning {
+  position: absolute !important;
+  top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 22 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 7px 14px !important;
+  border-radius: 999px !important;
+  background: rgba(227, 6, 19, 0.2) !important;
+  border: 1px solid rgba(227, 6, 19, 0.3) !important;
+  color: #ffb3bc !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* --- Side menu (categories, logout) --- */
+body.route-driver .driver-side-backdrop {
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  place-items: start center !important;
+}
+
+body.route-driver .driver-side-menu {
+  width: min(100%, 390px) !important;
+  max-height: calc(100dvh - 24px) !important;
+  padding: 18px !important;
+  border-radius: 26px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(7, 17, 28, 0.94) !important;
+  color: #f8fbff !important;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+body.route-driver .side-menu-close {
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  margin: 0 0 10px auto !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 16px !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+
+body.route-driver .driver-side-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  margin-bottom: 12px !important;
+}
+
+body.route-driver .driver-side-avatar {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: 2px solid rgba(255, 255, 255, 0.15) !important;
+  flex: 0 0 auto !important;
+}
+
+body.route-driver .driver-side-avatar.online { border-color: #22c55e !important; }
+body.route-driver .driver-side-avatar.offline { border-color: rgba(255, 255, 255, 0.15) !important; }
+
+body.route-driver .driver-side-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-driver .driver-side-head strong {
+  display: block !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .driver-side-head small {
+  display: block !important;
+  margin-top: 2px !important;
+  font-size: 12px !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-weight: 850 !important;
+}
+
+body.route-driver .driver-side-notice {
+  margin: 0 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+body.route-driver .driver-side-categories {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-bottom: 14px !important;
+}
+
+body.route-driver .driver-side-categories > strong {
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  margin-bottom: 4px !important;
+}
+
+body.route-driver .driver-side-cat-btn {
+  width: 100% !important;
+  min-height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  padding: 0 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  color: #f8fbff !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+body.route-driver .driver-side-cat-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: default !important;
+}
+
+body.route-driver .driver-side-cat-btn span {
+  text-align: left !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .driver-side-cat-btn small {
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  flex: 0 0 auto !important;
+}
+
+body.route-driver .driver-side-cat-btn.approved small { color: #22c55e !important; }
+body.route-driver .driver-side-cat-btn.requested small { color: #f59e0b !important; }
+body.route-driver .driver-side-cat-btn.rejected small { color: #ef4444 !important; }
+
+body.route-driver .driver-side-logout {
+  width: 100% !important;
+  min-height: 46px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  background: rgba(227, 6, 19, 0.15) !important;
+  color: #ffb3bc !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+}
+
+/* --- Responsive for narrow phones --- */
+@media (max-width: 380px) {
+  body.route-driver .driver-idle-controls {
+    padding: 10px !important;
+    gap: 6px !important;
+  }
+
+  body.route-driver .driver-idle-btn {
+    min-height: 42px !important;
+    font-size: 11px !important;
+  }
+
+  body.route-driver .driver-idle-bar {
+    padding: 6px 10px !important;
+    min-height: 46px !important;
+  }
+
+  body.route-driver .driver-idle-bar-center strong {
+    font-size: 13px !important;
+  }
+
+  body.route-driver .driver-cockpit-bar {
+    padding: 8px 12px !important;
+    min-height: 44px !important;
+  }
+
+  body.route-driver .driver-cockpit-primary {
+    min-height: 44px !important;
+    font-size: 13px !important;
+  }
+
+  body.route-driver .driver-cockpit-chat {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  body.route-driver .driver-cockpit-sheet {
+    padding: 12px !important;
+  }
+
+  body.route-driver .driver-cockpit-turn {
+    padding: 12px !important;
+  }
+}
+
+/* =========================================================
+   MiChofer Driver - Navigation-first mode
+   Prioridad: conducción, ruta clara y menos paneles.
+========================================================= */
+
+body.route-driver .driver-cockpit {
+  background: #eef3f8 !important;
+  overflow: hidden !important;
+}
+
+body.route-driver .driver-cockpit .mobility-map,
+body.route-driver .driver-cockpit .interactive-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  z-index: 0 !important;
+}
+
+body.route-driver .driver-cockpit .google-real-map::after {
+  display: none !important;
+}
+
+body.route-driver .driver-cockpit .navigation-toolbar {
+  top: calc(env(safe-area-inset-top, 0px) + 160px) !important;
+  left: 14px !important;
+  z-index: 35 !important;
+}
+
+body.route-driver .driver-cockpit .navigation-toolbar button {
+  min-height: 34px !important;
+  border-radius: 999px !important;
+  padding: 0 11px !important;
+  background: rgba(15, 23, 42, 0.78) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.18) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+body.route-driver .driver-cockpit .map-locate-btn {
+  top: calc(env(safe-area-inset-top, 0px) + 160px) !important;
+  right: 14px !important;
+  z-index: 35 !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #0f172a !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18) !important;
+}
+
+/* Oculta paneles viejos del cockpit si quedaron en CSS */
+body.route-driver .driver-cockpit-bar,
+body.route-driver .driver-cockpit-turn,
+body.route-driver .driver-cockpit-sheet {
+  display: none !important;
+}
+
+/* Tarjeta superior tipo Google Maps */
+body.route-driver .driver-navigation-instruction {
+  position: absolute !important;
+  top: max(10px, env(safe-area-inset-top, 0px)) !important;
+  left: 10px !important;
+  right: 10px !important;
+  z-index: 50 !important;
+  min-height: 112px !important;
+  padding: 14px !important;
+  border-radius: 18px !important;
+  display: grid !important;
+  grid-template-columns: 54px minmax(0, 1fr) 42px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: #08736f !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.26) !important;
+}
+
+body.route-driver .driver-navigation-turn-icon {
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 16px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+
+body.route-driver .driver-navigation-copy {
+  min-width: 0 !important;
+}
+
+body.route-driver .driver-navigation-copy span {
+  display: block !important;
+  margin-bottom: 4px !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .driver-navigation-copy strong {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  color: #ffffff !important;
+  font-size: clamp(22px, 5.6vw, 31px) !important;
+  line-height: 1.03 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
+}
+
+body.route-driver .driver-navigation-copy small {
+  display: block !important;
+  margin-top: 6px !important;
+  color: rgba(255, 255, 255, 0.74) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+body.route-driver .driver-navigation-refresh {
+  width: 42px !important;
+  height: 42px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+
+/* Barra inferior compacta */
+body.route-driver .driver-navigation-bottom {
+  position: absolute !important;
+  left: 10px !important;
+  right: 10px !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+  z-index: 50 !important;
+  padding: 12px !important;
+  border-radius: 22px !important;
+  background: rgba(12, 20, 29, 0.94) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34) !important;
+  backdrop-filter: blur(18px) !important;
+}
+
+body.route-driver .driver-navigation-trip {
+  min-width: 0 !important;
+}
+
+body.route-driver .driver-navigation-trip span {
+  display: block !important;
+  color: rgba(255, 255, 255, 0.52) !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+body.route-driver .driver-navigation-trip strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
+  line-height: 1.1 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+body.route-driver .driver-navigation-trip small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(255, 255, 255, 0.64) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+body.route-driver .driver-navigation-actions {
+  margin-top: 10px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 52px !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+body.route-driver .driver-navigation-primary {
+  min-height: 52px !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  background: #22c55e !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+  box-shadow: 0 12px 28px rgba(34, 197, 94, 0.26) !important;
+}
+
+body.route-driver .driver-navigation-chat {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 18px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+/* Más espacio de mapa en celulares chicos */
+@media (max-width: 380px) {
+  body.route-driver .driver-navigation-instruction {
+    min-height: 98px !important;
+    grid-template-columns: 46px minmax(0, 1fr) 38px !important;
+    gap: 9px !important;
+    padding: 11px !important;
+  }
+
+  body.route-driver .driver-navigation-turn-icon {
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  body.route-driver .driver-navigation-copy span {
+    font-size: 17px !important;
+  }
+
+  body.route-driver .driver-navigation-copy strong {
+    font-size: 21px !important;
+  }
+
+  body.route-driver .driver-cockpit .navigation-toolbar,
+  body.route-driver .driver-cockpit .map-locate-btn {
+    top: calc(env(safe-area-inset-top, 0px) + 138px) !important;
+  }
+
+  body.route-driver .driver-navigation-bottom {
+    padding: 10px !important;
+  }
+
+  body.route-driver .driver-navigation-primary {
+    min-height: 48px !important;
+    font-size: 15px !important;
+  }
+}
+/* =========================================================
+   MiChofer Driver - Ojo de águila / conducción tipo Google Maps
+   Solo visual. No cambia lógica ni conexiones.
+========================================================= */
+
+body.route-driver .driver-cockpit {
+  background: #07111c !important;
+  overflow: hidden !important;
+}
+
+body.route-driver .driver-cockpit .mobility-map,
+body.route-driver .driver-cockpit .interactive-map,
+body.route-driver .driver-cockpit .google-real-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+body.route-driver .driver-cockpit .google-real-map {
+  filter: saturate(1.08) contrast(1.03) brightness(1.02) !important;
+}
+
+body.route-driver .driver-cockpit .google-real-map::after {
+  background:
+    linear-gradient(180deg, rgba(4, 12, 22, 0.08) 0%, rgba(4, 12, 22, 0) 36%, rgba(4, 12, 22, 0.52) 100%),
+    radial-gradient(circle at 50% 72%, rgba(0, 213, 255, 0.12), transparent 30%) !important;
+}
+
+body.route-driver .driver-cockpit .navigation-toolbar {
+  left: 14px !important;
+  top: calc(env(safe-area-inset-top, 0px) + 104px) !important;
+  z-index: 70 !important;
+}
+
+body.route-driver .driver-cockpit .navigation-toolbar button {
+  min-height: 34px !important;
+  border-radius: 999px !important;
+  background: rgba(7, 17, 28, 0.76) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+body.route-driver .driver-cockpit .navigation-toolbar button.active {
+  background: linear-gradient(135deg, #23f29b, #00d5ff) !important;
+  color: #041014 !important;
+}
+
+body.route-driver .driver-cockpit .map-locate-btn {
+  right: 14px !important;
+  top: calc(env(safe-area-inset-top, 0px) + 104px) !important;
+  z-index: 70 !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 999px !important;
+  background: rgba(7, 17, 28, 0.78) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.32) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+body.route-driver .driver-navigation-instruction {
+  top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+  left: 12px !important;
+  right: 12px !important;
+  z-index: 90 !important;
+  border-radius: 28px !important;
+  background:
+    linear-gradient(135deg, rgba(4, 128, 120, 0.98), rgba(0, 111, 105, 0.96)) !important;
+  box-shadow:
+    0 22px 62px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(20px) saturate(1.1) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.1) !important;
+}
+
+body.route-driver .driver-navigation-bottom {
+  left: 12px !important;
+  right: 12px !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  z-index: 90 !important;
+  border-radius: 26px !important;
+  background:
+    linear-gradient(135deg, rgba(7, 17, 28, 0.94), rgba(14, 24, 38, 0.9)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow:
+    0 26px 74px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(22px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.12) !important;
+}
+
+body.route-driver .google-navigation-marker {
+  width: 96px !important;
+  height: 96px !important;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  display: grid !important;
+  place-items: center !important;
+  pointer-events: none !important;
+  isolation: isolate !important;
+  filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.42)) !important;
+  overflow: visible !important;
+}
+
+body.route-driver .google-navigation-marker::before,
+body.route-driver .google-navigation-marker::after {
+  content: '' !important;
+  position: absolute !important;
+  border-radius: 999px !important;
+  pointer-events: none !important;
+}
+
+body.route-driver .google-navigation-marker::before {
+  inset: 1px !important;
+  z-index: 0 !important;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.96) 0 26%, rgba(255, 255, 255, 0.54) 27% 48%, rgba(255, 255, 255, 0) 49%),
+    radial-gradient(circle, rgba(31, 122, 255, 0.24), rgba(31, 122, 255, 0) 70%) !important;
+}
+
+body.route-driver .google-navigation-marker::after {
+  left: 50% !important;
+  bottom: 12px !important;
+  z-index: 1 !important;
+  width: 58px !important;
+  height: 18px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(15, 23, 42, 0.18) !important;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.24) !important;
+  transform: translateX(-50%) !important;
+}
+
+body.route-driver .google-navigation-marker .navigation-arrow {
+  width: 64px !important;
+  height: 64px !important;
+  position: relative !important;
+  z-index: 3 !important;
+  display: block !important;
+  background:
+    linear-gradient(180deg, #f8fbff 0 18%, #2d7dff 19% 58%, #095ee9 100%) !important;
+  clip-path: polygon(50% 3%, 84% 78%, 50% 65%, 16% 78%) !important;
+  border-radius: 14px !important;
+  transform: translateY(-22px) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.86),
+    inset 0 -10px 14px rgba(0, 34, 114, 0.32) !important;
+}
+
+body.route-driver .google-navigation-marker .navigation-arrow::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 10px !important;
+  width: 9px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.18)) !important;
+  transform: translateX(-50%) !important;
+}
+
+body.route-driver .google-navigation-marker .navigation-arrow::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 8px !important;
+  width: 19px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  transform: translateX(-50%) !important;
+}
+/* =========================================================
+   MiChofer Driver - Marcador navegación
+   La posición abajo la hace la cámara, no el CSS.
+========================================================= */
+
+body.route-driver .google-navigation-marker {
+  transform: translate(-50%, -58%) scale(0.78) !important;
+}
+
+body.route-driver .google-navigation-marker .navigation-arrow {
+  transform: translateY(-18px) !important;
+}
+.car-navigation-marker {
+  width: 54px !important;
+  height: 54px !important;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  background: transparent !important;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
+}
+
+.car-navigation-marker::before,
+.car-navigation-marker::after {
+  display: none !important;
+}
+
+.navigation-car-img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  transform-origin: center center;
+}

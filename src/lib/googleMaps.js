@@ -54,6 +54,37 @@ export function loadGoogleMaps() {
   return googleMapsPromise
 }
 
+export async function reverseGeocode(lat, lng) {
+  try {
+    const google = await loadGoogleMaps()
+    if (!google?.maps?.Geocoder) {
+      console.warn('Geocoder no disponible para reverse geocode')
+      return null
+    }
+    return new Promise((resolve) => {
+      const geocoder = new google.maps.Geocoder()
+      geocoder.geocode(
+        { location: { lat: Number(lat), lng: Number(lng) } },
+        (results, status) => {
+          if (status === 'OK' && results?.[0]) {
+            resolve({
+              formatted_address: results[0].formatted_address,
+              lat: Number(results[0].geometry.location.lat()),
+              lng: Number(results[0].geometry.location.lng()),
+            })
+          } else {
+            console.warn('Reverse geocoding no exitoso:', status)
+            resolve(null)
+          }
+        }
+      )
+    })
+  } catch (error) {
+    console.error('Error en reverse geocodificacion:', error)
+    return null
+  }
+}
+
 export async function geocodeAddress(address, signal) {
   try {
     const google = await loadGoogleMaps()
