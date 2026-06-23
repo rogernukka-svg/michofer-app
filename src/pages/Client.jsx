@@ -169,12 +169,47 @@ function normalizeDriver(driver, location) {
   }
 }
 
-function statusCopy(status, driverName) {
+function rideStatusUi(status, driverName, etaText = '') {
   const name = firstName(driverName)
-  if (status === 'accepted') return [`${name} aceptó tu viaje`, 'Chofer en camino']
-  if (status === 'arriving') return [`${name} llegó al punto`, 'Listo para iniciar']
-  if (status === 'in_progress') return ['Viaje en curso', 'Seguimos tu recorrido']
-  return [`Esperando respuesta de ${name}`, 'Solicitud enviada']
+  const eta = etaText || 'breve'
+
+  if (status === 'accepted') {
+    return {
+      title: `Recogida en ${eta}`,
+      subtitle: `${name} aceptó tu viaje y va camino al punto de recogida.`,
+      badge: 'Confirmado',
+      progress: 58,
+      chatEnabled: true,
+    }
+  }
+
+  if (status === 'arriving') {
+    return {
+      title: 'Llegada en breve',
+      subtitle: `${name} llegó o está muy cerca. Verificá la chapa antes de subir.`,
+      badge: 'Llegando',
+      progress: 78,
+      chatEnabled: true,
+    }
+  }
+
+  if (status === 'in_progress') {
+    return {
+      title: 'Viaje en curso',
+      subtitle: 'Seguimos tu recorrido en tiempo real hasta el destino.',
+      badge: 'En ruta',
+      progress: 92,
+      chatEnabled: true,
+    }
+  }
+
+  return {
+    title: 'Chofer encontrado',
+    subtitle: 'Esperando que confirme tu solicitud. Todavía no está viniendo.',
+    badge: 'Solicitud enviada',
+    progress: 28,
+    chatEnabled: false,
+  }
 }
 
 export default function Client() {
@@ -1163,9 +1198,7 @@ async function cancelActiveTrip() {
     })
   }
 
-   const [statusTitle, statusSub] = statusCopy(activeTrip?.status, activeTripDriver?.name || selectedDriver?.name)
-
-  const liveDriverPoint = useMemo(() => {
+    const liveDriverPoint = useMemo(() => {
     if (
       !activeTripDriver ||
       !Number.isFinite(Number(activeTripDriver.lat)) ||
@@ -1188,41 +1221,63 @@ async function cancelActiveTrip() {
     activeTripDriver?.name,
   ])
 
- const activeTripAcceptedByDriver = Boolean(
-  activeTrip &&
-  ['accepted', 'arriving', 'in_progress'].includes(activeTrip.status)
-)
+  const activeTripAcceptedByDriver = Boolean(
+    activeTrip &&
+    ['accepted', 'arriving', 'in_progress'].includes(activeTrip.status)
+  )
 
-const activeTripWaitingForPickup = Boolean(
-  activeTripAcceptedByDriver && activeTrip.status !== 'in_progress'
-)
+  const activeTripWaitingForPickup = Boolean(
+    activeTripAcceptedByDriver && activeTrip.status !== 'in_progress'
+  )
 
-const shouldTrackDriverOnMap = Boolean(
-  activeTripAcceptedByDriver && liveDriverPoint
-)
+  const shouldTrackDriverOnMap = Boolean(
+    activeTripAcceptedByDriver && liveDriverPoint
+  )
 
-const mapOrigin = useMemo(() => {
-  return shouldTrackDriverOnMap ? liveDriverPoint : clientLocation
-}, [
-  shouldTrackDriverOnMap,
-  liveDriverPoint,
-  clientLocation?.lat,
-  clientLocation?.lng,
-])
+  const liveEtaText = routeGuidance?.duration
+    ? `${Math.max(1, Math.ceil(Number(routeGuidance.duration) / 60))} min`
+    : activeTripDriver?.eta || selectedDriver?.eta || ''
 
-const mapDestination = useMemo(() => {
-  if (!activeTripAcceptedByDriver) return destinationPoint
-  return activeTripWaitingForPickup ? clientLocation : destinationPoint
-}, [
-  activeTripAcceptedByDriver,
-  activeTripWaitingForPickup,
-  clientLocation?.lat,
-  clientLocation?.lng,
-  destinationPoint?.lat,
-  destinationPoint?.lng,
-])
+  const rideUi = rideStatusUi(
+    activeTrip?.status,
+    activeTripDriver?.name || selectedDriver?.name,
+    liveEtaText
+  )
 
-  const mapAvatar = activeTrip && liveDriverPoint ? liveDriverPoint.avatar : profile?.avatar_url
+  const rideProgressWidth = `${rideUi.progress}%`
+  const canChatInRide = Boolean(activeTrip?.id && rideUi.chatEnabled)
+  const driverVehicleText =
+    activeTripDriver?.vehicle ||
+    selectedDriver?.vehicle ||
+    'Vehículo verificado'
+
+  const driverPlateText =
+    activeTripDriver?.plate ||
+    selectedDriver?.plate ||
+    'Verificado'
+
+  const mapOrigin = useMemo(() => {
+    return shouldTrackDriverOnMap ? liveDriverPoint : clientLocation
+  }, [
+    shouldTrackDriverOnMap,
+    liveDriverPoint,
+    clientLocation?.lat,
+    clientLocation?.lng,
+  ])
+
+  const mapDestination = useMemo(() => {
+    if (!activeTripAcceptedByDriver) return destinationPoint
+    return activeTripWaitingForPickup ? clientLocation : destinationPoint
+  }, [
+    activeTripAcceptedByDriver,
+    activeTripWaitingForPickup,
+    clientLocation?.lat,
+    clientLocation?.lng,
+    destinationPoint?.lat,
+    destinationPoint?.lng,
+  ])
+
+  const mapAvatar = shouldTrackDriverOnMap ? liveDriverPoint?.avatar : profile?.avatar_url
 
   const mapDrivers = useMemo(() => {
     return activeTrip ? [] : visibleDrivers
@@ -1321,29 +1376,60 @@ const mapDestination = useMemo(() => {
           )}
         </header>
 
-        {activeTrip && activeTripDriver && (
-          <section className="active-trip-card">
-            <div>
-              <span>{statusSub}</span>
-              <h2>{statusTitle}</h2>
+                {activeTrip && activeTripDriver && (
+          <section className={`ride-live-sheet status-${activeTrip.status || 'pending'}`} aria-label="Estado del viaje">
+            <div className="ride-sheet-handle" />
+
+            <div className="ride-status-progress" aria-hidden="true">
+              <span style={{ width: rideProgressWidth }} />
             </div>
 
-            <div className="active-trip-driver">
-              {activeTripDriver.avatar ? (
-                <img src={activeTripDriver.avatar} alt={activeTripDriver.name} />
-              ) : (
-                <div className="driver-avatar-fallback">{firstName(activeTripDriver.name).slice(0, 2).toUpperCase()}</div>
-              )}
-              <strong>{firstName(activeTripDriver.name)}</strong>
+            <div className="ride-live-main">
+              <div className="ride-driver-avatar">
+                {activeTripDriver.avatar ? (
+                  <img src={activeTripDriver.avatar} alt={activeTripDriver.name} />
+                ) : (
+                  <span>{firstName(activeTripDriver.name).slice(0, 2).toUpperCase()}</span>
+                )}
+
+                <em aria-hidden="true">
+                  <CheckCircle2 size={13} />
+                </em>
+              </div>
+
+              <div className="ride-live-copy">
+                <span className="ride-status-pill">{rideUi.badge}</span>
+                <h2>{rideUi.title}</h2>
+                <p>{rideUi.subtitle}</p>
+              </div>
             </div>
 
-            <a className="active-trip-chat" href={`/chat?trip=${activeTrip.id}`} aria-label="Abrir chat">
-              <MessageCircle size={18} />
-            </a>
+            <div className="ride-driver-mini-card">
+              <strong>{driverPlateText}</strong>
+              <span>{driverVehicleText}</span>
+              <small>{firstName(activeTripDriver.name)}</small>
+            </div>
 
-            <button className="active-trip-cancel" type="button" onClick={cancelActiveTrip} aria-label="Cancelar viaje">
-              <X size={18} />
-            </button>
+            <div className="ride-live-actions">
+              <a
+                className={canChatInRide ? 'ride-chat-action' : 'ride-chat-action disabled'}
+                href={canChatInRide ? `/chat?trip=${activeTrip.id}` : '#'}
+                onClick={(event) => {
+                  if (!canChatInRide) {
+                    event.preventDefault()
+                    setMessage('El chat se activa cuando el chofer acepta tu solicitud.')
+                  }
+                }}
+              >
+                <MessageCircle size={18} />
+                {canChatInRide ? 'Chatear' : 'Chat al aceptar'}
+              </a>
+
+              <button type="button" className="ride-cancel-action" onClick={cancelActiveTrip}>
+                <X size={18} />
+                Cancelar
+              </button>
+            </div>
           </section>
         )}
 <InteractiveRouteMap

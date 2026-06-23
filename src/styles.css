@@ -824,12 +824,12 @@ button {
   transition: transform 220ms ease;
 }
 
-.interactive-map.is-3d .map-plane {
+.interactive-map.is-satellite .map-plane {
   transform: rotateX(54deg) rotateZ(-12deg) translateY(18px) scale(1.24);
 }
 
-.interactive-map.is-3d .map-marker,
-.interactive-map.is-3d .map-driver-pin {
+.interactive-map.is-satellite .map-marker,
+.interactive-map.is-satellite .map-driver-pin {
   transform: translate(-50%, -50%) rotateZ(12deg) rotateX(-54deg);
 }
 
@@ -10703,4 +10703,276 @@ body.route-driver .google-navigation-marker .navigation-arrow {
   height: 54px;
   object-fit: contain;
   transform-origin: center center;
+}
+/* =========================================================
+   MiChofer Ride Live Sheet
+   Panel inferior único para viaje activo.
+   Inspiración UX tipo app de movilidad, diseño propio MiChofer.
+========================================================= */
+
+body.route-client .ride-live-sheet {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  z-index: 95;
+  border-radius: 30px 30px 26px 26px;
+  padding: 10px 14px 14px;
+  color: #071018;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 252, 0.96)),
+    #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 -18px 54px rgba(7, 16, 24, 0.18),
+    0 28px 80px rgba(7, 16, 24, 0.16);
+  backdrop-filter: blur(24px) saturate(1.08);
+  -webkit-backdrop-filter: blur(24px) saturate(1.08);
+}
+
+body.route-client .ride-sheet-handle {
+  width: 48px;
+  height: 5px;
+  border-radius: 999px;
+  margin: 0 auto 12px;
+  background: rgba(7, 16, 24, 0.16);
+}
+
+body.route-client .ride-status-progress {
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: rgba(7, 16, 24, 0.08);
+}
+
+body.route-client .ride-status-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f766e, #14b8a6, #8ee6d2);
+  box-shadow: 0 0 22px rgba(20, 184, 166, 0.32);
+  transition: width 360ms ease;
+}
+
+body.route-client .ride-live-main {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+body.route-client .ride-driver-avatar {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 21px;
+  background: #071018;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  box-shadow: 0 14px 34px rgba(7, 16, 24, 0.18);
+}
+
+body.route-client .ride-driver-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+body.route-client .ride-driver-avatar > span {
+  font-size: 18px;
+  font-weight: 950;
+}
+
+body.route-client .ride-driver-avatar em {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #ffffff;
+  border: 3px solid #ffffff;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+}
+
+body.route-client .ride-live-copy {
+  min-width: 0;
+}
+
+body.route-client .ride-status-pill {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 9px;
+  background: rgba(15, 118, 110, 0.1);
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: -0.01em;
+}
+
+body.route-client .ride-live-copy h2 {
+  margin: 8px 0 0;
+  color: #071018;
+  font-size: clamp(23px, 6vw, 29px);
+  line-height: 0.96;
+  font-weight: 950;
+  letter-spacing: -0.055em;
+}
+
+body.route-client .ride-live-copy p {
+  margin: 7px 0 0;
+  color: #52606d;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 850;
+}
+
+body.route-client .ride-driver-mini-card {
+  margin-top: 14px;
+  min-height: 58px;
+  border-radius: 20px;
+  background: #f4f7f8;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(7, 16, 24, 0.06);
+}
+
+body.route-client .ride-driver-mini-card strong {
+  border-radius: 10px;
+  background: #ffffff;
+  color: #071018;
+  padding: 7px 9px;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  box-shadow: inset 0 0 0 1px rgba(7, 16, 24, 0.08);
+}
+
+body.route-client .ride-driver-mini-card span {
+  min-width: 0;
+  color: #26313b;
+  font-size: 13px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.route-client .ride-driver-mini-card small {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+body.route-client .ride-live-actions {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 118px;
+  gap: 10px;
+}
+
+body.route-client .ride-live-actions a,
+body.route-client .ride-live-actions button {
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  border-radius: 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 950;
+  text-decoration: none;
+}
+
+body.route-client .ride-chat-action {
+  background: #071018;
+  color: #ffffff;
+  box-shadow: 0 16px 32px rgba(7, 16, 24, 0.2);
+}
+
+body.route-client .ride-chat-action.disabled {
+  opacity: 0.58;
+  background: #dfe5e8;
+  color: #667085;
+  box-shadow: none;
+}
+
+body.route-client .ride-cancel-action {
+  background: rgba(227, 6, 19, 0.1);
+  color: #b70721;
+  cursor: pointer;
+}
+
+body.route-client .ride-live-sheet.status-pending .ride-status-progress span {
+  background: linear-gradient(90deg, #8b5cf6, #14b8a6);
+}
+
+body.route-client .ride-live-sheet.status-pending .ride-status-pill {
+  background: rgba(139, 92, 246, 0.12);
+  color: #6d28d9;
+}
+
+body.route-client .ride-live-sheet.status-arriving .ride-status-progress span {
+  background: linear-gradient(90deg, #f59e0b, #14b8a6);
+}
+
+body.route-client .ride-live-sheet.status-arriving .ride-status-pill {
+  background: rgba(245, 158, 11, 0.14);
+  color: #92400e;
+}
+
+body.route-client .ride-live-sheet.status-in_progress .ride-status-progress span {
+  background: linear-gradient(90deg, #071018, #0f766e, #14b8a6);
+}
+
+body.route-client .ride-live-sheet.status-in_progress .ride-status-pill {
+  background: rgba(7, 16, 24, 0.08);
+  color: #071018;
+}
+
+/* Apagamos el diseño viejo durante viaje activo */
+body.route-client .active-trip-card,
+body.route-client .active-trip-actions {
+  display: none !important;
+}
+
+@media (max-width: 380px) {
+  body.route-client .ride-live-sheet {
+    left: 8px;
+    right: 8px;
+    padding: 9px 11px 12px;
+    border-radius: 26px;
+  }
+
+  body.route-client .ride-live-copy h2 {
+    font-size: 23px;
+  }
+
+  body.route-client .ride-driver-mini-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  body.route-client .ride-driver-mini-card small {
+    display: none;
+  }
+
+  body.route-client .ride-live-actions {
+    grid-template-columns: 1fr;
+  }
 }

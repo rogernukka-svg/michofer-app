@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Layers, LocateFixed, Navigation } from 'lucide-react'
+import { LocateFixed, Map, Navigation } from 'lucide-react'
 import { loadGoogleMaps, GOOGLE_MAPS_MAP_ID } from '../lib/googleMaps'
 
 import carRightImg from '../assets/128derecha.png'
@@ -431,7 +431,7 @@ export default function InteractiveRouteMap({
   showOriginCar = false,
   onRouteUpdate,
 }) {
-  const [is3d, setIs3d] = useState(() => !navigationMode)
+   const [isSatellite, setIsSatellite] = useState(() => !navigationMode)
   const [showTraffic, setShowTraffic] = useState(false)
   const [mapReady, setMapReady] = useState(false)
   const [mapError, setMapError] = useState(null)
@@ -483,23 +483,29 @@ export default function InteractiveRouteMap({
 
         setGoogleApi(google)
 
-        const map = new google.maps.Map(mapContainerRef.current, {
-  center: isValidCoord(origin) ? toLatLng(origin) : DEFAULT_CENTER,
-  zoom: navigationMode ? NAVIGATION_ZOOM : 14.1,
-  tilt: navigationMode ? NAVIGATION_TILT : is3d ? 45 : 0,
-  heading: navigationMode ? navigationHeadingRef.current : is3d ? -18 : 0,
-  renderingType: google.maps.RenderingType?.VECTOR,
-  mapId: GOOGLE_MAPS_MAP_ID || undefined,
-  mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : navigationMode ? 'roadmap' : is3d ? 'satellite' : 'roadmap',
-  styles: navigationMode ? undefined : GOOGLE_MAPS_MAP_ID ? undefined : DARK_MAP_STYLE,
-  disableDefaultUI: true,
-  gestureHandling: mapInteractive ? 'greedy' : 'none',
-  zoomControl: false,
-  streetViewControl: false,
-  mapTypeControl: false,
-  fullscreenControl: false,
-  clickableIcons: false,
-})
+               const map = new google.maps.Map(mapContainerRef.current, {
+          center: isValidCoord(origin) ? toLatLng(origin) : DEFAULT_CENTER,
+          zoom: navigationMode ? NAVIGATION_ZOOM : 14.1,
+          tilt: navigationMode ? NAVIGATION_TILT : isSatellite ? 45 : 0,
+          heading: navigationMode ? navigationHeadingRef.current : isSatellite ? -18 : 0,
+          renderingType: google.maps.RenderingType?.VECTOR,
+          mapId: GOOGLE_MAPS_MAP_ID || undefined,
+          mapTypeId: GOOGLE_MAPS_MAP_ID
+            ? undefined
+            : navigationMode
+              ? 'roadmap'
+              : isSatellite
+                ? 'satellite'
+                : 'roadmap',
+          styles: navigationMode ? undefined : GOOGLE_MAPS_MAP_ID ? undefined : DARK_MAP_STYLE,
+          disableDefaultUI: true,
+          gestureHandling: mapInteractive ? 'greedy' : 'none',
+          zoomControl: false,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+          clickableIcons: false,
+        })
 
         mapRef.current = map
         directionsServiceRef.current = new google.maps.DirectionsService()
@@ -576,14 +582,14 @@ export default function InteractiveRouteMap({
 
     map.panTo(toLatLng(target))
     map.setZoom(selectedDriver ? 14.6 : 14.1)
-    map.setOptions({
-      tilt: is3d ? 45 : 0,
-      heading: is3d ? -10 : 0,
+        map.setOptions({
+      tilt: isSatellite ? 45 : 0,
+      heading: isSatellite ? -10 : 0,
       mapId: GOOGLE_MAPS_MAP_ID || undefined,
-      mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : is3d ? 'satellite' : 'roadmap',
+      mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : isSatellite ? 'satellite' : 'roadmap',
       styles: GOOGLE_MAPS_MAP_ID ? undefined : DARK_MAP_STYLE,
     })
-  }, [animateCamera, destination, googleApi, is3d, mapReady, navigationMode, origin, selectedDriver])
+  }, [animateCamera, destination, googleApi, isSatellite, mapReady, navigationMode, origin, selectedDriver])
 
   useEffect(() => {
     const map = mapRef.current
@@ -845,15 +851,20 @@ applyNavigationCamera(currentMap, lookAheadPoint, navigationHeading)
     selectedDriver?.lng,
   ])
 
-  return (
-    <section className={is3d ? 'mobility-map interactive-map is-3d' : 'mobility-map interactive-map'}>
+   return (
+    <section className={isSatellite ? 'mobility-map interactive-map is-satellite' : 'mobility-map interactive-map'}>
       <div ref={mapContainerRef} className={mapReady ? 'google-real-map ready' : 'google-real-map'} />
 
       <div className={navigationMode ? 'map-toolbar navigation-toolbar' : 'map-toolbar'} aria-label="Controles de mapa">
         {!navigationMode && (
-          <button type="button" className={is3d ? 'active' : ''} onClick={() => setIs3d((value) => !value)}>
-            <Layers size={16} />
-            {is3d ? '3D' : '2D'}
+          <button
+            type="button"
+            className={isSatellite ? 'active' : ''}
+            onClick={() => setIsSatellite((value) => !value)}
+            title={isSatellite ? 'Cambiar a mapa normal' : 'Cambiar a vista satelital'}
+          >
+            <Map size={16} />
+            {isSatellite ? 'Satélite' : 'Mapa'}
           </button>
         )}
 
