@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import InstallMiChoferButton from '../components/InstallMiChoferButton.jsx'
 import {
   getOwnProfile,
@@ -100,8 +100,16 @@ function cacheProfile({ email, fullName, role, avatarUrl }) {
   }
 }
 
+function getRolePath(role) {
+  return role === 'driver' ? '/driver' : '/client'
+}
+
 function goToRole(role) {
-  window.location.href = role === 'driver' ? '/driver' : '/client'
+  const targetPath = getRolePath(role || 'passenger')
+
+  if (window.location.pathname === targetPath) return
+
+  window.location.replace(targetPath)
 }
 
 function dataUrlToFile(dataUrl, filename, fallbackType = 'image/jpeg') {
@@ -203,7 +211,9 @@ export default function Login() {
     plate: '',
     vehicleYear: '',
   })
-  const [errorMessage, setErrorMessage] = useState('')
+    const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const redirectingRef = useRef(false)
 
   useEffect(() => {
     let alive = true
@@ -288,6 +298,9 @@ export default function Login() {
           })
         }
 
+                if (redirectingRef.current) return
+
+        redirectingRef.current = true
         goToRole(role || 'passenger')
         return
       }
@@ -497,6 +510,9 @@ export default function Login() {
 
       cacheProfile({ email: cleanEmail, fullName, role: nextRole, avatarUrl })
       markRoleConfirmed(cleanEmail)
+            if (redirectingRef.current) return
+
+      redirectingRef.current = true
       goToRole(nextRole)
     } catch (err) {
       console.error('ROLE SAVE ERROR:', err)
@@ -660,6 +676,9 @@ export default function Login() {
         })
       }
 
+            if (redirectingRef.current) return
+
+      redirectingRef.current = true
       goToRole(role)
     } catch (err) {
       console.error(err)
@@ -669,7 +688,38 @@ export default function Login() {
       setBusy(false)
     }
   }
+  async function handlePasswordReset() {
+    setErrorMessage('')
+    setSuccessMessage('')
 
+    const cleanEmail = normalizeEmail(email || knownUser?.email)
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setErrorMessage('Primero escribí tu correo para enviarte el enlace.')
+      setStep('email')
+      return
+    }
+
+    try {
+      setBusy(true)
+
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: `${window.location.origin}/login`,
+      })
+
+      if (error) {
+        setErrorMessage(error.message || 'No pude enviar el enlace de recuperación.')
+        return
+      }
+
+      setSuccessMessage('Te enviamos un enlace para recuperar tu clave. Revisá tu correo.')
+    } catch (err) {
+      console.error('PASSWORD RESET ERROR:', err)
+      setErrorMessage('No pude enviar el enlace. Revisá tu conexión e intentá de nuevo.')
+    } finally {
+      setBusy(false)
+    }
+  }
   async function handleGoogleAuth() {
     setErrorMessage('')
 
@@ -716,9 +766,15 @@ export default function Login() {
 
           <p className="login-subtitle">{subtitle}</p>
 
-          {errorMessage && (
+                    {errorMessage && (
             <div className="login-error-message">
               {errorMessage}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="login-success-message">
+              {successMessage}
             </div>
           )}
 
@@ -731,7 +787,7 @@ export default function Login() {
                 disabled={busy}
               >
                 <span className="google-mark" aria-hidden="true" />
-                {busy ? 'Conectando...' : 'Entrar con Google'}
+                {busy ? 'Conectando...' : 'Continuar con Google'}
               </button>
 
               <button
@@ -804,12 +860,21 @@ export default function Login() {
                 {busy ? 'Entrando...' : 'Entrar'}
               </button>
 
+                            <button
+                type="button"
+                className="login-text-btn"
+                onClick={handlePasswordReset}
+                disabled={busy}
+              >
+                Olvidé mi clave
+              </button>
+
               <button
                 type="button"
                 className="login-text-btn"
                 onClick={() => setStep('email')}
               >
-                {'<-'} Cambiar correo
+                Cambiar correo
               </button>
             </form>
           )}

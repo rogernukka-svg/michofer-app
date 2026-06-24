@@ -699,7 +699,7 @@ export default function Register() {
                 disabled={busy}
               >
                 <span className="google-mark" aria-hidden="true" />
-                {busy ? 'Conectando...' : 'Registrarme con Google'}
+                {busy ? 'Conectando...' : 'Continuar con Google'}
               </button>
 
               <button

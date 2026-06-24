@@ -18179,3 +18179,19 @@ body.route-client .driver-picker-pro-card .driver-side button {
     height: 44px !important;
   }
 }
+/* =========================================================
+   MiChofer Auth - mensajes claros
+========================================================= */
+
+.login-success-message {
+  width: 100%;
+  margin-top: 18px;
+  border-radius: 18px;
+  background: #ecfdf3;
+  color: #027a48;
+  padding: 13px 14px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 900;
+}
