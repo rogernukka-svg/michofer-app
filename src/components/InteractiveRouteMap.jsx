@@ -62,6 +62,7 @@ function getBearingBetweenPoints(start, end) {
 
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
 }
+
 function normalizeMapPoint(point, fallback = DEFAULT_CENTER) {
   if (typeof point?.lat === 'function' && typeof point?.lng === 'function') {
     return { lat: point.lat(), lng: point.lng() }
@@ -73,6 +74,7 @@ function normalizeMapPoint(point, fallback = DEFAULT_CENTER) {
 
   return fallback
 }
+
 function getDistanceMeters(start, end) {
   if (!isValidCoord(start) || !isValidCoord(end)) return 0
 
@@ -211,6 +213,7 @@ function applyNavigationCamera(map, center, heading) {
     }
   }
 }
+
 function createCircleIcon(color, google) {
   if (!google?.maps?.SymbolPath?.CIRCLE) {
     return null
@@ -225,6 +228,7 @@ function createCircleIcon(color, google) {
     strokeWeight: 2,
   }
 }
+
 function getCarImageByHeading(heading = 0) {
   const normalizedHeading = ((Number(heading) % 360) + 360) % 360
 
@@ -242,6 +246,7 @@ function getCarImageByHeading(heading = 0) {
 
   return carTopImg
 }
+
 function createDriverOverlay(driver, selected, onSelect, google) {
   const overlay = new google.maps.OverlayView()
   const element = document.createElement('button')
@@ -403,13 +408,23 @@ function createNavigationOverlay(position, google, heading = 0) {
   return overlay
 }
 
-const DARK_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#0f1724' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#0b1220' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#021126' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#0b1220' }] },
+const MICHOFER_LIGHT_MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#f6f7f9' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#4b5563' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
+
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#d8e1ea' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#c7d0dc' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#cbd5e1' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#aeb9c8' }] },
+
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#a9dcef' }] },
+  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#dff3e2' }] },
+  { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#f2f4f7' }] },
+
   { featureType: 'poi', stylers: [{ visibility: 'simplified' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'simplified' }] },
+  { featureType: 'poi.medical', stylers: [{ visibility: 'simplified' }] },
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ]
 
@@ -429,9 +444,11 @@ export default function InteractiveRouteMap({
   showRouteSummary = true,
   navigationMode = false,
   showOriginCar = false,
+  showMapTypeControl = true,
+  safetyZones = [],
   onRouteUpdate,
 }) {
-   const [isSatellite, setIsSatellite] = useState(() => !navigationMode)
+  const [isSatellite, setIsSatellite] = useState(false)
   const [showTraffic, setShowTraffic] = useState(false)
   const [mapReady, setMapReady] = useState(false)
   const [mapError, setMapError] = useState(null)
@@ -442,6 +459,7 @@ export default function InteractiveRouteMap({
   const directionsServiceRef = useRef(null)
   const routePolylineRef = useRef(null)
   const markersRef = useRef([])
+  const safetyZoneRefs = useRef([])
   const trafficLayerRef = useRef(null)
   const routeSignatureRef = useRef('')
   const routeRequestSerialRef = useRef(0)
@@ -483,7 +501,7 @@ export default function InteractiveRouteMap({
 
         setGoogleApi(google)
 
-               const map = new google.maps.Map(mapContainerRef.current, {
+        const map = new google.maps.Map(mapContainerRef.current, {
           center: isValidCoord(origin) ? toLatLng(origin) : DEFAULT_CENTER,
           zoom: navigationMode ? NAVIGATION_ZOOM : 14.1,
           tilt: navigationMode ? NAVIGATION_TILT : isSatellite ? 45 : 0,
@@ -492,12 +510,10 @@ export default function InteractiveRouteMap({
           mapId: GOOGLE_MAPS_MAP_ID || undefined,
           mapTypeId: GOOGLE_MAPS_MAP_ID
             ? undefined
-            : navigationMode
-              ? 'roadmap'
-              : isSatellite
-                ? 'satellite'
-                : 'roadmap',
-          styles: navigationMode ? undefined : GOOGLE_MAPS_MAP_ID ? undefined : DARK_MAP_STYLE,
+            : isSatellite
+              ? 'satellite'
+              : 'roadmap',
+          styles: isSatellite || GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
           disableDefaultUI: true,
           gestureHandling: mapInteractive ? 'greedy' : 'none',
           zoomControl: false,
@@ -547,6 +563,15 @@ export default function InteractiveRouteMap({
       })
       markersRef.current = []
 
+      safetyZoneRefs.current.forEach((zone) => {
+        try {
+          zone.setMap(null)
+        } catch {
+          // no-op
+        }
+      })
+      safetyZoneRefs.current = []
+
       if (routePolylineRef.current) {
         routePolylineRef.current.setMap(null)
         routePolylineRef.current = null
@@ -569,25 +594,30 @@ export default function InteractiveRouteMap({
     const target = isValidCoord(selectedDriver) ? selectedDriver : origin
 
     if (navigationMode) {
- map.setOptions({
-  tilt: NAVIGATION_TILT,
-  heading: navigationHeadingRef.current,
-  mapId: GOOGLE_MAPS_MAP_ID || undefined,
-  mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : 'roadmap',
-})
+      map.setOptions({
+        tilt: NAVIGATION_TILT,
+        heading: navigationHeadingRef.current,
+        mapId: GOOGLE_MAPS_MAP_ID || undefined,
+        mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : 'roadmap',
+        styles: GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
+      })
 
-  applyNavigationCamera(map, origin, navigationHeadingRef.current)
-  return
-}
+      applyNavigationCamera(map, origin, navigationHeadingRef.current)
+      return
+    }
 
-    map.panTo(toLatLng(target))
-    map.setZoom(selectedDriver ? 14.6 : 14.1)
-        map.setOptions({
+    if (animateCamera) {
+      map.panTo(toLatLng(target))
+    }
+
+    map.setZoom(selectedDriver ? 15.2 : 14.6)
+
+    map.setOptions({
       tilt: isSatellite ? 45 : 0,
       heading: isSatellite ? -10 : 0,
       mapId: GOOGLE_MAPS_MAP_ID || undefined,
       mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : isSatellite ? 'satellite' : 'roadmap',
-      styles: GOOGLE_MAPS_MAP_ID ? undefined : DARK_MAP_STYLE,
+      styles: isSatellite || GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
     })
   }, [animateCamera, destination, googleApi, isSatellite, mapReady, navigationMode, origin, selectedDriver])
 
@@ -619,17 +649,17 @@ export default function InteractiveRouteMap({
       return marker
     }
 
-   if (isValidCoord(origin)) {
-  try {
-    const showCarAsOrigin = navigationMode || showOriginCar
+    if (isValidCoord(origin)) {
+      try {
+        const showCarAsOrigin = navigationMode || showOriginCar
 
-    const originOverlay = showCarAsOrigin
-      ? createNavigationOverlay(origin, googleApi, navigationHeadingRef.current)
-      : createClientOverlay(clientAvatar, 'Tu ubicación', googleApi, origin)
+        const originOverlay = showCarAsOrigin
+          ? createNavigationOverlay(origin, googleApi, navigationHeadingRef.current)
+          : createClientOverlay(clientAvatar, 'Tu ubicación', googleApi, origin)
 
-    originOverlay.setMap(map)
-    markersRef.current.push(originOverlay)
-  } catch (err) {
+        originOverlay.setMap(map)
+        markersRef.current.push(originOverlay)
+      } catch (err) {
         const icon = createCircleIcon('#1f7aff', googleApi)
 
         addMarker(origin, {
@@ -669,7 +699,7 @@ export default function InteractiveRouteMap({
       overlay.setMap(map)
       markersRef.current.push(overlay)
     })
-      }, [
+  }, [
     clientAvatar,
     destination,
     googleApi,
@@ -791,11 +821,12 @@ export default function InteractiveRouteMap({
 
           currentPolyline.setPath(routePath)
 
-          const distance = route.legs?.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0) || 0
+                    const distance = route.legs?.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0) || 0
           const duration = route.legs?.reduce((sum, leg) => sum + (leg.duration?.value || 0), 0) || 0
           const instruction = route.legs?.[0]?.steps?.[0]?.instructions?.replace(/<[^>]*>/g, '') || ''
+          const heading = getRouteHeading(routePath, normalizedOrigin, normalizedDestination)
 
-          emitRouteUpdate({ distance, duration, instruction })
+          emitRouteUpdate({ distance, duration, instruction, heading })
 
           if (!navigationMode) {
             const bounds = getBounds(waypoints, googleApi)
@@ -806,26 +837,27 @@ export default function InteractiveRouteMap({
             }
           }
 
-          if (navigationMode) {
-  const navigationHeading = getRouteHeading(routePath, normalizedOrigin, normalizedDestination)
-  const lookAheadPoint = getRouteLookAheadPoint(routePath, normalizedOrigin, normalizedDestination)
+                    if (navigationMode) {
+            const navigationHeading = heading
+            const lookAheadPoint = getRouteLookAheadPoint(routePath, normalizedOrigin, normalizedDestination)
 
-  navigationHeadingRef.current = navigationHeading
+            navigationHeadingRef.current = navigationHeading
 
-  currentMap.setOptions({
-  tilt: NAVIGATION_TILT,
-  heading: navigationHeading,
-  mapId: GOOGLE_MAPS_MAP_ID || undefined,
-  mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : 'roadmap',
-})
+            currentMap.setOptions({
+              tilt: NAVIGATION_TILT,
+              heading: navigationHeading,
+              mapId: GOOGLE_MAPS_MAP_ID || undefined,
+              mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : 'roadmap',
+              styles: GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
+            })
 
-applyNavigationCamera(currentMap, lookAheadPoint, navigationHeading)
-}
+            applyNavigationCamera(currentMap, lookAheadPoint, navigationHeading)
+          }
 
           return
         }
 
-        currentPolyline.setPath([normalizedOrigin, normalizedDestination])
+               currentPolyline.setPath([normalizedOrigin, normalizedDestination])
         emitRouteUpdate(null)
       } catch (error) {
         console.warn('Error seguro en route callback:', error)
@@ -851,20 +883,20 @@ applyNavigationCamera(currentMap, lookAheadPoint, navigationHeading)
     selectedDriver?.lng,
   ])
 
-   return (
+  return (
     <section className={isSatellite ? 'mobility-map interactive-map is-satellite' : 'mobility-map interactive-map'}>
       <div ref={mapContainerRef} className={mapReady ? 'google-real-map ready' : 'google-real-map'} />
 
       <div className={navigationMode ? 'map-toolbar navigation-toolbar' : 'map-toolbar'} aria-label="Controles de mapa">
-        {!navigationMode && (
+        {!navigationMode && showMapTypeControl && (
           <button
             type="button"
             className={isSatellite ? 'active' : ''}
             onClick={() => setIsSatellite((value) => !value)}
-            title={isSatellite ? 'Cambiar a mapa normal' : 'Cambiar a vista satelital'}
+            title={isSatellite ? 'Volver al mapa normal' : 'Ver mapa satelital'}
           >
             <Map size={16} />
-            {isSatellite ? 'Satélite' : 'Mapa'}
+            Satélite
           </button>
         )}
 

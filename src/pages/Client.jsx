@@ -44,10 +44,24 @@ import {
 import { geocodeAddress, loadGoogleMaps } from '../lib/googleMaps'
 import { calculateFare } from '../lib/fareCalculator'
 
+import iconRideAll from '../assets/todos.png'
+import iconRideElla from '../assets/ella.png'
+import iconRideMoto from '../assets/moto.png'
+import iconRideComfort from '../assets/confor.png'
+import iconRidePremium from '../assets/premiun.png'
+
 const DEFAULT_CENTER = { lat: -25.5167, lng: -54.6167 }
 const ACTIVE_STATUSES = ['pending', 'accepted', 'arriving', 'in_progress']
 const CAR_PRICE_PER_KM = 4500
 const CAR_MIN_PRICE = 12000
+
+const RIDE_CATEGORY_ICONS = {
+  all: iconRideAll,
+  ella: iconRideElla,
+  moto: iconRideMoto,
+  comfort: iconRideComfort,
+  premium: iconRidePremium,
+}
 
 function distanceKm(a, b) {
   if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null
@@ -212,6 +226,37 @@ function rideStatusUi(status, driverName, etaText = '') {
   }
 }
 
+function liveDistanceMeters(driver, target) {
+  const km = distanceKm(driver, target)
+  return km == null ? null : km * 1000
+}
+
+function clientLiveStatusUi(status, driverName, etaText, distanceMeters) {
+  const name = firstName(driverName)
+
+  if ((status === 'accepted' || status === 'arriving') && distanceMeters != null && distanceMeters <= 22) {
+    return {
+      title: 'Tu chofer está en el punto',
+      subtitle: `${name} ya está muy cerca. Verificá el auto y la chapa.`,
+      badge: 'En el punto',
+      progress: 82,
+      chatEnabled: true,
+    }
+  }
+
+  if (status === 'in_progress' && distanceMeters != null && distanceMeters <= 25) {
+    return {
+      title: 'Estás llegando al destino',
+      subtitle: 'El destino está a pocos metros. Revisá tus pertenencias.',
+      badge: 'Llegando',
+      progress: 96,
+      chatEnabled: true,
+    }
+  }
+
+  return rideStatusUi(status, driverName, etaText)
+}
+
 export default function Client() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -237,8 +282,9 @@ export default function Client() {
   const [categorySheet, setCategorySheet] = useState(null)
   const [routeGuidance, setRouteGuidance] = useState(null)
   const [womenRequesting, setWomenRequesting] = useState(false)
-  const [activeTrip, setActiveTrip] = useState(null)
+    const [activeTrip, setActiveTrip] = useState(null)
   const [activeTripDriver, setActiveTripDriver] = useState(null)
+  const [liveSheetExpanded, setLiveSheetExpanded] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [showAvatarPreview, setShowAvatarPreview] = useState(false)
   const [googlePlacesError, setGooglePlacesError] = useState(null)
@@ -504,7 +550,7 @@ export default function Client() {
       })
       .subscribe()
 
-    const interval = window.setInterval(() => loadDrivers(clientLocation), 15000)
+    const interval = window.setInterval(() => loadDrivers(clientLocation), 5000)
 
     return () => {
       window.clearTimeout(refreshTimeout)
@@ -512,7 +558,16 @@ export default function Client() {
       supabase.removeChannel(channel)
     }
   }, [clientLocation])
+  useEffect(() => {
+    if (!activeTrip?.id) return
 
+    if (activeTrip.status === 'pending') {
+      setLiveSheetExpanded(true)
+      return
+    }
+
+    setLiveSheetExpanded(false)
+  }, [activeTrip?.id, activeTrip?.status])
   useEffect(() => {
     if (!activeTrip?.id) return undefined
 
@@ -552,7 +607,7 @@ export default function Client() {
       if (!liveError) {
         clearLiveTrip('Viaje cancelado o finalizado.')
       }
-    }, 3000)
+    }, 1800)
 
     return () => {
       window.clearInterval(interval)
@@ -1234,27 +1289,50 @@ async function cancelActiveTrip() {
     activeTripAcceptedByDriver && liveDriverPoint
   )
 
-  const liveEtaText = routeGuidance?.duration
+   const liveEtaText = routeGuidance?.duration
     ? `${Math.max(1, Math.ceil(Number(routeGuidance.duration) / 60))} min`
     : activeTripDriver?.eta || selectedDriver?.eta || ''
 
-  const rideUi = rideStatusUi(
+  const livePickupPoint =
+    activeTrip?.pickup_lat && activeTrip?.pickup_lng
+      ? { lat: Number(activeTrip.pickup_lat), lng: Number(activeTrip.pickup_lng) }
+      : clientLocation
+
+  const liveDestinationPoint =
+    activeTrip?.destination_lat && activeTrip?.destination_lng
+      ? { lat: Number(activeTrip.destination_lat), lng: Number(activeTrip.destination_lng) }
+      : destinationPoint
+
+  const liveTargetPoint =
+    activeTrip?.status === 'in_progress'
+      ? liveDestinationPoint
+      : livePickupPoint
+
+  const liveDistance =
+    liveDriverPoint && liveTargetPoint
+      ? liveDistanceMeters(liveDriverPoint, liveTargetPoint)
+      : null
+
+  const rideUi = clientLiveStatusUi(
     activeTrip?.status,
     activeTripDriver?.name || selectedDriver?.name,
-    liveEtaText
+    liveEtaText,
+    liveDistance
   )
 
-  const rideProgressWidth = `${rideUi.progress}%`
+    const rideProgressWidth = `${rideUi.progress}%`
   const canChatInRide = Boolean(activeTrip?.id && rideUi.chatEnabled)
   const driverVehicleText =
     activeTripDriver?.vehicle ||
     selectedDriver?.vehicle ||
     'Vehículo verificado'
 
-  const driverPlateText =
+    const driverPlateText =
     activeTripDriver?.plate ||
     selectedDriver?.plate ||
     'Verificado'
+
+  const pickupPointText = activeTrip?.pickup_text || 'Punto de recogida: tu ubicación actual'
 
   const mapOrigin = useMemo(() => {
     return shouldTrackDriverOnMap ? liveDriverPoint : clientLocation
@@ -1376,60 +1454,118 @@ async function cancelActiveTrip() {
           )}
         </header>
 
-                {activeTrip && activeTripDriver && (
-          <section className={`ride-live-sheet status-${activeTrip.status || 'pending'}`} aria-label="Estado del viaje">
-            <div className="ride-sheet-handle" />
+            {activeTrip && activeTripDriver && (
+          <section
+            className={`michofer-live-sheet ${liveSheetExpanded ? 'is-expanded' : 'is-minimized'} status-${activeTrip.status || 'pending'}`}
+            aria-label="Estado del viaje"
+          >
+            <button
+              type="button"
+              className="michofer-live-handle-button"
+              onClick={() => setLiveSheetExpanded((current) => !current)}
+              aria-label={liveSheetExpanded ? 'Minimizar detalles del viaje' : 'Ver detalles del viaje'}
+            >
+              <span />
+            </button>
 
-            <div className="ride-status-progress" aria-hidden="true">
+            <div className="michofer-live-progress" aria-hidden="true">
               <span style={{ width: rideProgressWidth }} />
             </div>
 
-            <div className="ride-live-main">
-              <div className="ride-driver-avatar">
-                {activeTripDriver.avatar ? (
-                  <img src={activeTripDriver.avatar} alt={activeTripDriver.name} />
-                ) : (
-                  <span>{firstName(activeTripDriver.name).slice(0, 2).toUpperCase()}</span>
-                )}
+            {!liveSheetExpanded ? (
+              <div className="michofer-live-compact">
+                <div className="michofer-live-compact-avatar">
+                  {activeTripDriver.avatar ? (
+                    <img src={activeTripDriver.avatar} alt={activeTripDriver.name} />
+                  ) : (
+                    <span>{firstName(activeTripDriver.name).slice(0, 2).toUpperCase()}</span>
+                  )}
 
-                <em aria-hidden="true">
-                  <CheckCircle2 size={13} />
-                </em>
+                  <em aria-hidden="true">
+                    <CheckCircle2 size={12} />
+                  </em>
+                </div>
+
+                <div className="michofer-live-compact-copy">
+                  <span>{rideUi.badge}</span>
+                  <strong>{rideUi.title}</strong>
+                  <small>{activeTrip.status === 'in_progress' ? 'Viaje en curso' : `${firstName(activeTripDriver.name)} viene hacia vos`}</small>
+                </div>
+
+                <button type="button" className="michofer-live-expand-action" onClick={() => setLiveSheetExpanded(true)}>
+                  Detalles
+                  <ChevronRight size={17} />
+                </button>
               </div>
+            ) : (
+              <>
+                <div className="michofer-live-main">
+                  <div className="michofer-live-avatar">
+                    {activeTripDriver.avatar ? (
+                      <img src={activeTripDriver.avatar} alt={activeTripDriver.name} />
+                    ) : (
+                      <span>{firstName(activeTripDriver.name).slice(0, 2).toUpperCase()}</span>
+                    )}
 
-              <div className="ride-live-copy">
-                <span className="ride-status-pill">{rideUi.badge}</span>
-                <h2>{rideUi.title}</h2>
-                <p>{rideUi.subtitle}</p>
-              </div>
-            </div>
+                    <em aria-hidden="true">
+                      <CheckCircle2 size={13} />
+                    </em>
+                  </div>
 
-            <div className="ride-driver-mini-card">
-              <strong>{driverPlateText}</strong>
-              <span>{driverVehicleText}</span>
-              <small>{firstName(activeTripDriver.name)}</small>
-            </div>
+                  <div className="michofer-live-copy">
+                    <span className="michofer-live-pill">{rideUi.badge}</span>
+                    <h2>{rideUi.title}</h2>
+                    <p>{rideUi.subtitle}</p>
+                  </div>
+                </div>
 
-            <div className="ride-live-actions">
-              <a
-                className={canChatInRide ? 'ride-chat-action' : 'ride-chat-action disabled'}
-                href={canChatInRide ? `/chat?trip=${activeTrip.id}` : '#'}
-                onClick={(event) => {
-                  if (!canChatInRide) {
-                    event.preventDefault()
-                    setMessage('El chat se activa cuando el chofer acepta tu solicitud.')
-                  }
-                }}
-              >
-                <MessageCircle size={18} />
-                {canChatInRide ? 'Chatear' : 'Chat al aceptar'}
-              </a>
+                <div className="michofer-live-driver-card">
+                  <div className="michofer-plate-box">
+                    <span>Chapa</span>
+                    <strong>{driverPlateText}</strong>
+                  </div>
 
-              <button type="button" className="ride-cancel-action" onClick={cancelActiveTrip}>
-                <X size={18} />
-                Cancelar
-              </button>
-            </div>
+                  <div className="michofer-vehicle-box">
+                    <span>Vehículo</span>
+                    <strong>{driverVehicleText}</strong>
+                  </div>
+
+                  <div className="michofer-driver-box">
+                    <span>Chofer</span>
+                    <strong>{firstName(activeTripDriver.name)}</strong>
+                  </div>
+                </div>
+
+                <div className="michofer-live-pickup-card">
+                  <MapPin size={18} />
+                  <div>
+                    <span>Recogida</span>
+                    <strong>{pickupPointText}</strong>
+                  </div>
+                </div>
+
+                <div className="michofer-live-actions">
+                  <a
+                    className={canChatInRide ? 'michofer-chat-action' : 'michofer-chat-action disabled'}
+                    href={canChatInRide ? `/chat?trip=${activeTrip.id}` : '#'}
+                    onClick={(event) => {
+                      if (!canChatInRide) {
+                        event.preventDefault()
+                        setMessage('El chat se activa cuando el chofer acepta tu solicitud.')
+                      }
+                    }}
+                  >
+                    <MessageCircle size={18} />
+                    {canChatInRide ? 'Chatear' : 'Chat al aceptar'}
+                  </a>
+
+                  <button type="button" className="michofer-cancel-action" onClick={cancelActiveTrip}>
+                    <X size={18} />
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
           </section>
         )}
 <InteractiveRouteMap
@@ -1445,93 +1581,67 @@ async function cancelActiveTrip() {
   onRouteUpdate={setRouteGuidance}
   showRouteSummary={false}
   showOriginCar={shouldTrackDriverOnMap}
+  showMapTypeControl
 />
 
-        {destination.trim().length > 0 && !destinationPoint && (
-          <section className="route-guidance-card warning-guidance" style={{ background: 'rgba(15, 23, 42, 0.9)', border: '1px solid #eab308' }} aria-label="Aviso de destino">
-            <p style={{ margin: 0, color: '#facc15', fontWeight: '800', textAlign: 'center', fontSize: '13px' }}>
-              Tocá una sugerencia y armamos tu viaje en segundos.
-            </p>
+     {destination.trim().length > 0 && !destinationPoint && !showDriverChooser && !selectedDriver && !activeTrip && !showDestinationSuggestions && (
+          <section className="route-guidance-card warning-guidance apple-route-warning" aria-label="Aviso de destino">
+            <p>Elegí una sugerencia para calcular el viaje.</p>
           </section>
         )}
 
-        {routeGuidance && fares && !activeTrip && (
-          <section className="route-guidance-card" aria-label="Detalle de ruta">
-            <div className="route-guidance-grid">
+        {routeGuidance && fares && !activeTrip && !showDriverChooser && !selectedDriver && !showDestinationSuggestions && (
+          <section className="client-decision-dock" aria-label="Resumen del viaje y elección de chofer">
+            <div className="client-decision-summary">
               <div>
-                <span>Ruta</span>
-                <strong>{fares.details.distanceKm != null ? `${fares.details.distanceKm.toFixed(1)} km` : '---'}</strong>
-              </div>
-              <div>
-                <span>Duración</span>
-                <strong>{fares.details.durationMin != null ? `${Math.ceil(fares.details.durationMin)} min` : '---'}</strong>
-              </div>
-              <div>
-                <span>Categoría</span>
-                <strong style={{ textTransform: 'capitalize' }}>
-                  {mode === 'all' ? 'Auto Normal' : mode === 'ella' ? 'Ella' : mode}
+                <span>Viaje estimado</span>
+                <strong>
+                  {fares.details.distanceKm != null ? `${fares.details.distanceKm.toFixed(1)} km` : '---'}
+                  {' · '}
+                  {fares.details.durationMin != null ? `${Math.ceil(fares.details.durationMin)} min` : '---'}
                 </strong>
               </div>
+
               <div>
-                <span>Precio estimado</span>
-                <strong className="text-highlight">{currentFare ? formatGs(currentFare) : '---'}</strong>
+                <span>Desde</span>
+                <strong>{currentFare ? formatGs(currentFare) : '---'}</strong>
               </div>
-            </div>
-          </section>
-        )}
-
-        {activeTrip && activeTripDriver && (
-          <section className="active-trip-actions" aria-label="Acciones del viaje">
-            <a href={`/chat?trip=${activeTrip.id}`}>
-              <MessageCircle size={18} />
-              Chat
-            </a>
-
-            <button type="button" onClick={cancelActiveTrip}>
-              <X size={18} />
-              Cancelar viaje
-            </button>
-          </section>
-        )}
-
-        {!showMenu && !showDriverChooser && !selectedDriver && !activeTrip && (
-          <div className="client-bottom-quickbar" aria-label="Acciones rápidas del cliente">
-            <div className="ride-category-strip">
-              {RIDE_CATEGORY_OPTIONS.map((category) => {
-                const catKey = category.code === 'all' || category.code === 'ella' ? 'auto_standard' : category.code
-                const fareValue = fares?.[catKey]
-                const label = fareValue 
-                  ? `${category.shortLabel} · ${Number(fareValue).toLocaleString('es-PY')} Gs.`
-                  : category.shortLabel
-
-                return (
-                  <button
-                    key={category.code}
-                    type="button"
-                    className={mode === category.code ? `active ${category.code}` : category.code}
-                    onClick={() => handleModeSelect(category.code)}
-                  >
-                    {label}
-                  </button>
-                )
-              })}
             </div>
 
             <button
               type="button"
-              className="primary-destination-chip"
+              className="client-driver-discovery-btn"
               onClick={() => setShowDriverChooser(true)}
               disabled={!canOpenDrivers}
             >
-              {canOpenDrivers ? `Ver choferes · ${currentFare ? formatGs(currentFare) : ''}` : 'Elegí destino'}
+              <span>
+                <MapPin size={17} />
+                Choferes cerca
+              </span>
+              <strong>{canOpenDrivers ? 'Ver opciones disponibles' : 'Elegí destino'}</strong>
+              <ChevronRight size={20} />
+            </button>
+          </section>
+        )}
+
+        {!routeGuidance && !fares && !showMenu && !showDriverChooser && !selectedDriver && !activeTrip && !showDestinationSuggestions && (
+          <div className="client-bottom-start-card client-empty-start-card" aria-label="Elegir chofer">
+            <button
+              type="button"
+              className="client-start-ride-btn"
+              onClick={() => setShowDriverChooser(true)}
+              disabled={!canOpenDrivers}
+            >
+              <span>{canOpenDrivers ? 'MiChofer disponible' : 'Elegí destino'}</span>
+              <strong>{canOpenDrivers ? 'Ver choferes cerca' : 'Buscar chofer'}</strong>
             </button>
           </div>
         )}
 
-        {selectedDriver && !activeTrip && (
-          <article className="selected-map-card driver-map-profile">
+        {selectedDriver && !activeTrip && !showDriverChooser && (
+          <article className="selected-map-card driver-confirm-card">
             <button
-              className="driver-profile-close"
+              className="driver-confirm-close"
               type="button"
               onClick={() => setSelectedDriver(null)}
               aria-label="Cerrar perfil del chofer"
@@ -1539,89 +1649,150 @@ async function cancelActiveTrip() {
               <X size={15} />
             </button>
 
-            <div className="driver-map-profile-head">
-              <div className="driver-map-profile-avatar-wrap">
-                <div className={`driver-map-profile-avatar ${selectedDriver.available || selectedDriver.is_available ? 'online' : 'offline'}`}>
-                  {selectedDriver.avatar ? (
-                    <img src={selectedDriver.avatar} alt={selectedDriver.name} />
-                  ) : (
-                    <span>{firstName(selectedDriver.name).slice(0, 2).toUpperCase()}</span>
-                  )}
-                </div>
+            <div className="driver-confirm-main">
+              <div className="driver-confirm-avatar">
+                {selectedDriver.avatar ? (
+                  <img src={selectedDriver.avatar} alt={selectedDriver.name} />
+                ) : (
+                  <span>{firstName(selectedDriver.name).slice(0, 2).toUpperCase()}</span>
+                )}
               </div>
 
-              <div className="driver-map-profile-info">
-                <span className="driver-map-profile-badge">PERFIL DEL CHOFER</span>
+              <div className="driver-confirm-copy">
+                <span>Chofer seleccionado</span>
                 <strong>{selectedDriver.name}</strong>
                 {selectedDriver.vehicle && <small>{selectedDriver.vehicle}</small>}
               </div>
             </div>
 
-            <div className="driver-map-profile-metrics">
+            <div className="driver-confirm-metrics">
               <span>
                 <Star size={12} /> {Number(selectedDriver.rating || 5).toFixed(2)}
               </span>
-              {selectedDriver.distance && <span>{selectedDriver.distance}</span>}
               {selectedDriver.eta && <span>{selectedDriver.eta}</span>}
-              {routeKm && <span>{routeKm.toFixed(1)} km ruta</span>}
+              {selectedDriver.distance && <span>{selectedDriver.distance}</span>}
             </div>
 
-            <div className="driver-map-profile-actions">
-              <button type="button" className="ghost-profile-btn" onClick={() => setShowDriverChooser(true)}>
-                Ver opciones
+            <div className="driver-confirm-bottom">
+              <button type="button" className="driver-change-btn" onClick={() => setShowDriverChooser(true)}>
+                Cambiar
               </button>
 
-              <button type="button" className="request-profile-btn" onClick={requestRide} disabled={requesting || !destinationPoint}>
+              <button
+                type="button"
+                className="driver-request-btn"
+                onClick={requestRide}
+                disabled={requesting || !destinationPoint}
+              >
                 {requesting ? 'Solicitando...' : currentFare ? `Solicitar · ${formatGs(currentFare)}` : 'Solicitar'}
               </button>
             </div>
           </article>
         )}
 
-        {showDriverChooser && (
-          <div className="driver-panel-backdrop" onClick={() => setShowDriverChooser(false)}>
-            <section className="client-sheet floating-driver-panel" onClick={(event) => event.stopPropagation()}>
+       {showDriverChooser && (
+          <div className="driver-panel-backdrop driver-picker-backdrop" onClick={() => setShowDriverChooser(false)}>
+            <section className="client-sheet floating-driver-panel driver-picker-sheet driver-picker-pro" onClick={(event) => event.stopPropagation()}>
               <div className="sheet-handle" />
 
-              <div className="sheet-heading">
+                            <header className="driver-picker-pro-header driver-picker-focus-header">
                 <div>
-                  <p className="eyebrow">CHOFERES DISPONIBLES CERCA</p>
-                  <h1>Elegí tu chofer</h1>
-                  <p>Vos decidís con quién viajar.</p>
+                  <p className="eyebrow">CHOFERES CERCA</p>
+                  <h1>Elegí chofer</h1>
+                  <span>
+                    {destinationPoint
+                      ? `${visibleDrivers.length} cerca`
+                      : 'Elegí un destino'}
+                  </span>
                 </div>
 
-                <span>{destinationPoint ? `${visibleDrivers.length} online` : 'Sin destino'}</span>
-
                 <button className="panel-close" type="button" onClick={() => setShowDriverChooser(false)} aria-label="Cerrar">
-                  <X size={18} />
+                  <X size={17} />
                 </button>
-              </div>
+              </header>
 
-              <div className="filters-row">
-                {RIDE_CATEGORY_OPTIONS.map((category) => (
-                  <button
-                    key={category.code}
-                    className={mode === category.code ? `active ${category.code}` : category.code}
-                    onClick={() => handleModeSelect(category.code)}
-                  >
-                    {category.shortLabel}
-                  </button>
-                ))}
+              <section className="driver-picker-pro-trip driver-picker-focus-trip" aria-label="Resumen del viaje">
+                <div>
+                  <span>Viaje</span>
+                  <strong>
+                    {fares?.details?.distanceKm != null ? `${fares.details.distanceKm.toFixed(1)} km` : '---'}
+                    {' · '}
+                    {fares?.details?.durationMin != null ? `${Math.ceil(fares.details.durationMin)} min` : '---'}
+                  </strong>
+                </div>
 
-                <button className={sort === 'rating' ? 'active icon-text' : 'icon-text'} onClick={() => setSort('rating')}>
-                  <SlidersHorizontal size={16} />
-                  Mejor calificados
-                </button>
+                <div>
+                  <span>Desde</span>
+                  <strong>{currentFare ? formatGs(currentFare) : '---'}</strong>
+                </div>
+              </section>
 
-                <button className={sort === 'near' ? 'active icon-text' : 'icon-text'} onClick={() => setSort('near')}>
-                  <MapPin size={16} />
-                  Más cerca
-                </button>
+              <div className="driver-picker-pro-modes driver-picker-mode-cards driver-picker-focus-modes" aria-label="Tipo de viaje">
+                {RIDE_CATEGORY_OPTIONS.map((category) => {
+                  const categoryFareKey =
+                    category.code === 'all'
+                      ? 'auto_standard'
+                      : category.code === 'ella'
+                        ? 'ella'
+                        : category.code
+
+                  const categoryFare = fares?.[categoryFareKey]
+
+                  const modeCopy = {
+                    all: {
+                      title: 'Todos',
+                      label: 'Todas las opciones',
+                    },
+                    ella: {
+                      title: 'Ella',
+                      label: 'Chofer mujer',
+                    },
+                    moto: {
+                      title: 'Moto',
+                      label: 'Viaje en moto',
+                    },
+                    comfort: {
+                      title: 'Comfort',
+                      label: 'Más comodidad',
+                    },
+                    premium: {
+                      title: 'Premium',
+                      label: 'Alta gama',
+                    },
+                  }
+
+                  const copy = modeCopy[category.code] || {
+                    title: category.shortLabel,
+                    label: 'Disponible',
+                  }
+
+                  const categoryIcon = RIDE_CATEGORY_ICONS[category.code] || RIDE_CATEGORY_ICONS.all
+                  const fareText = categoryFare ? ` · ${formatGs(categoryFare)}` : ''
+
+                  return (
+                    <button
+                      key={category.code}
+                      type="button"
+                      className={`ride-mode-pill ${mode === category.code ? 'active' : ''} ${category.code}`}
+                      onClick={() => handleModeSelect(category.code)}
+                      aria-label={`${copy.label}${fareText}`}
+                      title={`${copy.label}${fareText}`}
+                    >
+                      <span className="mode-card-icon" aria-hidden="true">
+                        <img src={categoryIcon} alt="" />
+                      </span>
+
+                      <span className="mode-card-copy">
+                        <strong>{copy.title}</strong>
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
 
               {mode !== 'all' && (
-                <div className="safety-message">
-                  <ShieldCheck size={17} />
+                <div className={`driver-picker-pro-mode-note ${mode}`}>
+                  <ShieldCheck size={15} />
                   <span>
                     <strong>{selectedModeMeta.title}</strong>
                     {selectedModeMeta.description}
@@ -1629,97 +1800,93 @@ async function cancelActiveTrip() {
                 </div>
               )}
 
-              {message && <div className="notice-card">{message}</div>}
+              {message && <div className="notice-card driver-picker-notice">{message}</div>}
 
-              {!hasDestination ? (
-                <div className="empty-state">Elegí un destino para ver la ruta y los choferes disponibles.</div>
-              ) : destinationStatus === 'searching' ? (
-                <div className="empty-state">Buscando destino...</div>
-              ) : !destinationPoint ? (
-                <div className="empty-state">Todavía no hay datos suficientes para mostrar una ruta real a ese destino.</div>
-              ) : loading ? (
-                <div className="empty-state">Cargando choferes verificados...</div>
-              ) : visibleDrivers.length === 0 ? (
-                <div className="empty-state">
-                  {mode === 'ella'
-                    ? 'No hay conductoras verificadas para MiChofer Ella cerca en este momento. Podes volver a Todos.'
-                    : 'No hay choferes disponibles ahora. Probá otro filtro.'}
-                </div>
-              ) : (
-                <div className="driver-list">
-                  {visibleDrivers.map((driver) => (
-                    <article
-                      key={driver.id}
-                      className={selectedDriver?.id === driver.id ? 'driver-card selected' : 'driver-card'}
-                    >
-                      {driver.avatar ? (
-                        <img src={driver.avatar} alt={driver.name} />
-                      ) : (
-                        <div className="driver-avatar-fallback">{firstName(driver.name).slice(0, 2).toUpperCase()}</div>
-                      )}
+              <div className="driver-picker-scroll driver-picker-pro-scroll">
+                {!hasDestination ? (
+                  <div className="driver-picker-empty driver-picker-pro-empty">
+                    <strong>Elegí un destino</strong>
+                    <span>Después vas a ver choferes cercanos.</span>
+                  </div>
+                ) : destinationStatus === 'searching' ? (
+                  <div className="driver-picker-empty driver-picker-pro-empty">
+                    <strong>Buscando destino</strong>
+                    <span>Estamos calculando la ruta.</span>
+                  </div>
+                ) : !destinationPoint ? (
+                  <div className="driver-picker-empty driver-picker-pro-empty">
+                    <strong>Sin ruta todavía</strong>
+                    <span>Elegí una sugerencia válida.</span>
+                  </div>
+                ) : loading ? (
+                  <div className="driver-picker-empty driver-picker-pro-empty">
+                    <strong>Cargando choferes</strong>
+                    <span>Buscando disponibles cerca.</span>
+                  </div>
+                ) : visibleDrivers.length === 0 ? (
+                  <div className="driver-picker-empty driver-picker-pro-empty">
+                    <strong>No hay choferes ahora</strong>
+                    <span>Probá otro modo de viaje.</span>
+                  </div>
+                ) : (
+                  <div className="driver-picker-pro-list">
+                    {visibleDrivers.map((driver) => {
+                      const driverFare = getDriverFare(driver)
 
-                      <div className="driver-info">
-                        <div className="driver-name-row">
-                          <strong>{driver.name}</strong>
-                          {driver.verified && <CheckCircle2 size={16} />}
-                          {isWomenDriver(driver) && <em>Ella</em>}
-                        </div>
-
-                        {driver.vehicle && <span>{driver.vehicle}</span>}
-
-                        <div className="driver-meta">
-                          {driver.rating != null && (
-                            <small>
-                              <Star size={13} /> {Number(driver.rating).toFixed(2)}
-                            </small>
-                          )}
-                          {driver.distance && <small>{driver.distance}</small>}
-                          {driver.eta && <small>{driver.eta}</small>}
-                        </div>
-                      </div>
-
-                      <div className="driver-side">
-                        {getDriverFare(driver) && <div className="driver-price">{formatGs(getDriverFare(driver))}</div>}
-
+                      return (
                         <button
+                          key={driver.id}
                           type="button"
+                          className="driver-picker-pro-card"
                           onClick={() => {
                             setSelectedDriver(driver)
                             setShowDriverChooser(false)
                           }}
                           disabled={!destinationPoint}
                         >
-                          {selectedDriver?.id === driver.id ? 'Elegido' : 'Elegir chofer'}
+                          <div className="driver-picker-pro-avatar">
+                            {driver.avatar ? (
+                              <img src={driver.avatar} alt={driver.name} />
+                            ) : (
+                              <span>{firstName(driver.name).slice(0, 2).toUpperCase()}</span>
+                            )}
+                          </div>
+
+                          <div className="driver-picker-pro-info">
+                            <div className="driver-picker-pro-name">
+                              <strong>{firstName(driver.name)}</strong>
+                              {driver.verified && <CheckCircle2 size={14} />}
+                              {isWomenDriver(driver) && <em>Ella</em>}
+                            </div>
+
+                            {driver.vehicle && <small>{driver.vehicle}</small>}
+
+                            <div className="driver-picker-pro-meta">
+                              <span>
+                                <Star size={12} /> {Number(driver.rating || 5).toFixed(2)}
+                              </span>
+                              {driver.eta && <span>{driver.eta}</span>}
+                              {driver.distance && <span>{driver.distance}</span>}
+                            </div>
+                          </div>
+
+                          <div className="driver-picker-pro-action">
+                            <strong>{driverFare ? formatGs(driverFare) : '---'}</strong>
+                            <span>Elegir</span>
+                          </div>
                         </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-
-              {activeTrip && activeTripDriver ? (
-                <div className="action-row">
-                  <a className="main-btn compact" href={`/chat?trip=${activeTrip.id}`}>
-                    <MessageCircle size={18} /> Chat
-                  </a>
-
-                  <button className="secondary-btn compact danger" onClick={cancelActiveTrip}>
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                <button className="main-btn request-btn" disabled={!selectedDriver || requesting} onClick={requestRide}>
-                  {requesting
-                    ? `Esperando respuesta de ${firstName(selectedDriver?.name)}`
-                    : selectedDriver
-                      ? 'Solicitar viaje con este chofer'
-                      : 'Elegí un chofer'}
-                  <ChevronRight size={20} />
-                </button>
-              )}
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </section>
           </div>
         )}
+
+        
+
+        
 
         {categorySheet && (
           <div className="category-mode-backdrop" onClick={() => setCategorySheet(null)}>

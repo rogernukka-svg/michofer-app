@@ -36,6 +36,27 @@ const ACTIVE_STATUSES = ['pending', 'accepted', 'arriving', 'in_progress']
 const LOCATION_STATUSES = ['accepted', 'arriving', 'in_progress']
 const DEFAULT_DRIVER_LOCATION = { lat: -25.5167, lng: -54.6167 }
 
+const ARRIVED_PICKUP_METERS = 18
+const ARRIVED_DESTINATION_METERS = 22
+const VERY_CLOSE_METERS = 45
+
+const SAFETY_ZONES_CDE = [
+  {
+    name: 'San Rafael',
+    lat: -25.5168,
+    lng: -54.6258,
+    radius: 700,
+    level: 'precaución',
+  },
+  {
+    name: 'San Agustín',
+    lat: -25.5306,
+    lng: -54.6504,
+    radius: 650,
+    level: 'precaución',
+  },
+]
+
 function distanceKm(a, b) {
   if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null
   const R = 6371
@@ -47,6 +68,68 @@ function distanceKm(a, b) {
       Math.cos((b.lat * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
+}
+
+function bearingBetween(a, b) {
+  if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return 0
+
+  const lat1 = (a.lat * Math.PI) / 180
+  const lat2 = (b.lat * Math.PI) / 180
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180
+
+  const y = Math.sin(dLng) * Math.cos(lat2)
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
+
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
+}
+
+function angleDiff(from, to) {
+  return ((to - from + 540) % 360) - 180
+}
+
+function sideLabelFromHeading(origin, target, heading) {
+  if (!origin || !target || !Number.isFinite(Number(heading))) return 'cerca'
+
+  const bearing = bearingBetween(origin, target)
+  const diff = angleDiff(Number(heading), bearing)
+
+  if (Math.abs(diff) < 28) return 'adelante'
+  if (Math.abs(diff) > 152) return 'detrás'
+  return diff > 0 ? 'a la derecha' : 'a la izquierda'
+}
+
+function closeArrivalCopy({ status, distanceMeters, side }) {
+  if (status === 'accepted' || status === 'arriving') {
+    if (distanceMeters <= ARRIVED_PICKUP_METERS) {
+      return {
+        title: 'Estás en el punto de recogida',
+        subtitle: 'El cliente está muy cerca. Verificá el lugar antes de marcar llegada.',
+      }
+    }
+
+    return {
+      title: `Cliente ${side}`,
+      subtitle: `Estás a ${Math.max(1, Math.round(distanceMeters))} m del punto de recogida.`,
+    }
+  }
+
+  if (status === 'in_progress') {
+    if (distanceMeters <= ARRIVED_DESTINATION_METERS) {
+      return {
+        title: 'Llegaste al destino',
+        subtitle: 'Confirmá que el pasajero bajó en el punto correcto.',
+      }
+    }
+
+    return {
+      title: `Destino ${side}`,
+      subtitle: `Estás a ${Math.max(1, Math.round(distanceMeters))} m del destino.`,
+    }
+  }
+
+  return null
 }
 
 function formatGs(value) {
@@ -86,6 +169,15 @@ function statusLabel(status) {
   return 'Solicitud entrante'
 }
 
+function tripActionLabel(status) {
+  if (status === 'accepted') return 'Aceptando viaje y preparando ruta segura...'
+  if (status === 'arriving') return 'Marcando llegada al punto...'
+  if (status === 'in_progress') return 'Iniciando viaje y recalculando destino...'
+  if (status === 'completed') return 'Finalizando viaje...'
+  if (status === 'cancelled') return 'Cancelando viaje y avisando al cliente...'
+  return 'Actualizando viaje...'
+}
+
 function mapsUrl(origin, destination) {
   if (!origin?.lat || !origin?.lng || !destination?.lat || !destination?.lng) return ''
   return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`
@@ -117,6 +209,7 @@ export default function Driver() {
   const [message, setMessage] = useState('')
   const [routeGuidance, setRouteGuidance] = useState(null)
   const [showSideMenu, setShowSideMenu] = useState(false)
+  const [tripAction, setTripAction] = useState('')
 
   useEffect(() => {
     init()
@@ -130,7 +223,7 @@ export default function Driver() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => loadTrips(user.id))
       .subscribe()
 
-    const interval = window.setInterval(() => loadTrips(user.id), 3500)
+       const interval = window.setInterval(() => loadTrips(user.id), 1800)
     return () => {
       window.clearInterval(interval)
       supabase.removeChannel(channel)
@@ -177,7 +270,7 @@ export default function Driver() {
     ? { lat: Number(focusTrip.destination_lat), lng: Number(focusTrip.destination_lng) }
     : null
 
-  const navigationTarget = activeTrip?.status === 'in_progress' ? destinationPoint : pickupPoint
+   const navigationTarget = activeTrip?.status === 'in_progress' ? destinationPoint : pickupPoint
   const navigationDistance = useMemo(
     () => (activeTrip && navigationTarget ? distanceKm(driverPoint, navigationTarget) : null),
     [activeTrip, driverPoint, navigationTarget]
@@ -185,6 +278,27 @@ export default function Driver() {
   const navigationEta = estimateEta(navigationDistance)
   const guidanceDistance = formatMeters(routeGuidance?.distance) || formatKm(navigationDistance)
   const guidanceEta = formatSeconds(routeGuidance?.duration) || navigationEta
+
+  const navigationMeters = Number.isFinite(Number(routeGuidance?.distance))
+    ? Number(routeGuidance.distance)
+    : navigationDistance != null
+      ? navigationDistance * 1000
+      : null
+
+  const destinationSide =
+    navigationTarget && navigationMeters != null
+      ? sideLabelFromHeading(driverPoint, navigationTarget, routeGuidance?.heading)
+      : 'cerca'
+
+  const closeArrival =
+    navigationMeters != null && navigationMeters <= VERY_CLOSE_METERS
+      ? closeArrivalCopy({
+          status: activeTrip?.status,
+          distanceMeters: navigationMeters,
+          side: destinationSide,
+        })
+      : null
+
   const driverAvatar = driverProfile?.avatar_url || profile?.avatar_url || ''
   const focusDistance = useMemo(
     () =>
@@ -209,12 +323,14 @@ export default function Driver() {
     ? (activeTrip.status === 'in_progress' ? destinationPoint : pickupPoint)
     : null
 
-  useEffect(() => {
+   useEffect(() => {
     if (!activeTrip?.id || !hasDriverLocation) return undefined
-    const interval = window.setInterval(() => syncStoredTripLocation(activeTrip), 8000)
+
+    syncStoredTripLocation(activeTrip)
+
+    const interval = window.setInterval(() => syncStoredTripLocation(activeTrip), 1800)
     return () => window.clearInterval(interval)
   }, [activeTrip?.id, activeTrip?.status, driverProfile?.lat, driverProfile?.lng, hasDriverLocation])
-
   async function init() {
     setLoading(true)
     setMessage('')
@@ -288,17 +404,23 @@ export default function Driver() {
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => resolve(fallback),
-        { enableHighAccuracy: true, timeout: 7000 }
+        { enableHighAccuracy: true, timeout: 2500, maximumAge: 1000 }
       )
     })
   }
 
-  async function syncStoredTripLocation(trip = activeTrip) {
+     async function syncStoredTripLocation(trip = activeTrip) {
     const location = await getCurrentLocation()
-    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status)) return null
+    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+
     const storedLocation = getStoredLocation()
     const movedMeters = storedLocation ? (distanceKm(storedLocation, location) || 0) * 1000 : 999
-    if (movedMeters < 5) return storedLocation || location
+
+    const shouldForceTripSync = LOCATION_STATUSES.includes(trip.status)
+
+    if (movedMeters < 3 && !shouldForceTripSync) {
+      return storedLocation || location
+    }
 
     const { data: updatedDriver } = await updateOwnDriverStatus({
       isOnline: true,
@@ -306,6 +428,7 @@ export default function Driver() {
       lat: location.lat,
       lng: location.lng,
     })
+
     if (updatedDriver) setDriverProfile(updatedDriver)
 
     await supabase
@@ -316,6 +439,7 @@ export default function Driver() {
         updated_at: new Date().toISOString(),
       })
       .eq('id', trip.id)
+      .eq('driver_id', user.id)
 
     return location
   }
@@ -333,7 +457,7 @@ export default function Driver() {
     })
     if (!error && updatedDriver) setDriverProfile(updatedDriver)
 
-    if (trip?.id && LOCATION_STATUSES.includes(trip.status)) {
+        if (trip?.id && LOCATION_STATUSES.includes(trip.status) && user?.id) {
       await supabase
         .from('trips')
         .update({
@@ -342,6 +466,7 @@ export default function Driver() {
           updated_at: new Date().toISOString(),
         })
         .eq('id', trip.id)
+        .eq('driver_id', user.id)
     }
     return location
   }
@@ -402,68 +527,90 @@ export default function Driver() {
     setMessage(data?.status === 'approved' ? 'Categoria ya aprobada.' : 'Solicitud enviada.')
   }
 
-  async function updateTrip(trip, status) {
-  if (!trip?.id || !user?.id) {
-    setMessage('No pude identificar este viaje.')
-    return
+   async function updateTrip(trip, status) {
+    if (!trip?.id || !user?.id) {
+      setMessage('No pude identificar este viaje.')
+      return
+    }
+
+    if (trip.driver_id !== user.id) {
+      setMessage('Este viaje no pertenece a tu cuenta de chofer.')
+      return
+    }
+
+    const allowedTransitions = {
+      pending: ['accepted', 'cancelled'],
+      accepted: ['arriving', 'cancelled'],
+      arriving: ['in_progress', 'cancelled'],
+      in_progress: ['completed', 'cancelled'],
+    }
+
+    const currentStatus = trip.status || 'pending'
+    const validNextStatuses = allowedTransitions[currentStatus] || []
+
+    if (!validNextStatuses.includes(status)) {
+      setMessage('Cambio de estado no permitido para este viaje.')
+      return
+    }
+
+    try {
+      setTripAction(status)
+      setMessage(tripActionLabel(status))
+
+      const location = await getCurrentLocation()
+
+      setTrips((current) =>
+        current.map((item) =>
+          item.id === trip.id
+            ? {
+                ...item,
+                status,
+                driver_lat: location.lat,
+                driver_lng: location.lng,
+                updated_at: new Date().toISOString(),
+              }
+            : item
+        )
+      )
+
+      const { error } = await supabase
+        .from('trips')
+        .update({
+          status,
+          driver_lat: location.lat,
+          driver_lng: location.lng,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', trip.id)
+        .eq('driver_id', user.id)
+
+      if (error) {
+        setMessage('No pude actualizar el viaje.')
+        await loadTrips()
+        return
+      }
+
+      const nextAvailable = status === 'completed' || status === 'cancelled'
+
+      const { data: updatedDriver } = await updateOwnDriverStatus({
+        isOnline: true,
+        isAvailable: nextAvailable,
+        lat: location.lat,
+        lng: location.lng,
+      })
+
+      if (updatedDriver) setDriverProfile(updatedDriver)
+
+      if (status === 'accepted') setMessage('Ruta lista. Vamos al punto de recogida.')
+      else if (status === 'cancelled') setMessage('Viaje cancelado. El cliente será avisado.')
+      else if (status === 'completed') setMessage('Viaje finalizado.')
+      else setMessage('')
+
+      await loadTrips()
+    } finally {
+      setTripAction('')
+    }
   }
-
-  if (trip.driver_id !== user.id) {
-    setMessage('Este viaje no pertenece a tu cuenta de chofer.')
-    return
-  }
-
-  const allowedTransitions = {
-    pending: ['accepted', 'cancelled'],
-    accepted: ['arriving', 'cancelled'],
-    arriving: ['in_progress', 'cancelled'],
-    in_progress: ['completed'],
-  }
-
-  const currentStatus = trip.status || 'pending'
-  const validNextStatuses = allowedTransitions[currentStatus] || []
-
-  if (!validNextStatuses.includes(status)) {
-    setMessage('Cambio de estado no permitido para este viaje.')
-    return
-  }
-
-  const location = await getCurrentLocation()
-
-  const { error } = await supabase
-    .from('trips')
-    .update({
-      status,
-      driver_lat: location.lat,
-      driver_lng: location.lng,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', trip.id)
-    .eq('driver_id', user.id)
-
-  if (error) {
-    setMessage('No pude actualizar el viaje.')
-    return
-  }
-
-  const nextAvailable = status === 'completed' || status === 'cancelled'
-
-  const { data: updatedDriver } = await updateOwnDriverStatus({
-    isOnline: true,
-    isAvailable: nextAvailable,
-    lat: location.lat,
-    lng: location.lng,
-  })
-
-  if (updatedDriver) setDriverProfile(updatedDriver)
-
-  if (status === 'accepted') setMessage('Viaje aceptado.')
-  else if (status === 'cancelled') setMessage('Solicitud rechazada.')
-  else if (status === 'completed') setMessage('Viaje finalizado.')
-  else setMessage('')
-
-  await loadTrips()
-}
 
   // ==================== RENDER ====================
 
@@ -487,20 +634,33 @@ export default function Driver() {
             mapInteractive
             animateCamera
             showRouteSummary={false}
-            navigationMode
+                       navigationMode
+            showMapTypeControl={false}
+            safetyZones={SAFETY_ZONES_CDE}
             onRouteUpdate={setRouteGuidance}
           />
 
-                    {/* Navigation instruction card */}
+                              {tripAction && (
+            <div className="driver-route-loading">
+              <RefreshCw size={17} />
+              <span>{tripActionLabel(tripAction)}</span>
+            </div>
+          )}
+
+          {/* Navigation instruction card */}
           <header className="driver-navigation-instruction">
             <div className="driver-navigation-turn-icon">
               <Navigation size={30} />
             </div>
 
-            <div className="driver-navigation-copy">
+                        <div className="driver-navigation-copy">
               <span>{guidanceDistance}</span>
-              <strong>{routeGuidance?.instruction || activeTrip.destination_text || 'Seguimos por la ruta'}</strong>
-              <small>{guidanceEta} · {activeTrip.status === 'in_progress' ? 'al destino' : 'al cliente'}</small>
+              <strong>
+                {closeArrival?.title || routeGuidance?.instruction || activeTrip.destination_text || 'Seguimos por la ruta'}
+              </strong>
+              <small>
+                {closeArrival?.subtitle || `${guidanceEta} · ${activeTrip.status === 'in_progress' ? 'al destino' : 'al cliente'}`}
+              </small>
             </div>
 
             <button type="button" className="driver-navigation-refresh" onClick={() => syncDriverLocation(activeTrip)} aria-label="Actualizar ubicación">
@@ -535,9 +695,22 @@ export default function Driver() {
                 </button>
               )}
 
-              <a href={`/chat?trip=${activeTrip.id}`} className="driver-navigation-chat" aria-label="Abrir chat">
+                            <a href={`/chat?trip=${activeTrip.id}`} className="driver-navigation-chat" aria-label="Abrir chat">
                 <MessageCircle size={20} />
               </a>
+
+              <button
+                type="button"
+                className="driver-navigation-cancel"
+                onClick={() => {
+                  if (window.confirm('¿Cancelar este viaje? El cliente será avisado.')) {
+                    updateTrip(activeTrip, 'cancelled')
+                  }
+                }}
+                aria-label="Cancelar viaje"
+              >
+                <XCircle size={20} />
+              </button>
             </div>
           </section>
         </section>
@@ -564,8 +737,10 @@ export default function Driver() {
   mapInteractive={false}
   animateCamera={false}
   showRouteSummary={false}
-  navigationMode={false}
+    navigationMode={false}
   showOriginCar
+  showMapTypeControl={false}
+  safetyZones={SAFETY_ZONES_CDE}
   onRouteUpdate={() => {}}
 />
         </div>
