@@ -12,13 +12,15 @@ const DEFAULT_PADDING = { top: 96, bottom: 122, left: 58, right: 58 }
 const MAX_DRIVER_MARKERS = 6
 
 // Cámara tipo Google Maps navegación:
-// más cerca del vehículo, ruta vertical hacia adelante.
-const NAVIGATION_ZOOM = 19.05
+// vista cercana, inclinada y vertical hacia adelante, pero más estable.
+const NAVIGATION_ZOOM = 19.35
 const NAVIGATION_TILT = 67
-const NAVIGATION_LOOK_AHEAD_RATIO = 0.2
-const NAVIGATION_MIN_LOOK_AHEAD_METERS = 95
-const NAVIGATION_MAX_LOOK_AHEAD_METERS = 360
-const NAVIGATION_HEADING_DISTANCE_METERS = 65
+const NAVIGATION_LOOK_AHEAD_RATIO = 0.13
+const NAVIGATION_MIN_LOOK_AHEAD_METERS = 42
+const NAVIGATION_MAX_LOOK_AHEAD_METERS = 150
+const NAVIGATION_HEADING_DISTANCE_METERS = 115
+const NAVIGATION_MIN_HEADING_CHANGE = 7
+const NAVIGATION_HEADING_SMOOTHING = 0.22
 
 function isValidCoord(point) {
   return Number.isFinite(Number(point?.lat)) && Number.isFinite(Number(point?.lng))
@@ -187,7 +189,25 @@ function getRouteHeading(routePath, fallbackOrigin, fallbackDestination) {
 
   return getBearingBetweenPoints(fallbackOrigin, fallbackDestination)
 }
+function getAngleDiff(from, to) {
+  return ((to - from + 540) % 360) - 180
+}
 
+function getSmoothNavigationHeading(previousHeading, nextHeading) {
+  const previous = Number(previousHeading)
+  const next = Number(nextHeading)
+
+  if (!Number.isFinite(previous)) return next
+  if (!Number.isFinite(next)) return previous
+
+  const diff = getAngleDiff(previous, next)
+
+  if (Math.abs(diff) < NAVIGATION_MIN_HEADING_CHANGE) {
+    return previous
+  }
+
+  return (previous + diff * NAVIGATION_HEADING_SMOOTHING + 360) % 360
+}
 function applyNavigationCamera(map, center, heading) {
   if (!map || !isValidCoord(center)) return
 
@@ -200,17 +220,23 @@ function applyNavigationCamera(map, center, heading) {
 
   if (typeof map.moveCamera === 'function') {
     map.moveCamera(camera)
+    return
+  }
+
+  if (typeof map.panTo === 'function') {
+    map.panTo(camera.center)
   } else {
     map.setCenter(camera.center)
-    map.setZoom(camera.zoom)
+  }
 
-    if (typeof map.setTilt === 'function') {
-      map.setTilt(camera.tilt)
-    }
+  map.setZoom(camera.zoom)
 
-    if (typeof map.setHeading === 'function') {
-      map.setHeading(camera.heading)
-    }
+  if (typeof map.setTilt === 'function') {
+    map.setTilt(camera.tilt)
+  }
+
+  if (typeof map.setHeading === 'function') {
+    map.setHeading(camera.heading)
   }
 }
 
@@ -837,8 +863,8 @@ export default function InteractiveRouteMap({
             }
           }
 
-                    if (navigationMode) {
-            const navigationHeading = heading
+                              if (navigationMode) {
+            const navigationHeading = getSmoothNavigationHeading(navigationHeadingRef.current, heading)
             const lookAheadPoint = getRouteLookAheadPoint(routePath, normalizedOrigin, normalizedDestination)
 
             navigationHeadingRef.current = navigationHeading

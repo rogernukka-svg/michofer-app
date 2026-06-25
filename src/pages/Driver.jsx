@@ -206,10 +206,11 @@ export default function Driver() {
   const [driverProfile, setDriverProfile] = useState(null)
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState('')
+    const [message, setMessage] = useState('')
   const [routeGuidance, setRouteGuidance] = useState(null)
   const [showSideMenu, setShowSideMenu] = useState(false)
   const [tripAction, setTripAction] = useState('')
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
   useEffect(() => {
     init()
@@ -254,13 +255,16 @@ export default function Driver() {
   )
 
   const focusTrip = activeTrip || pendingTrips[0] || null
-  const driverPoint = useMemo(
-    () => ({
-      lat: Number(driverProfile?.lat) || DEFAULT_DRIVER_LOCATION.lat,
-      lng: Number(driverProfile?.lng) || DEFAULT_DRIVER_LOCATION.lng,
-    }),
-    [driverProfile?.lat, driverProfile?.lng]
-  )
+    const driverPoint = useMemo(() => {
+    const lat = Number(driverProfile?.lat)
+    const lng = Number(driverProfile?.lng)
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return null
+    }
+
+    return { lat, lng }
+  }, [driverProfile?.lat, driverProfile?.lng])
 
   const pickupPoint = focusTrip?.pickup_lat && focusTrip?.pickup_lng
     ? { lat: Number(focusTrip.pickup_lat), lng: Number(focusTrip.pickup_lng) }
@@ -300,12 +304,12 @@ export default function Driver() {
       : null
 
   const driverAvatar = driverProfile?.avatar_url || profile?.avatar_url || ''
-  const focusDistance = useMemo(
+   const focusDistance = useMemo(
     () =>
-      focusTrip
+      focusTrip && driverPoint
         ? distanceKm(driverPoint, { lat: focusTrip.pickup_lat, lng: focusTrip.pickup_lng })
         : null,
-    [driverProfile?.lat, driverProfile?.lng, focusTrip]
+    [driverPoint?.lat, driverPoint?.lng, focusTrip]
   )
 
   const driverDisplayName = profile?.full_name || driverProfile?.full_name || 'MiChofer'
@@ -397,29 +401,57 @@ export default function Driver() {
     return { lat, lng }
   }
 
-  async function getCurrentLocation() {
+   async function getCurrentLocation() {
     const fallback = getStoredLocation() || DEFAULT_DRIVER_LOCATION
+
     if (!navigator.geolocation) return fallback
+
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (pos) => {
+          resolve({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            speed: pos.coords.speed,
+            heading: pos.coords.heading,
+          })
+        },
         () => resolve(fallback),
-        { enableHighAccuracy: true, timeout: 2500, maximumAge: 1000 }
+        {
+          enableHighAccuracy: true,
+          timeout: 6000,
+          maximumAge: 2500,
+        }
       )
     })
   }
 
-     async function syncStoredTripLocation(trip = activeTrip) {
+   async function syncStoredTripLocation(trip = activeTrip) {
     const location = await getCurrentLocation()
     if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
 
     const storedLocation = getStoredLocation()
     const movedMeters = storedLocation ? (distanceKm(storedLocation, location) || 0) * 1000 : 999
+    const accuracy = Number(location.accuracy)
+    const speed = Number(location.speed)
 
-    const shouldForceTripSync = LOCATION_STATUSES.includes(trip.status)
+    // Si el GPS viene muy impreciso, no movemos el auto.
+    // En interiores esto evita que el mapa cambie dirección estando quieto.
+    if (Number.isFinite(accuracy) && accuracy > 45 && storedLocation) {
+      return storedLocation
+    }
 
-    if (movedMeters < 3 && !shouldForceTripSync) {
-      return storedLocation || location
+    // Si el chofer parece quieto, ignoramos saltos pequeños/medianos del GPS.
+    const looksStationary = !Number.isFinite(speed) || speed < 1
+
+    if (storedLocation && looksStationary && movedMeters < 22) {
+      return storedLocation
+    }
+
+    // En movimiento real, igual no actualizamos por micro saltos.
+    if (storedLocation && movedMeters < 10) {
+      return storedLocation
     }
 
     const { data: updatedDriver } = await updateOwnDriverStatus({
@@ -615,7 +647,7 @@ export default function Driver() {
   // ==================== RENDER ====================
 
   // --- Active navigation (accepted, arriving, in_progress) ---
-  if (activeTrip && navigationTarget) {
+    if (activeTrip && navigationTarget && driverPoint) {
     return (
       <main className="app-shell">
         <section className="phone driver-phone driver-cockpit">
@@ -699,19 +731,71 @@ export default function Driver() {
                 <MessageCircle size={20} />
               </a>
 
-              <button
+                <button
                 type="button"
                 className="driver-navigation-cancel"
-                onClick={() => {
-                  if (window.confirm('¿Cancelar este viaje? El cliente será avisado.')) {
-                    updateTrip(activeTrip, 'cancelled')
-                  }
-                }}
+                onClick={() => setShowCancelConfirm(true)}
                 aria-label="Cancelar viaje"
               >
                 <XCircle size={20} />
               </button>
             </div>
+                      {showCancelConfirm && (
+            <div
+              className="michofer-modal-backdrop"
+              onClick={() => setShowCancelConfirm(false)}
+              role="presentation"
+            >
+              <section
+                className="michofer-confirm-modal"
+                onClick={(event) => event.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Cancelar viaje"
+              >
+                <div className="michofer-confirm-icon danger">
+                  <XCircle size={28} />
+                </div>
+
+                <div className="michofer-confirm-copy">
+                  <span>Cancelar viaje</span>
+                  <h2>¿Querés cancelar este viaje?</h2>
+                  <p>
+                    El cliente será avisado y el viaje dejará de estar activo en tu panel.
+                  </p>
+                </div>
+
+                <div className="michofer-confirm-trip">
+                  <span>{statusLabel(activeTrip.status)}</span>
+                  <strong>{activeTrip.destination_text || 'Destino del viaje'}</strong>
+                  <small>{formatGs(activeTrip.price)} · {guidanceDistance} · {guidanceEta}</small>
+                </div>
+
+                <div className="michofer-confirm-actions">
+                  <button
+                    type="button"
+                    className="michofer-confirm-secondary"
+                    onClick={() => setShowCancelConfirm(false)}
+                    disabled={tripAction === 'cancelled'}
+                  >
+                    Seguir viaje
+                  </button>
+
+                  <button
+                    type="button"
+                    className="michofer-confirm-danger"
+                    onClick={() => {
+                      setShowCancelConfirm(false)
+                      updateTrip(activeTrip, 'cancelled')
+                    }}
+                    disabled={tripAction === 'cancelled'}
+                  >
+                    {tripAction === 'cancelled' ? 'Cancelando...' : 'Sí, cancelar'}
+                  </button>
+                </div>
+              </section>
+            </div>
+          )}
           </section>
         </section>
       </main>
@@ -723,26 +807,40 @@ export default function Driver() {
     <main className="app-shell">
       <section className="phone driver-phone driver-idle">
         {/* Map background */}
-        <div className="driver-idle-map">
-          <InteractiveRouteMap
-  origin={driverPoint}
-  destination={null}
-  destinationText={null}
-  clientAvatar={driverAvatar}
-  drivers={[]}
-  selectedDriver={null}
-  onSelectDriver={() => {}}
-  onChooseDriver={() => {}}
-  onRefreshLocation={() => syncDriverLocation(null)}
-  mapInteractive={false}
-  animateCamera={false}
-  showRouteSummary={false}
-    navigationMode={false}
-  showOriginCar
-  showMapTypeControl={false}
-  safetyZones={SAFETY_ZONES_CDE}
-  onRouteUpdate={() => {}}
-/>
+                <div className="driver-idle-map">
+          {driverPoint ? (
+            <InteractiveRouteMap
+              origin={driverPoint}
+              destination={null}
+              destinationText={null}
+              clientAvatar={driverAvatar}
+              drivers={[]}
+              selectedDriver={null}
+              onSelectDriver={() => {}}
+              onChooseDriver={() => {}}
+              onRefreshLocation={() => syncDriverLocation(null)}
+              mapInteractive={false}
+              animateCamera={false}
+              showRouteSummary={false}
+              navigationMode={false}
+              showOriginCar
+              showMapTypeControl={false}
+              safetyZones={SAFETY_ZONES_CDE}
+              onRouteUpdate={() => {}}
+            />
+          ) : (
+            <section className="mobility-map interactive-map">
+              <div className="map-empty-state">
+                <div className="map-empty-card">
+                  <strong>GPS del chofer pendiente</strong>
+                  <span>Activá o calibrá tu ubicación para aparecer en el punto real.</span>
+                  <button type="button" className="main-btn" onClick={() => syncDriverLocation(null, true, isAvailable)}>
+                    Calibrar ubicación
+                  </button>
+                </div>
+              </div>
+            </section>
+                   )}
         </div>
 
         {/* Driver status bar */}

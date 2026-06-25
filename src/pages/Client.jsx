@@ -272,7 +272,8 @@ export default function Client() {
   const [sort, setSort] = useState('near')
   const [drivers, setDrivers] = useState([])
   const [selectedDriver, setSelectedDriver] = useState(null)
-  const [clientLocation, setClientLocation] = useState(DEFAULT_CENTER)
+  const [clientLocation, setClientLocation] = useState(null)
+const [locationReady, setLocationReady] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [loading, setLoading] = useState(true)
   const [requesting, setRequesting] = useState(false)
@@ -499,8 +500,12 @@ export default function Client() {
         const request = {
           input: query,
           componentRestrictions: { country: 'PY' },
-          location: new google.maps.LatLng(clientLocation.lat, clientLocation.lng),
-          radius: 50000,
+                    ...(clientLocation
+            ? {
+                location: new google.maps.LatLng(clientLocation.lat, clientLocation.lng),
+                radius: 50000,
+              }
+            : {}),
           // Sin 'types' restrictivo — incluir establecimientos, mercados, POIs y geocodes
         }
 
@@ -742,18 +747,25 @@ export default function Client() {
       await restoreActiveTrip(currentUser.id)
     }
 
-    navigator.geolocation.getCurrentPosition(
+        navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const nextLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        const nextLocation = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        }
+
         setClientLocation(nextLocation)
+        setLocationReady(true)
         await loadDrivers(nextLocation)
         setLoading(false)
       },
       async () => {
-        await loadDrivers(DEFAULT_CENTER)
+        setClientLocation(null)
+        setLocationReady(false)
         setLoading(false)
+        setMessage('Activá tu ubicación para ver choferes reales cerca de vos.')
       },
-      { enableHighAccuracy: true, timeout: 9000 }
+           { enableHighAccuracy: true, timeout: 9000, maximumAge: 1000 }
     )
   }
 
@@ -1245,12 +1257,25 @@ async function cancelActiveTrip() {
   clearLiveTrip('Viaje cancelado. Podés elegir otro chofer.')
 }
 
-  async function refreshLocation() {
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const nextLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-      setClientLocation(nextLocation)
-      loadDrivers(nextLocation)
-    })
+    async function refreshLocation() {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const nextLocation = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        }
+
+        setClientLocation(nextLocation)
+        setLocationReady(true)
+        loadDrivers(nextLocation)
+        setMessage('')
+      },
+      () => {
+        setLocationReady(false)
+        setMessage('No pude leer tu ubicación. Activá el GPS y probá de nuevo.')
+      },
+      { enableHighAccuracy: true, timeout: 9000, maximumAge: 1000 }
+    )
   }
 
     const liveDriverPoint = useMemo(() => {
@@ -1334,21 +1359,24 @@ async function cancelActiveTrip() {
 
   const pickupPointText = activeTrip?.pickup_text || 'Punto de recogida: tu ubicación actual'
 
-  const mapOrigin = useMemo(() => {
-    return shouldTrackDriverOnMap ? liveDriverPoint : clientLocation
+   const mapOrigin = useMemo(() => {
+    if (shouldTrackDriverOnMap) return liveDriverPoint
+    return locationReady ? clientLocation : null
   }, [
     shouldTrackDriverOnMap,
     liveDriverPoint,
+    locationReady,
     clientLocation?.lat,
     clientLocation?.lng,
   ])
 
-  const mapDestination = useMemo(() => {
+   const mapDestination = useMemo(() => {
     if (!activeTripAcceptedByDriver) return destinationPoint
-    return activeTripWaitingForPickup ? clientLocation : destinationPoint
+    return activeTripWaitingForPickup && locationReady ? clientLocation : destinationPoint
   }, [
     activeTripAcceptedByDriver,
     activeTripWaitingForPickup,
+    locationReady,
     clientLocation?.lat,
     clientLocation?.lng,
     destinationPoint?.lat,
@@ -1568,21 +1596,35 @@ async function cancelActiveTrip() {
             )}
           </section>
         )}
-<InteractiveRouteMap
-  origin={mapOrigin}
-  destination={mapDestination}
-  destinationText={destination}
-  clientAvatar={mapAvatar}
-  drivers={mapDrivers}
-  selectedDriver={mapSelectedDriver}
-  onSelectDriver={setSelectedDriver}
-  onChooseDriver={() => setShowDriverChooser(true)}
-  onRefreshLocation={refreshLocation}
-  onRouteUpdate={setRouteGuidance}
-  showRouteSummary={false}
-  showOriginCar={shouldTrackDriverOnMap}
-  showMapTypeControl
-/>
+{locationReady || shouldTrackDriverOnMap ? (
+  <InteractiveRouteMap
+    origin={mapOrigin}
+    destination={mapDestination}
+    destinationText={destination}
+    clientAvatar={mapAvatar}
+    drivers={mapDrivers}
+    selectedDriver={mapSelectedDriver}
+    onSelectDriver={setSelectedDriver}
+    onChooseDriver={() => setShowDriverChooser(true)}
+    onRefreshLocation={refreshLocation}
+    onRouteUpdate={setRouteGuidance}
+    showRouteSummary={false}
+    showOriginCar={shouldTrackDriverOnMap}
+    showMapTypeControl
+  />
+) : (
+  <section className="mobility-map interactive-map">
+    <div className="map-empty-state">
+      <div className="map-empty-card">
+        <strong>Activando ubicación</strong>
+        <span>Necesitamos tu GPS para mostrar tu punto real, no una ubicación aproximada.</span>
+        <button type="button" className="main-btn" onClick={refreshLocation}>
+          Activar ubicación
+        </button>
+      </div>
+    </div>
+  </section>
+)}
 
      {destination.trim().length > 0 && !destinationPoint && !showDriverChooser && !selectedDriver && !activeTrip && !showDestinationSuggestions && (
           <section className="route-guidance-card warning-guidance apple-route-warning" aria-label="Aviso de destino">
