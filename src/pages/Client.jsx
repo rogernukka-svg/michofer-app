@@ -987,10 +987,13 @@ const [locationReady, setLocationReady] = useState(false)
 
     if (Number.isFinite(Number(nextTrip.driver_lat)) && Number.isFinite(Number(nextTrip.driver_lng))) {
       setActiveTripDriver((current) => ({
-        ...(current || driver || {}),
-        lat: Number(nextTrip.driver_lat),
-        lng: Number(nextTrip.driver_lng),
-      }))
+  ...(current || driver || {}),
+  lat: Number(nextTrip.driver_lat),
+  lng: Number(nextTrip.driver_lng),
+  heading: Number.isFinite(Number(nextTrip.driver_heading)) ? Number(nextTrip.driver_heading) : current?.heading ?? null,
+  speed: Number.isFinite(Number(nextTrip.driver_speed)) ? Number(nextTrip.driver_speed) : current?.speed ?? null,
+  accuracy: Number.isFinite(Number(nextTrip.driver_accuracy)) ? Number(nextTrip.driver_accuracy) : current?.accuracy ?? null,
+}))
     }
   }
 
@@ -1288,15 +1291,36 @@ async function cancelActiveTrip() {
     }
 
     return {
-      ...activeTripDriver,
-      lat: Number(activeTripDriver.lat),
-      lng: Number(activeTripDriver.lng),
-    }
-  }, [
+  ...activeTripDriver,
+  lat: Number(activeTripDriver.lat),
+  lng: Number(activeTripDriver.lng),
+  heading: Number.isFinite(Number(activeTrip?.driver_heading))
+    ? Number(activeTrip.driver_heading)
+    : Number.isFinite(Number(activeTripDriver?.heading))
+      ? Number(activeTripDriver.heading)
+      : null,
+  speed: Number.isFinite(Number(activeTrip?.driver_speed))
+    ? Number(activeTrip.driver_speed)
+    : Number.isFinite(Number(activeTripDriver?.speed))
+      ? Number(activeTripDriver.speed)
+      : null,
+  accuracy: Number.isFinite(Number(activeTrip?.driver_accuracy))
+    ? Number(activeTrip.driver_accuracy)
+    : Number.isFinite(Number(activeTripDriver?.accuracy))
+      ? Number(activeTripDriver.accuracy)
+      : null,
+}
+   }, [
+    activeTrip?.driver_heading,
+    activeTrip?.driver_speed,
+    activeTrip?.driver_accuracy,
     activeTripDriver?.id,
     activeTripDriver?.user_id,
     activeTripDriver?.lat,
     activeTripDriver?.lng,
+    activeTripDriver?.heading,
+    activeTripDriver?.speed,
+    activeTripDriver?.accuracy,
     activeTripDriver?.avatar,
     activeTripDriver?.name,
   ])

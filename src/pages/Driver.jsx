@@ -258,16 +258,31 @@ export default function Driver() {
   )
 
   const focusTrip = activeTrip || pendingTrips[0] || null
-    const driverPoint = useMemo(() => {
-    const lat = Number(driverProfile?.lat)
-    const lng = Number(driverProfile?.lng)
+   const driverPoint = useMemo(() => {
+  const lat = Number(driverProfile?.lat)
+  const lng = Number(driverProfile?.lng)
+  const heading = Number(driverProfile?.heading)
+  const speed = Number(driverProfile?.speed)
+  const accuracy = Number(driverProfile?.accuracy)
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return null
-    }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
 
-    return { lat, lng }
-  }, [driverProfile?.lat, driverProfile?.lng])
+  return {
+    lat,
+    lng,
+    heading: Number.isFinite(heading) ? heading : null,
+    speed: Number.isFinite(speed) ? speed : null,
+    accuracy: Number.isFinite(accuracy) ? accuracy : null,
+  }
+}, [
+  driverProfile?.lat,
+  driverProfile?.lng,
+  driverProfile?.heading,
+  driverProfile?.speed,
+  driverProfile?.accuracy,
+])
 
   const pickupPoint = focusTrip?.pickup_lat && focusTrip?.pickup_lng
     ? { lat: Number(focusTrip.pickup_lat), lng: Number(focusTrip.pickup_lng) }
@@ -533,15 +548,27 @@ export default function Driver() {
 
       if (updatedDriver) setDriverProfile(updatedDriver)
 
-      await supabase
-        .from('trips')
-        .update({
-          driver_lat: location.lat,
-          driver_lng: location.lng,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', trip.id)
-        .eq('driver_id', user.id)
+     await supabase
+  .from('trips')
+  .update({
+    driver_lat: location.lat,
+    driver_lng: location.lng,
+    driver_heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
+    driver_speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
+    driver_accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
+    updated_at: new Date().toISOString(),
+  })
+  .eq('id', trip.id)
+  .eq('driver_id', user.id)
+
+await supabase
+  .from('driver_profiles')
+  .update({
+    heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
+    speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
+    accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
+  })
+  .eq('user_id', user.id)
 
       return location
     } finally {
@@ -584,15 +611,27 @@ export default function Driver() {
 
     if (updatedDriver) setDriverProfile(updatedDriver)
 
-    await supabase
-      .from('trips')
-      .update({
-        driver_lat: location.lat,
-        driver_lng: location.lng,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', trip.id)
-      .eq('driver_id', user.id)
+ await supabase
+  .from('trips')
+  .update({
+    driver_lat: location.lat,
+    driver_lng: location.lng,
+    driver_heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
+    driver_speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
+    driver_accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
+    updated_at: new Date().toISOString(),
+  })
+  .eq('id', trip.id)
+  .eq('driver_id', user.id)
+
+await supabase
+  .from('driver_profiles')
+  .update({
+    heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
+    speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
+    accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
+  })
+  .eq('user_id', user.id)
 
     return location
   }

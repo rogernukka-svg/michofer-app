@@ -22,8 +22,8 @@ const NAVIGATION_HEADING_DISTANCE_METERS = 82
 const NAVIGATION_MIN_HEADING_CHANGE = 5
 const NAVIGATION_HEADING_SMOOTHING = 0.28
 
-const NAVIGATION_SNAP_METERS = 28
-const NAVIGATION_OFF_ROUTE_METERS = 38
+const NAVIGATION_SNAP_METERS = 55
+const NAVIGATION_OFF_ROUTE_METERS = 75
 const NAVIGATION_REROUTE_COOLDOWN_MS = 4200
 const NAVIGATION_BACKTRACK_TOLERANCE = 2
 const NAVIGATION_FORWARD_SEARCH = 55
@@ -383,10 +383,23 @@ function normalizeHeading(heading = 0) {
   return ((Number(heading) % 360) + 360) % 360
 }
 
-function getCarScreenHeading(heading = 0, navigationMode = false) {
-  const visualHeading = navigationMode ? 0 : normalizeHeading(heading)
+function getCarScreenHeading(heading = 0) {
+  return normalizeHeading(heading + CAR_SPRITE_ROTATION_OFFSET)
+}
 
-  return normalizeHeading(visualHeading + CAR_SPRITE_ROTATION_OFFSET)
+function getBestVehicleHeading(origin, routeHeading, previousHeading) {
+  const gpsHeading = Number(origin?.heading)
+  const speed = Number(origin?.speed)
+
+  if (Number.isFinite(gpsHeading) && (!Number.isFinite(speed) || speed >= 0.6)) {
+    return normalizeHeading(gpsHeading)
+  }
+
+  if (Number.isFinite(Number(routeHeading))) {
+    return normalizeHeading(routeHeading)
+  }
+
+  return normalizeHeading(previousHeading || 0)
 }
 
 function createDriverOverlay(driver, selected, onSelect, google) {
@@ -868,7 +881,8 @@ const [routeRefreshToken, setRouteRefreshToken] = useState(0)
         )
 
         lastMatchedPointRef.current = matchedOrigin
-        nextHeading = getRouteHeadingFromProjection(routePath, matchedProjection, destination)
+        const routeHeading = getRouteHeadingFromProjection(routePath, matchedProjection, destination)
+nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current)
       } else {
         // Si salió de la ruta, mostramos posición real y pedimos reroute.
         matchedOrigin = toLatLng(origin)
@@ -890,8 +904,9 @@ setRouteRefreshToken((value) => value + 1)
         }
       }
     } else if (isValidCoord(destination)) {
-      nextHeading = getBearingBetweenPoints(matchedOrigin, destination)
-    }
+  const routeHeading = getBearingBetweenPoints(matchedOrigin, destination)
+  nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current)
+}
 
     if (showCarAsOrigin) {
       navigationHeadingRef.current = getSmoothNavigationHeading(navigationHeadingRef.current, nextHeading)
@@ -906,7 +921,7 @@ setRouteRefreshToken((value) => value + 1)
         currentOverlay.setMap(null)
       }
 
-      const carHeading = getCarScreenHeading(navigationHeadingRef.current, navigationMode)
+     const carHeading = getCarScreenHeading(navigationHeadingRef.current)
 
       originOverlayRef.current = showCarAsOrigin
         ? createNavigationOverlay(matchedOrigin, googleApi, carHeading)
@@ -917,7 +932,7 @@ setRouteRefreshToken((value) => value + 1)
       originOverlayRef.current.updatePosition(matchedOrigin)
 
       if (showCarAsOrigin && typeof originOverlayRef.current.updateHeading === 'function') {
-        originOverlayRef.current.updateHeading(getCarScreenHeading(navigationHeadingRef.current, navigationMode))
+        originOverlayRef.current.updateHeading(getCarScreenHeading(navigationHeadingRef.current))
       }
     }
 
@@ -1145,10 +1160,16 @@ currentPolyline.setPath(routePath)
 lastMatchedRouteIndexRef.current = currentProjection.index
 lastMatchedPointRef.current = currentProjection.point
 
-const heading = getRouteHeadingFromProjection(
+const routeHeading = getRouteHeadingFromProjection(
   routePath,
   currentProjection,
   normalizedDestination
+)
+
+const heading = getBestVehicleHeading(
+  origin,
+  routeHeading,
+  navigationHeadingRef.current
 )
           const smoothHeading = getSmoothNavigationHeading(navigationHeadingRef.current, heading)
 
@@ -1158,7 +1179,7 @@ const heading = getRouteHeadingFromProjection(
             originOverlayRef.current?.__modeKey === 'car' &&
             typeof originOverlayRef.current.updateHeading === 'function'
           ) {
-            originOverlayRef.current.updateHeading(getCarScreenHeading(smoothHeading, navigationMode))
+            originOverlayRef.current.updateHeading(getCarScreenHeading(smoothHeading))
           }
 
           emitRouteUpdate({ distance, duration, instruction, heading: smoothHeading })
