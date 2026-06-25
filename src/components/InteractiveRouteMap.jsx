@@ -13,14 +13,21 @@ const MAX_DRIVER_MARKERS = 6
 
 // Cámara tipo Google Maps navegación:
 // vista cercana, inclinada y vertical hacia adelante, pero más estable.
-const NAVIGATION_ZOOM = 19.35
-const NAVIGATION_TILT = 67
-const NAVIGATION_LOOK_AHEAD_RATIO = 0.13
-const NAVIGATION_MIN_LOOK_AHEAD_METERS = 42
-const NAVIGATION_MAX_LOOK_AHEAD_METERS = 150
-const NAVIGATION_HEADING_DISTANCE_METERS = 115
-const NAVIGATION_MIN_HEADING_CHANGE = 7
-const NAVIGATION_HEADING_SMOOTHING = 0.22
+const NAVIGATION_ZOOM = 19.65
+const NAVIGATION_TILT = 63
+const NAVIGATION_LOOK_AHEAD_RATIO = 0.09
+const NAVIGATION_MIN_LOOK_AHEAD_METERS = 30
+const NAVIGATION_MAX_LOOK_AHEAD_METERS = 95
+const NAVIGATION_HEADING_DISTANCE_METERS = 82
+const NAVIGATION_MIN_HEADING_CHANGE = 5
+const NAVIGATION_HEADING_SMOOTHING = 0.28
+
+const NAVIGATION_SNAP_METERS = 28
+const NAVIGATION_OFF_ROUTE_METERS = 38
+const NAVIGATION_REROUTE_COOLDOWN_MS = 4200
+const NAVIGATION_BACKTRACK_TOLERANCE = 2
+const NAVIGATION_FORWARD_SEARCH = 55
+const CAR_SPRITE_ROTATION_OFFSET = 0
 
 function isValidCoord(point) {
   return Number.isFinite(Number(point?.lat)) && Number.isFinite(Number(point?.lng))
@@ -216,17 +223,24 @@ function projectPointToSegment(point, start, end) {
   }
 }
 
-function getClosestPointOnRoute(point, routePath, maxSnapMeters = 45) {
+function getClosestRouteProjection(point, routePath, options = {}) {
   const routePoints = normalizeRoutePath(routePath, null, null)
 
   if (!isValidCoord(point) || routePoints.length < 2) {
-    return isValidCoord(point) ? toLatLng(point) : point
+    return null
   }
+
+  const fromIndex = Math.max(1, Number(options.fromIndex) || 1)
+  const toIndex = Math.min(
+    routePoints.length - 1,
+    Number.isFinite(Number(options.toIndex)) ? Number(options.toIndex) : routePoints.length - 1
+  )
 
   let bestPoint = toLatLng(point)
   let bestDistance = Infinity
+  let bestIndex = fromIndex
 
-  for (let index = 1; index < routePoints.length; index += 1) {
+  for (let index = fromIndex; index <= toIndex; index += 1) {
     const projected = projectPointToSegment(point, routePoints[index - 1], routePoints[index])
     if (!projected) continue
 
@@ -235,14 +249,69 @@ function getClosestPointOnRoute(point, routePath, maxSnapMeters = 45) {
     if (distance < bestDistance) {
       bestDistance = distance
       bestPoint = projected
+      bestIndex = index
     }
   }
 
-  if (bestDistance <= maxSnapMeters) {
-    return bestPoint
+  return {
+    point: bestPoint,
+    distance: bestDistance,
+    index: bestIndex,
+  }
+}
+
+function getClosestPointOnRoute(point, routePath, maxSnapMeters = 45) {
+  const projection = getClosestRouteProjection(point, routePath)
+
+  if (!projection) {
+    return isValidCoord(point) ? toLatLng(point) : point
   }
 
-  return toLatLng(point)
+  return projection.distance <= maxSnapMeters ? projection.point : toLatLng(point)
+}
+
+function getRouteHeadingFromProjection(routePath, projection, fallbackDestination, distanceMeters = NAVIGATION_HEADING_DISTANCE_METERS) {
+  const routePoints = normalizeRoutePath(routePath, null, null)
+
+  if (!projection || routePoints.length < 2) {
+    return getBearingBetweenPoints(projection?.point, fallbackDestination)
+  }
+
+  const start = projection.point
+  const startIndex = Math.max(1, Math.min(projection.index, routePoints.length - 1))
+  let travelled = 0
+
+  for (let index = startIndex; index < routePoints.length; index += 1) {
+    const previous = index === startIndex ? start : routePoints[index - 1]
+    const current = routePoints[index]
+    const segmentDistance = getDistanceMeters(previous, current)
+
+    if (travelled + segmentDistance >= distanceMeters) {
+      const remaining = distanceMeters - travelled
+      const fraction = segmentDistance > 0 ? remaining / segmentDistance : 0
+      const nextPoint = interpolatePoint(previous, current, fraction)
+
+      return getBearingBetweenPoints(start, nextPoint)
+    }
+
+    travelled += segmentDistance
+  }
+
+  return getBearingBetweenPoints(start, fallbackDestination || routePoints[routePoints.length - 1])
+}
+
+function getRouteLookAheadFromProjection(routePath, projection, fallbackDestination) {
+  const routePoints = normalizeRoutePath(routePath, null, null)
+
+  if (!projection || routePoints.length < 2) {
+    return isValidCoord(fallbackDestination) ? toLatLng(fallbackDestination) : projection?.point
+  }
+
+  const startIndex = Math.max(1, Math.min(projection.index, routePoints.length - 1))
+  const slicedRoute = [projection.point, ...routePoints.slice(startIndex)]
+  const distance = Math.max(42, Math.min(90, getRouteDistanceMeters(slicedRoute) * 0.11))
+
+  return getRoutePointAtDistance(slicedRoute, distance)
 }
 function getAngleDiff(from, to) {
   return ((to - from + 540) % 360) - 180
@@ -315,9 +384,9 @@ function normalizeHeading(heading = 0) {
 }
 
 function getCarScreenHeading(heading = 0, navigationMode = false) {
-  // En el panel del chofer el mapa ya gira, entonces el auto debe quedar mirando hacia arriba.
-  // En el cliente el mapa no gira, entonces el auto sí rota según la ruta.
-  return navigationMode ? 0 : normalizeHeading(heading)
+  const visualHeading = navigationMode ? 0 : normalizeHeading(heading)
+
+  return normalizeHeading(visualHeading + CAR_SPRITE_ROTATION_OFFSET)
 }
 
 function createDriverOverlay(driver, selected, onSelect, google) {
@@ -569,18 +638,23 @@ export default function InteractiveRouteMap({
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
   const directionsServiceRef = useRef(null)
-    const routePolylineRef = useRef(null)
+  const routePolylineRef = useRef(null)
   const activeRoutePathRef = useRef([])
   const markersRef = useRef([])
   const originOverlayRef = useRef(null)
   const safetyZoneRefs = useRef([])
   const trafficLayerRef = useRef(null)
   const routeSignatureRef = useRef('')
-   const routeRequestSerialRef = useRef(0)
+  const routeRequestSerialRef = useRef(0)
   const lastRouteUpdateRef = useRef(null)
   const navigationHeadingRef = useRef(0)
   const userCameraTouchedRef = useRef(false)
   const hasAutoFittedRouteRef = useRef(false)
+  const lastMatchedRouteIndexRef = useRef(1)
+  const lastMatchedPointRef = useRef(null)
+ const lastRerouteAtRef = useRef(0)
+const routeOriginRef = useRef(null)
+const [routeRefreshToken, setRouteRefreshToken] = useState(0)
 
   const visibleDrivers = useMemo(() => {
     const safeDrivers = Array.isArray(drivers) ? drivers : []
@@ -722,7 +796,7 @@ export default function InteractiveRouteMap({
 
     const target = isValidCoord(selectedDriver) ? selectedDriver : origin
 
-    if (navigationMode) {
+       if (navigationMode) {
       map.setOptions({
         tilt: NAVIGATION_TILT,
         heading: navigationHeadingRef.current,
@@ -731,7 +805,6 @@ export default function InteractiveRouteMap({
         styles: GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
       })
 
-      applyNavigationCamera(map, origin, navigationHeadingRef.current)
       return
     }
 
@@ -748,7 +821,7 @@ export default function InteractiveRouteMap({
       styles: isSatellite || GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
     })
   }, [animateCamera, destination, googleApi, isSatellite, mapReady, navigationMode, origin, selectedDriver])
-  useEffect(() => {
+   useEffect(() => {
     const map = mapRef.current
 
     if (!mapReady || !map || !googleApi) return
@@ -765,6 +838,64 @@ export default function InteractiveRouteMap({
     const showCarAsOrigin = navigationMode || showOriginCar
     const nextModeKey = showCarAsOrigin ? 'car' : 'client'
     const currentOverlay = originOverlayRef.current
+    const routePath = activeRoutePathRef.current
+
+    let matchedOrigin = toLatLng(origin)
+    let matchedProjection = null
+    let nextHeading = navigationHeadingRef.current
+
+    if (showCarAsOrigin && routePath.length > 1) {
+      const currentIndex = Math.max(1, lastMatchedRouteIndexRef.current || 1)
+      const fromIndex = Math.max(1, currentIndex - NAVIGATION_BACKTRACK_TOLERANCE)
+      const toIndex = Math.min(routePath.length - 1, currentIndex + NAVIGATION_FORWARD_SEARCH)
+
+      matchedProjection = getClosestRouteProjection(origin, routePath, {
+        fromIndex,
+        toIndex,
+      })
+
+      if (!matchedProjection) {
+        matchedProjection = getClosestRouteProjection(origin, routePath)
+      }
+
+      if (matchedProjection && matchedProjection.distance <= NAVIGATION_SNAP_METERS) {
+        matchedOrigin = matchedProjection.point
+
+        // Progreso con memoria: evita que el autito vuelva atrás en la misma ruta.
+        lastMatchedRouteIndexRef.current = Math.max(
+          currentIndex - NAVIGATION_BACKTRACK_TOLERANCE,
+          matchedProjection.index
+        )
+
+        lastMatchedPointRef.current = matchedOrigin
+        nextHeading = getRouteHeadingFromProjection(routePath, matchedProjection, destination)
+      } else {
+        // Si salió de la ruta, mostramos posición real y pedimos reroute.
+        matchedOrigin = toLatLng(origin)
+
+        const now = Date.now()
+        const isOffRoute = matchedProjection?.distance >= NAVIGATION_OFF_ROUTE_METERS
+
+        if (navigationMode && isOffRoute && now - lastRerouteAtRef.current > NAVIGATION_REROUTE_COOLDOWN_MS) {
+          lastRerouteAtRef.current = now
+          routeOriginRef.current = toLatLng(origin)
+routeSignatureRef.current = ''
+setRouteRefreshToken((value) => value + 1)
+        }
+
+        if (lastMatchedPointRef.current) {
+          nextHeading = getBearingBetweenPoints(lastMatchedPointRef.current, matchedOrigin)
+        } else if (isValidCoord(destination)) {
+          nextHeading = getBearingBetweenPoints(matchedOrigin, destination)
+        }
+      }
+    } else if (isValidCoord(destination)) {
+      nextHeading = getBearingBetweenPoints(matchedOrigin, destination)
+    }
+
+    if (showCarAsOrigin) {
+      navigationHeadingRef.current = getSmoothNavigationHeading(navigationHeadingRef.current, nextHeading)
+    }
 
     if (
       !currentOverlay ||
@@ -775,33 +906,35 @@ export default function InteractiveRouteMap({
         currentOverlay.setMap(null)
       }
 
-            const matchedOrigin =
-        showCarAsOrigin && activeRoutePathRef.current.length > 1
-          ? getClosestPointOnRoute(origin, activeRoutePathRef.current, navigationMode ? 55 : 35)
-          : origin
-
-           const carHeading = getCarScreenHeading(navigationHeadingRef.current, navigationMode)
+      const carHeading = getCarScreenHeading(navigationHeadingRef.current, navigationMode)
 
       originOverlayRef.current = showCarAsOrigin
         ? createNavigationOverlay(matchedOrigin, googleApi, carHeading)
         : createClientOverlay(clientAvatar, 'Tu ubicación', googleApi, matchedOrigin)
 
       originOverlayRef.current.setMap(map)
-      return
+    } else {
+      originOverlayRef.current.updatePosition(matchedOrigin)
+
+      if (showCarAsOrigin && typeof originOverlayRef.current.updateHeading === 'function') {
+        originOverlayRef.current.updateHeading(getCarScreenHeading(navigationHeadingRef.current, navigationMode))
+      }
     }
 
-        const matchedOrigin =
-      showCarAsOrigin && activeRoutePathRef.current.length > 1
-        ? getClosestPointOnRoute(origin, activeRoutePathRef.current, navigationMode ? 55 : 35)
-        : origin
+    if (navigationMode && showCarAsOrigin) {
+      const cameraPoint =
+        matchedProjection && matchedProjection.distance <= NAVIGATION_SNAP_METERS
+          ? getRouteLookAheadFromProjection(routePath, matchedProjection, destination)
+          : matchedOrigin
 
-    originOverlayRef.current.updatePosition(matchedOrigin)
-
-        if (showCarAsOrigin && typeof originOverlayRef.current.updateHeading === 'function') {
-      originOverlayRef.current.updateHeading(getCarScreenHeading(navigationHeadingRef.current, navigationMode))
+      if (isValidCoord(cameraPoint)) {
+        applyNavigationCamera(map, cameraPoint, navigationHeadingRef.current)
+      }
     }
   }, [
     clientAvatar,
+    destination?.lat,
+    destination?.lng,
     googleApi,
     mapReady,
     navigationMode,
@@ -908,6 +1041,9 @@ export default function InteractiveRouteMap({
        const clearRoute = () => {
       try {
         activeRoutePathRef.current = []
+lastMatchedRouteIndexRef.current = 1
+lastMatchedPointRef.current = null
+routeOriginRef.current = null
 
         if (routePolyline) {
           routePolyline.setPath([])
@@ -938,19 +1074,22 @@ export default function InteractiveRouteMap({
     const normalizedDestination = toLatLng(destination)
     const normalizedSelectedDriver = isValidCoord(selectedDriver) ? toLatLng(selectedDriver) : null
 
-    const routeSignature = JSON.stringify({
-      origin: normalizedOrigin,
-      destination: normalizedDestination,
-      selectedDriver: normalizedSelectedDriver,
-      navigationMode,
-    })
+      const routeOrigin = routeOriginRef.current || normalizedOrigin
+const routeSignature = JSON.stringify({
+  origin: routeOrigin,
+  destination: normalizedDestination,
+  selectedDriver: normalizedSelectedDriver,
+  navigationMode,
+  routeRefreshToken,
+})
 
     if (routeSignatureRef.current === routeSignature) {
       return
     }
 
-        routeSignatureRef.current = routeSignature
-    routeRequestSerialRef.current += 1
+    routeSignatureRef.current = routeSignature
+routeOriginRef.current = routeOrigin
+routeRequestSerialRef.current += 1
 
     if (!navigationMode) {
       hasAutoFittedRouteRef.current = false
@@ -959,7 +1098,7 @@ export default function InteractiveRouteMap({
     const requestSerial = routeRequestSerialRef.current
     let cancelled = false
 
-    const waypoints = [normalizedOrigin]
+   const waypoints = [routeOrigin]
 
     if (normalizedSelectedDriver) {
       waypoints.push(normalizedSelectedDriver)
@@ -991,13 +1130,26 @@ export default function InteractiveRouteMap({
             ? route.overview_path.map((point) => normalizeMapPoint(point, null)).filter(isValidCoord)
             : []
 
-          activeRoutePathRef.current = routePath
-          currentPolyline.setPath(routePath)
+                  activeRoutePathRef.current = routePath
+currentPolyline.setPath(routePath)
 
                     const distance = route.legs?.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0) || 0
           const duration = route.legs?.reduce((sum, leg) => sum + (leg.duration?.value || 0), 0) || 0
                    const instruction = route.legs?.[0]?.steps?.[0]?.instructions?.replace(/<[^>]*>/g, '') || ''
-          const heading = getRouteHeading(routePath, normalizedOrigin, normalizedDestination)
+                    const currentProjection = getClosestRouteProjection(normalizedOrigin, routePath) || {
+  point: normalizedOrigin,
+  index: 1,
+  distance: 0,
+}
+
+lastMatchedRouteIndexRef.current = currentProjection.index
+lastMatchedPointRef.current = currentProjection.point
+
+const heading = getRouteHeadingFromProjection(
+  routePath,
+  currentProjection,
+  normalizedDestination
+)
           const smoothHeading = getSmoothNavigationHeading(navigationHeadingRef.current, heading)
 
           navigationHeadingRef.current = smoothHeading
@@ -1021,19 +1173,23 @@ export default function InteractiveRouteMap({
             }
           }
                               if (navigationMode) {
-            const navigationHeading = smoothHeading
-            const lookAheadPoint = getRouteLookAheadPoint(routePath, normalizedOrigin, normalizedDestination)
+  const navigationHeading = smoothHeading
+  const lookAheadPoint = getRouteLookAheadFromProjection(
+    routePath,
+    currentProjection,
+    normalizedDestination
+  )
 
-            currentMap.setOptions({
-              tilt: NAVIGATION_TILT,
-              heading: navigationHeading,
-              mapId: GOOGLE_MAPS_MAP_ID || undefined,
-              mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : 'roadmap',
-              styles: GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
-            })
+  currentMap.setOptions({
+    tilt: NAVIGATION_TILT,
+    heading: navigationHeading,
+    mapId: GOOGLE_MAPS_MAP_ID || undefined,
+    mapTypeId: GOOGLE_MAPS_MAP_ID ? undefined : 'roadmap',
+    styles: GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
+  })
 
-            applyNavigationCamera(currentMap, lookAheadPoint, navigationHeading)
-          }
+  applyNavigationCamera(currentMap, lookAheadPoint, navigationHeading)
+}
 
           return
         }
@@ -1049,7 +1205,7 @@ export default function InteractiveRouteMap({
     return () => {
       cancelled = true
     }
-  }, [
+   }, [
     destination?.lat,
     destination?.lng,
     fitPadding,
@@ -1059,6 +1215,7 @@ export default function InteractiveRouteMap({
     onRouteUpdate,
     origin?.lat,
     origin?.lng,
+    routeRefreshToken,
     selectedDriver?.id,
     selectedDriver?.lat,
     selectedDriver?.lng,
