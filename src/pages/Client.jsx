@@ -1597,7 +1597,7 @@ async function cancelActiveTrip() {
           </section>
         )}
 {locationReady || shouldTrackDriverOnMap ? (
-  <InteractiveRouteMap
+    <InteractiveRouteMap
     origin={mapOrigin}
     destination={mapDestination}
     destinationText={destination}
@@ -1611,6 +1611,7 @@ async function cancelActiveTrip() {
     showRouteSummary={false}
     showOriginCar={shouldTrackDriverOnMap}
     showMapTypeControl
+    animateCamera={!shouldTrackDriverOnMap}
   />
 ) : (
   <section className="mobility-map interactive-map">

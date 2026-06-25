@@ -189,6 +189,61 @@ function getRouteHeading(routePath, fallbackOrigin, fallbackDestination) {
 
   return getBearingBetweenPoints(fallbackOrigin, fallbackDestination)
 }
+function projectPointToSegment(point, start, end) {
+  if (!isValidCoord(point) || !isValidCoord(start) || !isValidCoord(end)) return null
+
+  const lat = Number(point.lat)
+  const lng = Number(point.lng)
+  const startLat = Number(start.lat)
+  const startLng = Number(start.lng)
+  const endLat = Number(end.lat)
+  const endLng = Number(end.lng)
+
+  const dx = endLng - startLng
+  const dy = endLat - startLat
+  const lengthSquared = dx * dx + dy * dy
+
+  if (lengthSquared === 0) return start
+
+  const t = Math.max(
+    0,
+    Math.min(1, ((lng - startLng) * dx + (lat - startLat) * dy) / lengthSquared)
+  )
+
+  return {
+    lat: startLat + t * dy,
+    lng: startLng + t * dx,
+  }
+}
+
+function getClosestPointOnRoute(point, routePath, maxSnapMeters = 45) {
+  const routePoints = normalizeRoutePath(routePath, null, null)
+
+  if (!isValidCoord(point) || routePoints.length < 2) {
+    return isValidCoord(point) ? toLatLng(point) : point
+  }
+
+  let bestPoint = toLatLng(point)
+  let bestDistance = Infinity
+
+  for (let index = 1; index < routePoints.length; index += 1) {
+    const projected = projectPointToSegment(point, routePoints[index - 1], routePoints[index])
+    if (!projected) continue
+
+    const distance = getDistanceMeters(point, projected)
+
+    if (distance < bestDistance) {
+      bestDistance = distance
+      bestPoint = projected
+    }
+  }
+
+  if (bestDistance <= maxSnapMeters) {
+    return bestPoint
+  }
+
+  return toLatLng(point)
+}
 function getAngleDiff(from, to) {
   return ((to - from + 540) % 360) - 180
 }
@@ -255,22 +310,14 @@ function createCircleIcon(color, google) {
   }
 }
 
-function getCarImageByHeading(heading = 0) {
-  const normalizedHeading = ((Number(heading) % 360) + 360) % 360
+function normalizeHeading(heading = 0) {
+  return ((Number(heading) % 360) + 360) % 360
+}
 
-  if (normalizedHeading >= 45 && normalizedHeading < 135) {
-    return carRightImg
-  }
-
-  if (normalizedHeading >= 135 && normalizedHeading < 225) {
-    return carBackImg
-  }
-
-  if (normalizedHeading >= 225 && normalizedHeading < 315) {
-    return carLeftImg
-  }
-
-  return carTopImg
+function getCarScreenHeading(heading = 0, navigationMode = false) {
+  // En el panel del chofer el mapa ya gira, entonces el auto debe quedar mirando hacia arriba.
+  // En el cliente el mapa no gira, entonces el auto sí rota según la ruta.
+  return navigationMode ? 0 : normalizeHeading(heading)
 }
 
 function createDriverOverlay(driver, selected, onSelect, google) {
@@ -351,15 +398,27 @@ function createClientOverlay(clientAvatar, name, google, onCenter) {
     .slice(0, 2)
     .toUpperCase()
 
+  overlay.currentPosition = isValidCoord(onCenter) ? toLatLng(onCenter) : null
+  overlay.__modeKey = 'client'
+  overlay.__avatar = clientAvatar || ''
+
   element.className = 'google-client-marker'
   element.style.position = 'absolute'
   element.style.zIndex = '10'
+  element.style.transition = 'left 900ms cubic-bezier(0.22, 1, 0.36, 1), top 900ms cubic-bezier(0.22, 1, 0.36, 1)'
+  element.style.willChange = 'left, top'
   element.innerHTML = `
     <div class="google-client-marker-ring" aria-hidden="true"></div>
     <div class="google-client-marker-content">
       ${clientAvatar ? `<img src="${clientAvatar}" alt="${name}" />` : `<span>${initials}</span>`}
     </div>
   `
+
+  overlay.updatePosition = function (nextPosition) {
+    if (!isValidCoord(nextPosition)) return
+    this.currentPosition = toLatLng(nextPosition)
+    this.draw()
+  }
 
   overlay.onAdd = function () {
     const panes = this.getPanes()
@@ -371,9 +430,9 @@ function createClientOverlay(clientAvatar, name, google, onCenter) {
 
   overlay.draw = function () {
     const projection = this.getProjection()
-    if (!projection || !onCenter) return
+    if (!projection || !isValidCoord(this.currentPosition)) return
 
-    const pos = new google.maps.LatLng(onCenter.lat, onCenter.lng)
+    const pos = new google.maps.LatLng(this.currentPosition.lat, this.currentPosition.lng)
     const point = projection.fromLatLngToDivPixel(pos)
 
     if (point) {
@@ -394,14 +453,42 @@ function createClientOverlay(clientAvatar, name, google, onCenter) {
 function createNavigationOverlay(position, google, heading = 0) {
   const overlay = new google.maps.OverlayView()
   const element = document.createElement('div')
-  const carImage = getCarImageByHeading(heading)
+  const image = document.createElement('img')
+
+  overlay.currentPosition = isValidCoord(position) ? toLatLng(position) : null
+  overlay.currentHeading = normalizeHeading(heading)
+  overlay.__modeKey = 'car'
 
   element.className = 'google-navigation-marker car-navigation-marker'
   element.style.position = 'absolute'
   element.style.zIndex = '30'
-  element.innerHTML = `
-    <img class="navigation-car-img" src="${carImage}" alt="Auto en navegación" />
-  `
+  element.style.transition = 'left 850ms cubic-bezier(0.22, 1, 0.36, 1), top 850ms cubic-bezier(0.22, 1, 0.36, 1)'
+  element.style.willChange = 'left, top, transform'
+  element.style.transform = 'translate(-50%, -50%)'
+
+  image.className = 'navigation-car-img'
+  image.alt = 'Auto en navegación'
+  image.src = carTopImg
+  image.style.display = 'block'
+  image.style.transformOrigin = '50% 50%'
+  image.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)'
+  image.style.transform = `rotate(${overlay.currentHeading}deg)`
+
+  element.appendChild(image)
+
+  overlay.updatePosition = function (nextPosition) {
+    if (!isValidCoord(nextPosition)) return
+    this.currentPosition = toLatLng(nextPosition)
+    this.draw()
+  }
+
+  overlay.updateHeading = function (nextHeading) {
+    const headingNumber = Number(nextHeading)
+    if (!Number.isFinite(headingNumber)) return
+
+    this.currentHeading = normalizeHeading(headingNumber)
+    image.style.transform = `rotate(${this.currentHeading}deg)`
+  }
 
   overlay.onAdd = function () {
     const panes = this.getPanes()
@@ -413,15 +500,14 @@ function createNavigationOverlay(position, google, heading = 0) {
 
   overlay.draw = function () {
     const projection = this.getProjection()
-    if (!projection || !isValidCoord(position)) return
+    if (!projection || !isValidCoord(this.currentPosition)) return
 
-    const pos = new google.maps.LatLng(position.lat, position.lng)
+    const pos = new google.maps.LatLng(this.currentPosition.lat, this.currentPosition.lng)
     const point = projection.fromLatLngToDivPixel(pos)
 
     if (point) {
       element.style.left = `${point.x}px`
       element.style.top = `${point.y}px`
-      element.style.transform = 'translate(-50%, -50%)'
     }
   }
 
@@ -483,14 +569,18 @@ export default function InteractiveRouteMap({
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
   const directionsServiceRef = useRef(null)
-  const routePolylineRef = useRef(null)
+    const routePolylineRef = useRef(null)
+  const activeRoutePathRef = useRef([])
   const markersRef = useRef([])
+  const originOverlayRef = useRef(null)
   const safetyZoneRefs = useRef([])
   const trafficLayerRef = useRef(null)
   const routeSignatureRef = useRef('')
-  const routeRequestSerialRef = useRef(0)
+   const routeRequestSerialRef = useRef(0)
   const lastRouteUpdateRef = useRef(null)
   const navigationHeadingRef = useRef(0)
+  const userCameraTouchedRef = useRef(false)
+  const hasAutoFittedRouteRef = useRef(false)
 
   const visibleDrivers = useMemo(() => {
     const safeDrivers = Array.isArray(drivers) ? drivers : []
@@ -499,7 +589,6 @@ export default function InteractiveRouteMap({
 
     return candidates.filter(isValidCoord).slice(0, MAX_DRIVER_MARKERS)
   }, [drivers, selectedDriver])
-
   useEffect(() => {
     let cancelled = false
     let timeoutId = null
@@ -551,7 +640,13 @@ export default function InteractiveRouteMap({
 
         mapRef.current = map
         directionsServiceRef.current = new google.maps.DirectionsService()
-
+        ;['dragstart', 'zoom_changed', 'tilt_changed', 'heading_changed'].forEach((eventName) => {
+          map.addListener(eventName, () => {
+            if (!navigationMode) {
+              userCameraTouchedRef.current = true
+            }
+          })
+        })
         routePolylineRef.current = new google.maps.Polyline({
           map,
           path: [],
@@ -579,7 +674,15 @@ export default function InteractiveRouteMap({
       if (timeoutId) {
         clearTimeout(timeoutId)
       }
+      if (originOverlayRef.current) {
+        try {
+          originOverlayRef.current.setMap(null)
+        } catch {
+          // no-op
+        }
 
+        originOverlayRef.current = null
+      }
       markersRef.current.forEach((marker) => {
         try {
           marker.setMap(null)
@@ -632,11 +735,10 @@ export default function InteractiveRouteMap({
       return
     }
 
-    if (animateCamera) {
+       if (animateCamera && !userCameraTouchedRef.current) {
       map.panTo(toLatLng(target))
+      map.setZoom(selectedDriver ? 15.2 : 14.6)
     }
-
-    map.setZoom(selectedDriver ? 15.2 : 14.6)
 
     map.setOptions({
       tilt: isSatellite ? 45 : 0,
@@ -646,7 +748,67 @@ export default function InteractiveRouteMap({
       styles: isSatellite || GOOGLE_MAPS_MAP_ID ? undefined : MICHOFER_LIGHT_MAP_STYLE,
     })
   }, [animateCamera, destination, googleApi, isSatellite, mapReady, navigationMode, origin, selectedDriver])
+  useEffect(() => {
+    const map = mapRef.current
 
+    if (!mapReady || !map || !googleApi) return
+
+    if (!isValidCoord(origin)) {
+      if (originOverlayRef.current) {
+        originOverlayRef.current.setMap(null)
+        originOverlayRef.current = null
+      }
+
+      return
+    }
+
+    const showCarAsOrigin = navigationMode || showOriginCar
+    const nextModeKey = showCarAsOrigin ? 'car' : 'client'
+    const currentOverlay = originOverlayRef.current
+
+    if (
+      !currentOverlay ||
+      currentOverlay.__modeKey !== nextModeKey ||
+      (!showCarAsOrigin && currentOverlay.__avatar !== (clientAvatar || ''))
+    ) {
+      if (currentOverlay) {
+        currentOverlay.setMap(null)
+      }
+
+            const matchedOrigin =
+        showCarAsOrigin && activeRoutePathRef.current.length > 1
+          ? getClosestPointOnRoute(origin, activeRoutePathRef.current, navigationMode ? 55 : 35)
+          : origin
+
+           const carHeading = getCarScreenHeading(navigationHeadingRef.current, navigationMode)
+
+      originOverlayRef.current = showCarAsOrigin
+        ? createNavigationOverlay(matchedOrigin, googleApi, carHeading)
+        : createClientOverlay(clientAvatar, 'Tu ubicación', googleApi, matchedOrigin)
+
+      originOverlayRef.current.setMap(map)
+      return
+    }
+
+        const matchedOrigin =
+      showCarAsOrigin && activeRoutePathRef.current.length > 1
+        ? getClosestPointOnRoute(origin, activeRoutePathRef.current, navigationMode ? 55 : 35)
+        : origin
+
+    originOverlayRef.current.updatePosition(matchedOrigin)
+
+        if (showCarAsOrigin && typeof originOverlayRef.current.updateHeading === 'function') {
+      originOverlayRef.current.updateHeading(getCarScreenHeading(navigationHeadingRef.current, navigationMode))
+    }
+  }, [
+    clientAvatar,
+    googleApi,
+    mapReady,
+    navigationMode,
+    origin?.lat,
+    origin?.lng,
+    showOriginCar,
+  ])
   useEffect(() => {
     const map = mapRef.current
 
@@ -675,31 +837,7 @@ export default function InteractiveRouteMap({
       return marker
     }
 
-    if (isValidCoord(origin)) {
-      try {
-        const showCarAsOrigin = navigationMode || showOriginCar
-
-        const originOverlay = showCarAsOrigin
-          ? createNavigationOverlay(origin, googleApi, navigationHeadingRef.current)
-          : createClientOverlay(clientAvatar, 'Tu ubicación', googleApi, origin)
-
-        originOverlay.setMap(map)
-        markersRef.current.push(originOverlay)
-      } catch (err) {
-        const icon = createCircleIcon('#1f7aff', googleApi)
-
-        addMarker(origin, {
-          ...(icon ? { icon } : {}),
-          label: {
-            text: navigationMode ? '▶' : 'Yo',
-            color: '#ffffff',
-            fontSize: '10px',
-            fontWeight: '700',
-          },
-          zIndex: 10,
-        })
-      }
-    }
+     
 
     if (isValidCoord(destination)) {
       const icon = createCircleIcon('#dc2626', googleApi)
@@ -732,7 +870,7 @@ export default function InteractiveRouteMap({
     mapReady,
     navigationMode,
     onSelectDriver,
-    origin,
+      
     selectedDriver,
     showOriginCar,
     visibleDrivers,
@@ -767,8 +905,10 @@ export default function InteractiveRouteMap({
       onRouteUpdate?.(nextValue)
     }
 
-    const clearRoute = () => {
+       const clearRoute = () => {
       try {
+        activeRoutePathRef.current = []
+
         if (routePolyline) {
           routePolyline.setPath([])
         }
@@ -809,8 +949,12 @@ export default function InteractiveRouteMap({
       return
     }
 
-    routeSignatureRef.current = routeSignature
+        routeSignatureRef.current = routeSignature
     routeRequestSerialRef.current += 1
+
+    if (!navigationMode) {
+      hasAutoFittedRouteRef.current = false
+    }
 
     const requestSerial = routeRequestSerialRef.current
     let cancelled = false
@@ -842,32 +986,43 @@ export default function InteractiveRouteMap({
         if (!currentMap || !currentPolyline || !googleApi) return
 
         if (status === googleApi.maps.DirectionsStatus.OK && result?.routes?.[0]) {
-          const route = result.routes[0]
-          const routePath = Array.isArray(route.overview_path) ? route.overview_path : []
+                   const route = result.routes[0]
+          const routePath = Array.isArray(route.overview_path)
+            ? route.overview_path.map((point) => normalizeMapPoint(point, null)).filter(isValidCoord)
+            : []
 
+          activeRoutePathRef.current = routePath
           currentPolyline.setPath(routePath)
 
                     const distance = route.legs?.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0) || 0
           const duration = route.legs?.reduce((sum, leg) => sum + (leg.duration?.value || 0), 0) || 0
-          const instruction = route.legs?.[0]?.steps?.[0]?.instructions?.replace(/<[^>]*>/g, '') || ''
+                   const instruction = route.legs?.[0]?.steps?.[0]?.instructions?.replace(/<[^>]*>/g, '') || ''
           const heading = getRouteHeading(routePath, normalizedOrigin, normalizedDestination)
+          const smoothHeading = getSmoothNavigationHeading(navigationHeadingRef.current, heading)
 
-          emitRouteUpdate({ distance, duration, instruction, heading })
+          navigationHeadingRef.current = smoothHeading
 
-          if (!navigationMode) {
+          if (
+            originOverlayRef.current?.__modeKey === 'car' &&
+            typeof originOverlayRef.current.updateHeading === 'function'
+          ) {
+            originOverlayRef.current.updateHeading(getCarScreenHeading(smoothHeading, navigationMode))
+          }
+
+          emitRouteUpdate({ distance, duration, instruction, heading: smoothHeading })
+
+                  if (!navigationMode && !userCameraTouchedRef.current && !hasAutoFittedRouteRef.current) {
             const bounds = getBounds(waypoints, googleApi)
 
             if (bounds) {
               const padding = typeof fitPadding === 'function' ? fitPadding() : fitPadding || DEFAULT_PADDING
               currentMap.fitBounds(bounds, padding)
+              hasAutoFittedRouteRef.current = true
             }
           }
-
                               if (navigationMode) {
-            const navigationHeading = getSmoothNavigationHeading(navigationHeadingRef.current, heading)
+            const navigationHeading = smoothHeading
             const lookAheadPoint = getRouteLookAheadPoint(routePath, normalizedOrigin, normalizedDestination)
-
-            navigationHeadingRef.current = navigationHeading
 
             currentMap.setOptions({
               tilt: NAVIGATION_TILT,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CarFront,
   CheckCircle2,
@@ -211,7 +211,10 @@ export default function Driver() {
   const [showSideMenu, setShowSideMenu] = useState(false)
   const [tripAction, setTripAction] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-
+  const liveWatchIdRef = useRef(null)
+  const liveSyncBusyRef = useRef(false)
+  const liveLastSyncAtRef = useRef(0)
+  const liveLastStoredPointRef = useRef(null)
   useEffect(() => {
     init()
   }, [])
@@ -327,14 +330,62 @@ export default function Driver() {
     ? (activeTrip.status === 'in_progress' ? destinationPoint : pickupPoint)
     : null
 
-   useEffect(() => {
-    if (!activeTrip?.id || !hasDriverLocation) return undefined
+     useEffect(() => {
+    if (!activeTrip?.id || !hasDriverLocation || !navigator.geolocation) return undefined
 
+    let cancelled = false
+
+    liveLastStoredPointRef.current = getStoredLocation()
     syncStoredTripLocation(activeTrip)
 
-    const interval = window.setInterval(() => syncStoredTripLocation(activeTrip), 1800)
-    return () => window.clearInterval(interval)
-  }, [activeTrip?.id, activeTrip?.status, driverProfile?.lat, driverProfile?.lng, hasDriverLocation])
+    const handlePosition = (pos) => {
+      if (cancelled) return
+
+      pushLiveTripLocation(
+        {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          speed: pos.coords.speed,
+          heading: pos.coords.heading,
+        },
+        activeTrip
+      )
+    }
+
+    const handleError = () => {
+      if (!cancelled) {
+        syncStoredTripLocation(activeTrip)
+      }
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      handlePosition,
+      handleError,
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 8000,
+      }
+    )
+
+    liveWatchIdRef.current = watchId
+
+    const fallbackInterval = window.setInterval(() => {
+      syncStoredTripLocation(activeTrip)
+    }, 7000)
+
+    return () => {
+      cancelled = true
+
+      if (liveWatchIdRef.current != null) {
+        navigator.geolocation.clearWatch(liveWatchIdRef.current)
+        liveWatchIdRef.current = null
+      }
+
+      window.clearInterval(fallbackInterval)
+    }
+  }, [activeTrip?.id, activeTrip?.status, hasDriverLocation, user?.id])
   async function init() {
     setLoading(true)
     setMessage('')
@@ -426,7 +477,77 @@ export default function Driver() {
       )
     })
   }
+  async function pushLiveTripLocation(location, trip = activeTrip) {
+    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
 
+    const previousLocation = liveLastStoredPointRef.current || getStoredLocation()
+    const movedMeters = previousLocation ? (distanceKm(previousLocation, location) || 0) * 1000 : 999
+    const accuracy = Number(location.accuracy)
+    const speed = Number(location.speed)
+    const now = Date.now()
+
+    if (Number.isFinite(accuracy) && accuracy > 55 && previousLocation) {
+      return previousLocation
+    }
+
+    const moving = Number.isFinite(speed) && speed >= 1.2
+
+    if (previousLocation && !moving && movedMeters < 10) {
+      return previousLocation
+    }
+
+    if (previousLocation && moving && movedMeters < 3) {
+      return previousLocation
+    }
+
+    if (now - liveLastSyncAtRef.current < 1200) {
+      return previousLocation || location
+    }
+
+    if (liveSyncBusyRef.current) {
+      return previousLocation || location
+    }
+
+    liveLastSyncAtRef.current = now
+    liveLastStoredPointRef.current = location
+
+    setDriverProfile((current) =>
+      current
+        ? {
+            ...current,
+            lat: location.lat,
+            lng: location.lng,
+          }
+        : current
+    )
+
+    liveSyncBusyRef.current = true
+
+    try {
+      const { data: updatedDriver } = await updateOwnDriverStatus({
+        isOnline: true,
+        isAvailable,
+        lat: location.lat,
+        lng: location.lng,
+      })
+
+      if (updatedDriver) setDriverProfile(updatedDriver)
+
+      await supabase
+        .from('trips')
+        .update({
+          driver_lat: location.lat,
+          driver_lng: location.lng,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', trip.id)
+        .eq('driver_id', user.id)
+
+      return location
+    } finally {
+      liveSyncBusyRef.current = false
+    }
+  }
    async function syncStoredTripLocation(trip = activeTrip) {
     const location = await getCurrentLocation()
     if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
@@ -445,12 +566,12 @@ export default function Driver() {
     // Si el chofer parece quieto, ignoramos saltos pequeños/medianos del GPS.
     const looksStationary = !Number.isFinite(speed) || speed < 1
 
-    if (storedLocation && looksStationary && movedMeters < 22) {
+      if (storedLocation && looksStationary && movedMeters < 18) {
       return storedLocation
     }
 
-    // En movimiento real, igual no actualizamos por micro saltos.
-    if (storedLocation && movedMeters < 10) {
+    // En movimiento real, dejamos pasar cambios más pequeños para curvas y giros.
+    if (storedLocation && !looksStationary && movedMeters < 5) {
       return storedLocation
     }
 
