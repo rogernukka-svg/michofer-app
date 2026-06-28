@@ -86,10 +86,23 @@ function interpolateLatLng(from, to, t) {
 }
 
 function isValidCoord(point) {
-  return Number.isFinite(Number(point?.lat)) && Number.isFinite(Number(point?.lng))
+  const lat = Number(point?.lat)
+  const lng = Number(point?.lng)
+
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat !== 0 &&
+    lng !== 0 &&
+    lat >= -28 &&
+    lat <= -19 &&
+    lng >= -63 &&
+    lng <= -53
+  )
 }
 
 function toLatLng(point) {
+  if (!isValidCoord(point)) return DEFAULT_CENTER
   return { lat: Number(point.lat), lng: Number(point.lng) }
 }
 
@@ -1053,13 +1066,13 @@ export default function InteractiveRouteMap({
   const cameraAnimStartRef = useRef(0)
   const cameraAnimDurationRef = useRef(0)
 
-  const visibleDrivers = useMemo(() => {
-    const safeDrivers = Array.isArray(drivers) ? drivers : []
-    const selectedPresent = selectedDriver && safeDrivers.some((driver) => driver.id === selectedDriver.id)
-    const candidates = selectedPresent || !selectedDriver ? safeDrivers : [selectedDriver, ...safeDrivers]
+const visibleDrivers = useMemo(() => {
+  const safeDrivers = Array.isArray(drivers) ? drivers : []
+  const selectedPresent = selectedDriver && safeDrivers.some((driver) => driver.id === selectedDriver.id)
+  const candidates = selectedPresent || !selectedDriver ? safeDrivers : [selectedDriver, ...safeDrivers]
 
-    return candidates.filter(isValidCoord).slice(0, MAX_DRIVER_MARKERS)
-  }, [drivers, selectedDriver])
+  return candidates.filter(isValidCoord).slice(0, MAX_DRIVER_MARKERS)
+}, [drivers, selectedDriver])
 
   // ==================== THEME AUTO-SWITCH ====================
 

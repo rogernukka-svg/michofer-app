@@ -64,15 +64,31 @@ const SAFETY_ZONES_CDE = [
   },
 ]
 
+function isValidParaguayCoord(point) {
+  const lat = Number(point?.lat)
+  const lng = Number(point?.lng)
+
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat !== 0 &&
+    lng !== 0 &&
+    lat >= -28 &&
+    lat <= -19 &&
+    lng >= -63 &&
+    lng <= -53
+  )
+}
+
 function distanceKm(a, b) {
-  if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null
+  if (!isValidParaguayCoord(a) || !isValidParaguayCoord(b)) return null
   const R = 6371
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180
+  const dLat = ((Number(b.lat) - Number(a.lat)) * Math.PI) / 180
+  const dLng = ((Number(b.lng) - Number(a.lng)) * Math.PI) / 180
   const x =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
+    Math.cos((Number(a.lat) * Math.PI) / 180) *
+      Math.cos((Number(b.lat) * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
 }
@@ -267,8 +283,7 @@ export default function Driver() {
   const [verificationTitle] = verificationCopy(verificationStatus, approved)
   const isOnline = driverProfile?.is_online === true
   const isAvailable = driverProfile?.is_available === true
-  const hasDriverLocation =
-    Number.isFinite(Number(driverProfile?.lat)) && Number.isFinite(Number(driverProfile?.lng))
+  const hasDriverLocation = isValidParaguayCoord(driverProfile)
   const isReceivingTrips = isOnline && isAvailable && hasDriverLocation
 
   const activeTrip = useMemo(() => trips.find((trip) => trip.status !== 'pending') || null, [trips])
@@ -286,14 +301,14 @@ export default function Driver() {
   )
 
   const focusTrip = activeTrip || pendingTrips[0] || null
-   const driverPoint = useMemo(() => {
+  const driverPoint = useMemo(() => {
   const lat = Number(driverProfile?.lat)
   const lng = Number(driverProfile?.lng)
   const heading = Number(driverProfile?.heading)
   const speed = Number(driverProfile?.speed)
   const accuracy = Number(driverProfile?.accuracy)
 
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+  if (!isValidParaguayCoord({ lat, lng })) {
     return null
   }
 
@@ -488,40 +503,56 @@ export default function Driver() {
     setTrips(data || [])
   }
 
-  function getStoredLocation() {
-    const lat = Number(driverProfile?.lat)
-    const lng = Number(driverProfile?.lng)
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-    return { lat, lng }
-  }
+ function getStoredLocation() {
+  const lat = Number(driverProfile?.lat)
+  const lng = Number(driverProfile?.lng)
+  const stored = { lat, lng }
 
-   async function getCurrentLocation() {
-    const fallback = getStoredLocation() || DEFAULT_DRIVER_LOCATION
+  if (!isValidParaguayCoord(stored)) return null
 
-    if (!navigator.geolocation) return fallback
+  return stored
+}
 
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          resolve({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-            speed: pos.coords.speed,
-            heading: pos.coords.heading,
-          })
-        },
-        () => resolve(fallback),
-        {
-          enableHighAccuracy: true,
-          timeout: 6000,
-          maximumAge: 2500,
+async function getCurrentLocation() {
+  const storedLocation = getStoredLocation()
+  const fallback = storedLocation || DEFAULT_DRIVER_LOCATION
+
+  if (!navigator.geolocation) return fallback
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const nextLocation = {
+          lat: Number(pos.coords.latitude),
+          lng: Number(pos.coords.longitude),
+          accuracy: pos.coords.accuracy,
+          speed: pos.coords.speed,
+          heading: pos.coords.heading,
         }
-      )
-    })
-  }
+
+        if (!isValidParaguayCoord(nextLocation)) {
+          setMessage('GPS inválido. Activá ubicación precisa para recibir solicitudes.')
+          resolve(fallback)
+          return
+        }
+
+        resolve(nextLocation)
+      },
+      () => resolve(fallback),
+      {
+        enableHighAccuracy: true,
+        timeout: 6000,
+        maximumAge: 2500,
+      }
+    )
+  })
+}
   async function pushLiveTripLocation(location, trip = activeTrip) {
-    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+  if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+
+  if (!isValidParaguayCoord(location)) {
+    return getStoredLocation()
+  }
 
     const previousLocation = liveLastStoredPointRef.current || getStoredLocation()
     const movedMeters = previousLocation ? (distanceKm(previousLocation, location) || 0) * 1000 : 999
@@ -655,7 +686,11 @@ await supabase
   }
    async function syncStoredTripLocation(trip = activeTrip) {
     const location = await getCurrentLocation()
-    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+
+if (!isValidParaguayCoord(location)) {
+  return getStoredLocation()
+}
 
     const storedLocation = getStoredLocation()
     const movedMeters = storedLocation ? (distanceKm(storedLocation, location) || 0) * 1000 : 999
@@ -751,58 +786,76 @@ await supabase
   }
 
   async function syncDriverLocation(trip = activeTrip, nextOnline = isOnline, nextAvailable = isAvailable) {
-    if (!driverProfile?.user_id) return null
-    const location = nextOnline ? await getCurrentLocation() : getStoredLocation()
-    if (!Number.isFinite(location?.lat) || !Number.isFinite(location?.lng)) return null
+  if (!driverProfile?.user_id) return null
 
-    const { data: updatedDriver, error } = await updateOwnDriverStatus({
-      isOnline: nextOnline,
-      isAvailable: nextAvailable,
-      lat: location?.lat,
-      lng: location?.lng,
-    })
-    if (!error && updatedDriver) setDriverProfile(updatedDriver)
+  const location = nextOnline ? await getCurrentLocation() : getStoredLocation()
 
-        if (trip?.id && LOCATION_STATUSES.includes(trip.status) && user?.id) {
-      await supabase
-        .from('trips')
-        .update({
-          driver_lat: location.lat,
-          driver_lng: location.lng,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', trip.id)
-        .eq('driver_id', user.id)
-    }
-    return location
+  if (!isValidParaguayCoord(location)) {
+    setMessage('GPS inválido. Activá ubicación precisa para recibir solicitudes.')
+    return null
   }
+
+  const { data: updatedDriver, error } = await updateOwnDriverStatus({
+    isOnline: nextOnline,
+    isAvailable: nextAvailable,
+    lat: location.lat,
+    lng: location.lng,
+  })
+
+  if (!error && updatedDriver) setDriverProfile(updatedDriver)
+
+  if (trip?.id && LOCATION_STATUSES.includes(trip.status) && user?.id) {
+    await supabase
+      .from('trips')
+      .update({
+        driver_lat: location.lat,
+        driver_lng: location.lng,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', trip.id)
+      .eq('driver_id', user.id)
+  }
+
+  return location
+}
 
   async function updateAvailability(nextOnline, nextAvailable) {
-    if (!driverProfile?.user_id) return
-    if (!approved) {
-      setMessage('Tu cuenta esta en revision. Te avisaremos cuando puedas recibir viajes.')
-      return
-    }
-    const location = await getCurrentLocation()
-    const { data: updatedDriver, error } = await updateOwnDriverStatus({
-      isOnline: nextOnline,
-      isAvailable: nextAvailable,
-      lat: location.lat,
-      lng: location.lng,
-    })
-    if (error) {
-      setMessage('No pude actualizar disponibilidad.')
-      return
-    }
-    if (updatedDriver) setDriverProfile(updatedDriver)
-    if (!nextOnline) {
-      setMessage('Desconectado.')
-    } else if (nextAvailable) {
-      setMessage('Disponible para recibir solicitudes.')
-    } else {
-      setMessage('Conectado, pero pausado.')
-    }
+  if (!driverProfile?.user_id) return
+
+  if (!approved) {
+    setMessage('Tu cuenta esta en revision. Te avisaremos cuando puedas recibir viajes.')
+    return
   }
+
+  const location = await getCurrentLocation()
+
+  if (nextOnline && !isValidParaguayCoord(location)) {
+    setMessage('GPS inválido. Activá ubicación precisa para recibir solicitudes.')
+    return
+  }
+
+  const { data: updatedDriver, error } = await updateOwnDriverStatus({
+    isOnline: nextOnline,
+    isAvailable: nextOnline ? nextAvailable : false,
+    lat: location.lat,
+    lng: location.lng,
+  })
+
+  if (error) {
+    setMessage('No pude actualizar disponibilidad.')
+    return
+  }
+
+  if (updatedDriver) setDriverProfile(updatedDriver)
+
+  if (!nextOnline) {
+    setMessage('Desconectado.')
+  } else if (nextAvailable) {
+    setMessage('Disponible para recibir solicitudes.')
+  } else {
+    setMessage('Conectado, pero pausado.')
+  }
+}
 
   async function requestCategory(categoryCode) {
     if (!driverProfile?.user_id) {

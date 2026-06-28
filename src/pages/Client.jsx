@@ -63,15 +63,31 @@ const RIDE_CATEGORY_ICONS = {
   premium: iconRidePremium,
 }
 
+function isValidParaguayCoord(point) {
+  const lat = Number(point?.lat)
+  const lng = Number(point?.lng)
+
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat !== 0 &&
+    lng !== 0 &&
+    lat >= -28 &&
+    lat <= -19 &&
+    lng >= -63 &&
+    lng <= -53
+  )
+}
+
 function distanceKm(a, b) {
-  if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null
+  if (!isValidParaguayCoord(a) || !isValidParaguayCoord(b)) return null
   const R = 6371
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180
+  const dLat = ((Number(b.lat) - Number(a.lat)) * Math.PI) / 180
+  const dLng = ((Number(b.lng) - Number(a.lng)) * Math.PI) / 180
   const x =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
+    Math.cos((Number(a.lat) * Math.PI) / 180) *
+      Math.cos((Number(b.lat) * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
 }
@@ -159,27 +175,28 @@ async function findStoredAvatarUrl(userId) {
 }
 
 function normalizeDriver(driver, location) {
-  const lat = Number(driver.lat)
-  const lng = Number(driver.lng)
-  const hasLocation = Number.isFinite(lat) && Number.isFinite(lng)
-  const km = hasLocation ? distanceKm(location, { lat, lng }) : null
+  const lat = Number(driver?.lat)
+  const lng = Number(driver?.lng)
+  const hasLocation = isValidParaguayCoord({ lat, lng })
+  const km = hasLocation && isValidParaguayCoord(location) ? distanceKm(location, { lat, lng }) : null
   const price = estimatePrice(km)
-  const car = [driver.car_brand, driver.car_model].filter(Boolean).join(' ').trim()
-  const vehicle = [car, driver.car_color, maskPlate(driver.plate)].filter(Boolean).join(' · ')
+  const car = [driver?.car_brand, driver?.car_model].filter(Boolean).join(' ').trim()
+  const vehicle = [car, driver?.car_color, maskPlate(driver?.plate)].filter(Boolean).join(' · ')
 
   return {
     ...driver,
-    id: driver.id || driver.user_id,
-    user_id: driver.user_id || driver.id,
+    id: driver?.id || driver?.user_id,
+    user_id: driver?.user_id || driver?.id,
     lat: hasLocation ? lat : null,
     lng: hasLocation ? lng : null,
-    name: driver.full_name || driver.email || 'Chofer disponible',
-    avatar: driver.avatar_url || '',
+    name: driver?.full_name || driver?.email || 'Chofer disponible',
+    avatar: driver?.avatar_url || '',
     vehicle,
     distanceKm: km,
     distance: km ? `${km.toFixed(1)} km` : '',
     eta: km ? `${Math.max(3, Math.round(km * 3))} min` : '',
     price,
+    hasValidLocation: hasLocation,
   }
 }
 
@@ -750,14 +767,22 @@ const [locationReady, setLocationReady] = useState(false)
         navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const nextLocation = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        }
+  lat: Number(pos.coords.latitude),
+  lng: Number(pos.coords.longitude),
+}
 
-        setClientLocation(nextLocation)
-        setLocationReady(true)
-        await loadDrivers(nextLocation)
-        setLoading(false)
+if (!isValidParaguayCoord(nextLocation)) {
+  setClientLocation(null)
+  setLocationReady(false)
+  setLoading(false)
+  setMessage('Tu GPS devolvió una ubicación inválida. Activá ubicación precisa y probá de nuevo.')
+  return
+}
+
+setClientLocation(nextLocation)
+setLocationReady(true)
+await loadDrivers(nextLocation)
+setLoading(false)
       },
       async () => {
         setClientLocation(null)
@@ -930,11 +955,23 @@ const [locationReady, setLocationReady] = useState(false)
     }
 
     driversFailureCountRef.current = 0
-    driversRetryAtRef.current = 0
-    const normalized = (data || []).map((driver) => normalizeDriver(driver, location))
+driversRetryAtRef.current = 0
 
-    setDrivers(normalized)
-    if (message.includes('choferes disponibles')) setMessage('')
+const normalized = (data || [])
+  .map((driver) => normalizeDriver(driver, location))
+  .filter((driver) => isValidParaguayCoord(driver))
+
+console.log('[MiChofer Drivers] raw drivers:', data || [])
+console.log('[MiChofer Drivers] valid drivers:', normalized)
+console.log('[MiChofer Drivers] clientLocation:', location)
+
+setDrivers(normalized)
+
+if (!normalized.length) {
+  setMessage('No hay choferes disponibles cerca. Verificá que el chofer esté aprobado, en línea, recibiendo y con GPS activo.')
+} else if (message.includes('choferes disponibles') || message.includes('No hay choferes')) {
+  setMessage('')
+}
   }
 
   async function handleLogout() {
@@ -1264,14 +1301,20 @@ async function cancelActiveTrip() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const nextLocation = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        }
+  lat: Number(pos.coords.latitude),
+  lng: Number(pos.coords.longitude),
+}
 
-        setClientLocation(nextLocation)
-        setLocationReady(true)
-        loadDrivers(nextLocation)
-        setMessage('')
+if (!isValidParaguayCoord(nextLocation)) {
+  setLocationReady(false)
+  setMessage('Tu GPS devolvió una ubicación inválida. Activá ubicación precisa y probá de nuevo.')
+  return
+}
+
+setClientLocation(nextLocation)
+setLocationReady(true)
+loadDrivers(nextLocation)
+setMessage('')
       },
       () => {
         setLocationReady(false)
