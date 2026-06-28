@@ -809,6 +809,38 @@ button {
   box-shadow: var(--shadow);
 }
 
+.map-recenter-btn {
+  position: absolute;
+  right: 18px;
+  top: 88px;
+  z-index: 9;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--black);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-size: 20px;
+  transition: opacity 0.2s ease;
+}
+
+.map-recenter-btn:hover {
+  background: #f0f0f0;
+}
+
+.map-theme-dark .map-recenter-btn {
+  background: rgba(30, 35, 45, 0.92);
+  color: #e0e0e0;
+}
+
+.map-theme-dark .map-recenter-btn:hover {
+  background: rgba(50, 55, 68, 0.95);
+}
+
 .map-perspective {
   position: absolute;
   inset: -10px -20px 0;
@@ -18322,4 +18354,201 @@ body.route-client .driver-picker-pro-card .driver-side button {
 .michofer-confirm-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+/* ==================== MAP THEMES ==================== */
+
+/* Default / light theme */
+.map-theme-light {
+  --map-bg: #ffffff;
+}
+
+/* Dark theme - CSS overlay when no dark MapID is available */
+.map-theme-dark .google-real-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.18);
+  mix-blend-mode: multiply;
+}
+
+/* When using MapID cloud style, no CSS overlay needed */
+.map-theme-dark .google-real-map {
+  filter: brightness(0.92) saturate(0.95);
+}
+
+/* ==================== CAR NAVIGATION MARKER STABLE ==================== */
+
+.car-navigation-marker {
+  width: 54px !important;
+  height: 54px !important;
+  will-change: left, top, transform;
+  pointer-events: none !important;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+.car-navigation-marker::before,
+.car-navigation-marker::after {
+  display: none !important;
+  content: none !important;
+}
+
+.navigation-car-img {
+  width: 54px;
+  height: 54px;
+  display: block;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  image-rendering: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  transition: none !important; /* animation handled by JS */
+}
+
+/* ==================== MAP CONTAINER STABILITY ==================== */
+
+.mobility-map {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.google-real-map {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* ==================== CAR MOVING STATE ==================== */
+
+.google-navigation-marker.is-moving .navigation-car-img {
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
+}
+
+.google-navigation-marker.is-stale .navigation-car-img {
+  opacity: 0.75;
+}
+
+/* ==================== DARK MODE ADAPTATIONS ==================== */
+
+/* Driver idle - darker background */
+body.route-driver .map-theme-dark .google-real-map {
+  filter: brightness(0.88) saturate(0.9) contrast(1.05) !important;
+}
+
+/* Driver cockpit - navigation mode dark */
+body.route-driver .driver-cockpit .map-theme-dark .google-real-map {
+  filter: brightness(0.85) saturate(0.88) contrast(1.06) !important;
+}
+
+/* Client dark mode */
+body.route-client .map-theme-dark .google-real-map {
+  filter: brightness(0.88) saturate(0.9) contrast(1.04) !important;
+}
+
+/* Client maps with women mode */
+body.route-client .women-client-mode .map-theme-dark .google-real-map {
+  filter: brightness(0.86) saturate(0.88) contrast(1.05) !important;
+}
+
+/* Dark mode: no '::after' overlay overrides when in driver cockpit */
+body.route-driver .driver-cockpit .map-theme-dark .google-real-map::after {
+  display: none !important;
+}
+
+body.route-driver .driver-idle .map-theme-dark .google-real-map::after {
+  display: none !important;
+}
+
+body.route-client .map-theme-dark .google-real-map::after {
+  display: none !important;
+}
+
+/* ==================== DARK MODE: MAP UI OVERLAYS ==================== */
+
+/* Map toolbar buttons in dark mode */
+.map-theme-dark .map-toolbar button {
+  background: rgba(30, 35, 45, 0.92);
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.map-theme-dark .map-toolbar button:hover,
+.map-theme-dark .map-toolbar button.active {
+  background: rgba(50, 55, 68, 0.95);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Locate button in dark mode */
+.map-theme-dark .map-locate-btn {
+  background: rgba(30, 35, 45, 0.92);
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.map-theme-dark .map-locate-btn:hover {
+  background: rgba(50, 55, 68, 0.95);
+  color: #ffffff;
+}
+
+/* Route summary card in dark mode */
+.map-theme-dark .route-summary {
+  background: rgba(30, 35, 45, 0.95);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+}
+
+.map-theme-dark .route-summary strong {
+  color: #f3f4f6;
+}
+
+.map-theme-dark .route-summary button {
+  background: rgba(54, 23, 255, 0.75);
+  color: #ffffff;
+}
+
+/* ==================== LIGHT MODE ADAPTATIONS ==================== */
+
+/* Driver idle - light map */
+body.route-driver .map-theme-light .google-real-map {
+  filter: saturate(1.02) contrast(0.96) brightness(1.04) !important;
+}
+
+/* Driver cockpit light */
+body.route-driver .driver-cockpit .map-theme-light .google-real-map {
+  filter: saturate(1.08) contrast(1.03) brightness(1.02) !important;
+}
+
+/* Client light map */
+body.route-client .map-theme-light .google-real-map {
+  filter: none !important;
+}
+
+/* ==================== MAP THEME TRANSITION ==================== */
+
+.mobility-map {
+  transition: filter 0.6s ease;
+}
+
+.google-real-map {
+  transition: filter 0.6s ease, opacity 0.6s ease;
+}
+
+/* ==================== DATA ATTRIBUTE STYLING ==================== */
+
+.mobility-map[data-map-theme="dark"] .map-toolbar button {
+  background: rgba(30, 35, 45, 0.92);
+  color: #d1d5db;
+}
+
+.mobility-map[data-map-theme="light"] .map-toolbar button {
+  background: rgba(255, 255, 255, 0.92);
+  color: #374151;
 }

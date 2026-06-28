@@ -27,6 +27,11 @@ import {
   upsertOwnDriverProfile,
 } from '../lib/supabase'
 import {
+  GOOGLE_ROADS_API_ENABLED,
+  GpsBuffer,
+  snapToRoads,
+} from '../lib/googleMaps'
+import {
   DRIVER_CATEGORY_ACTIONS,
   categoryStatusLabel,
   getDriverCategoryStatus,
@@ -39,6 +44,8 @@ const DEFAULT_DRIVER_LOCATION = { lat: -25.5167, lng: -54.6167 }
 const ARRIVED_PICKUP_METERS = 18
 const ARRIVED_DESTINATION_METERS = 22
 const VERY_CLOSE_METERS = 45
+const ROADS_MIN_POINTS = 3
+const ROADS_SYNC_INTERVAL_MS = 5200
 
 const SAFETY_ZONES_CDE = [
   {
@@ -83,6 +90,24 @@ function bearingBetween(a, b) {
     Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
 
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
+}
+
+function normalizeRoadSnapResult(result) {
+  if (!result) return null
+  const last = Array.isArray(result) ? result[result.length - 1] : result
+  if (!last) return null
+
+  const lat = Number(last.lat)
+  const lng = Number(last.lng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+
+  return {
+    lat,
+    lng,
+    placeId: last.placeId || null,
+    originalIndex: Number.isFinite(Number(last.originalIndex)) ? Number(last.originalIndex) : null,
+    snappedAt: Number.isFinite(Number(last.snappedAt)) ? Number(last.snappedAt) : Date.now(),
+  }
 }
 
 function angleDiff(from, to) {
@@ -215,6 +240,9 @@ export default function Driver() {
   const liveSyncBusyRef = useRef(false)
   const liveLastSyncAtRef = useRef(0)
   const liveLastStoredPointRef = useRef(null)
+  const gpsBufferRef = useRef(new GpsBuffer(20))
+  const lastRoadsSnapAtRef = useRef(0)
+  const roadsSyncBusyRef = useRef(false)
   useEffect(() => {
     init()
   }, [])
@@ -526,7 +554,15 @@ export default function Driver() {
     liveLastSyncAtRef.current = now
     liveLastStoredPointRef.current = location
 
-    setDriverProfile((current) =>
+   if (GOOGLE_ROADS_API_ENABLED && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
+  gpsBufferRef.current.push({ lat: location.lat, lng: location.lng })
+
+  if (import.meta.env.DEV) {
+    console.info('[MiChofer Roads] buffer size:', gpsBufferRef.current.getForRoads().length)
+  }
+}
+
+setDriverProfile((current) =>
       current
         ? {
             ...current,
@@ -570,6 +606,48 @@ await supabase
   })
   .eq('user_id', user.id)
 
+      let snappedPoint = null
+      if (GOOGLE_ROADS_API_ENABLED && gpsBufferRef.current.getForRoads().length >= ROADS_MIN_POINTS) {
+        const enoughTime = Date.now() - lastRoadsSnapAtRef.current >= ROADS_SYNC_INTERVAL_MS
+        if (enoughTime && !roadsSyncBusyRef.current) {
+          roadsSyncBusyRef.current = true
+          try {
+            const rawRoadSnapped = await snapToRoads(gpsBufferRef.current.getForRoads())
+            snappedPoint = normalizeRoadSnapResult(rawRoadSnapped)
+            if (snappedPoint) {
+              lastRoadsSnapAtRef.current = Date.now()
+            }
+          } catch (error) {
+            snappedPoint = null
+            if (import.meta.env.DEV) {
+              console.warn('[MiChofer Roads] snapToRoads failed:', error)
+            }
+          } finally {
+            roadsSyncBusyRef.current = false
+          }
+        }
+      }
+
+      if (snappedPoint) {
+        try {
+          await supabase
+            .from('trips')
+            .update({
+              driver_road_lat: snappedPoint.lat,
+              driver_road_lng: snappedPoint.lng,
+              driver_road_place_id: snappedPoint.placeId,
+              driver_road_snapped_at: new Date(snappedPoint.snappedAt).toISOString(),
+            })
+            .eq('id', trip.id)
+            .eq('driver_id', user.id)
+          if (import.meta.env.DEV) {
+            console.info('[MiChofer Roads] saved snapped point:', snappedPoint)
+          }
+        } catch {
+          // Keep working if Roads columns do not exist or update fails
+        }
+      }
+
       return location
     } finally {
       liveSyncBusyRef.current = false
@@ -593,13 +671,17 @@ await supabase
     // Si el chofer parece quieto, ignoramos saltos pequeños/medianos del GPS.
     const looksStationary = !Number.isFinite(speed) || speed < 1
 
-      if (storedLocation && looksStationary && movedMeters < 18) {
+    if (storedLocation && looksStationary && movedMeters < 18) {
       return storedLocation
     }
 
     // En movimiento real, dejamos pasar cambios más pequeños para curvas y giros.
     if (storedLocation && !looksStationary && movedMeters < 5) {
       return storedLocation
+    }
+
+    if (GOOGLE_ROADS_API_ENABLED && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
+      gpsBufferRef.current.push({ lat: location.lat, lng: location.lng })
     }
 
     const { data: updatedDriver } = await updateOwnDriverStatus({
@@ -611,27 +693,59 @@ await supabase
 
     if (updatedDriver) setDriverProfile(updatedDriver)
 
- await supabase
-  .from('trips')
-  .update({
-    driver_lat: location.lat,
-    driver_lng: location.lng,
-    driver_heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
-    driver_speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
-    driver_accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
-    updated_at: new Date().toISOString(),
-  })
-  .eq('id', trip.id)
-  .eq('driver_id', user.id)
+    await supabase
+      .from('trips')
+      .update({
+        driver_lat: location.lat,
+        driver_lng: location.lng,
+        driver_heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
+        driver_speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
+        driver_accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', trip.id)
+      .eq('driver_id', user.id)
 
-await supabase
-  .from('driver_profiles')
-  .update({
-    heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
-    speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
-    accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
-  })
-  .eq('user_id', user.id)
+    await supabase
+      .from('driver_profiles')
+      .update({
+        heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
+        speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
+        accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
+      })
+      .eq('user_id', user.id)
+
+    if (GOOGLE_ROADS_API_ENABLED && gpsBufferRef.current.getForRoads().length >= ROADS_MIN_POINTS) {
+      const enoughTime = Date.now() - lastRoadsSnapAtRef.current >= ROADS_SYNC_INTERVAL_MS
+      if (enoughTime && !roadsSyncBusyRef.current) {
+        roadsSyncBusyRef.current = true
+        try {
+          const rawRoadSnapped = await snapToRoads(gpsBufferRef.current.getForRoads())
+          const snappedPoint = normalizeRoadSnapResult(rawRoadSnapped)
+          if (snappedPoint) {
+            lastRoadsSnapAtRef.current = Date.now()
+            try {
+              await supabase
+                .from('trips')
+                .update({
+                  driver_road_lat: snappedPoint.lat,
+                  driver_road_lng: snappedPoint.lng,
+                  driver_road_place_id: snappedPoint.placeId,
+                  driver_road_snapped_at: new Date(snappedPoint.snappedAt).toISOString(),
+                })
+                .eq('id', trip.id)
+                .eq('driver_id', user.id)
+            } catch {
+              // Keep working if Roads columns do not exist or update fails
+            }
+          }
+        } catch {
+          // ignore Roads API failures and keep normal GPS position
+        } finally {
+          roadsSyncBusyRef.current = false
+        }
+      }
+    }
 
     return location
   }

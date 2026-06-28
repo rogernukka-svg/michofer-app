@@ -1,6 +1,11 @@
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
 export const GOOGLE_MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || ''
-const GOOGLE_MAPS_JS = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry`
+export const GOOGLE_MAPS_LIGHT_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_LIGHT_MAP_ID || ''
+export const GOOGLE_MAPS_DARK_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_DARK_MAP_ID || ''
+export const GOOGLE_ROADS_API_ENABLED = import.meta.env.VITE_GOOGLE_ROADS_API_ENABLED === 'true'
+export const GOOGLE_ROUTES_API_ENABLED = import.meta.env.VITE_GOOGLE_ROUTES_API_ENABLED === 'true'
+export const GOOGLE_PLACES_NEW_ENABLED = import.meta.env.VITE_GOOGLE_PLACES_NEW_ENABLED === 'true'
+const GOOGLE_MAPS_JS = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry,marker`
 
 let googleMapsPromise = null
 
@@ -81,6 +86,232 @@ export async function reverseGeocode(lat, lng) {
     })
   } catch (error) {
     console.error('Error en reverse geocodificacion:', error)
+    return null
+  }
+}
+
+/**
+ * Determines if it's currently "dark time" based on local time.
+ * Dark: 18:30 - 05:45
+ * Light: 05:45 - 18:30
+ * @returns {'light' | 'dark'}
+ */
+export function getAutoMapTheme() {
+  const now = new Date()
+  const hours = now.getHours()
+  const minutes = now.getMinutes()
+  const totalMinutes = hours * 60 + minutes
+
+  // Dark from 18:30 (1110 min) to 05:45 (345 min)
+  if (totalMinutes >= 1110 || totalMinutes < 345) {
+    return 'dark'
+  }
+  return 'light'
+}
+
+/**
+ * Returns the appropriate MapID for the given theme.
+ * Falls back to GOOGLE_MAPS_MAP_ID if no dedicated dark/light MapID is set.
+ */
+export function getMapIdForTheme(theme) {
+  if (theme === 'dark' && GOOGLE_MAPS_DARK_MAP_ID) return GOOGLE_MAPS_DARK_MAP_ID
+  if (theme === 'light' && GOOGLE_MAPS_LIGHT_MAP_ID) return GOOGLE_MAPS_LIGHT_MAP_ID
+  return GOOGLE_MAPS_MAP_ID || undefined
+}
+
+/**
+ * Roads API: Snap GPS points to roads.
+ * Uses the Google Roads API endpoint directly.
+ * Max 100 points per request. We send last 5-20 points.
+ * Falls back silently if Roads API fails.
+ * @param {Array<{lat: number, lng: number}>} points - GPS points to snap
+ * @returns {Promise<{lat: number, lng: number, placeId: string|null, originalIndex: number, snappedAt: number}|null>} last snapped point
+ */
+export async function snapToRoads(points) {
+  if (!GOOGLE_ROADS_API_ENABLED || !Array.isArray(points) || points.length < 2) {
+    return null
+  }
+
+  // Use only last 100 points
+  const limitedPoints = points.slice(-100)
+  const path = limitedPoints.map((p) => `${Number(p.lat)},${Number(p.lng)}`).join('|')
+
+  const url = `https://roads.googleapis.com/v1/snapToRoads?path=${encodeURIComponent(path)}&interpolate=true&key=${GOOGLE_MAPS_API_KEY}`
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+
+    const data = await response.json()
+    if (!data?.snappedPoints?.length) return null
+
+    // Return the LAST snapped point (most recent)
+    const last = data.snappedPoints[data.snappedPoints.length - 1]
+    return {
+      lat: last.location.latitude,
+      lng: last.location.longitude,
+      placeId: last.placeId || null,
+      originalIndex: last.originalIndex,
+      snappedAt: Date.now(),
+    }
+  } catch {
+    // Silently fail - app continues without Roads
+    return null
+  }
+}
+
+/**
+ * Stores recent GPS points for Roads API calls.
+ * Auto-prunes points older than 30 seconds.
+ */
+export class GpsBuffer {
+  constructor(maxPoints = 20) {
+    this.points = []
+    this.maxPoints = maxPoints
+    this.maxAgeMs = 30000
+  }
+
+  push(point) {
+    const now = Date.now()
+    this.points.push({ ...point, _ts: now })
+
+    // Prune old points
+    this.points = this.points
+      .filter((p) => now - p._ts < this.maxAgeMs)
+      .slice(-this.maxPoints)
+  }
+
+  getForRoads() {
+    // Return last 5-20 points with timestamps
+    return this.points.length >= 5 ? this.points.slice(-Math.min(this.points.length, 20)) : []
+  }
+
+  clear() {
+    this.points = []
+  }
+}
+
+/**
+ * Decodes a Google Maps encoded polyline string into an array of {lat, lng}.
+ * @param {string} encoded - The encoded polyline string
+ * @returns {Array<{lat: number, lng: number}>}
+ */
+export function decodePolyline(encoded) {
+  if (!encoded || typeof encoded !== 'string') return []
+
+  const points = []
+  let index = 0
+  const len = encoded.length
+  let lat = 0
+  let lng = 0
+
+  while (index < len) {
+    let b
+    let shift = 0
+    let result = 0
+    do {
+      b = encoded.charCodeAt(index++) - 63
+      result |= (b & 0x1f) << shift
+      shift += 5
+    } while (b >= 0x20)
+    const dlat = (result & 1) ? ~(result >> 1) : (result >> 1)
+    lat += dlat
+
+    shift = 0
+    result = 0
+    do {
+      b = encoded.charCodeAt(index++) - 63
+      result |= (b & 0x1f) << shift
+      shift += 5
+    } while (b >= 0x20)
+    const dlng = (result & 1) ? ~(result >> 1) : (result >> 1)
+    lng += dlng
+
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 })
+  }
+
+  return points
+}
+
+/**
+ * Routes API moderna: computeRoutes.
+ * Usa POST https://routes.googleapis.com/directions/v2:computeRoutes
+ * Si falla, devuelve null para que el caller use DirectionsService como fallback.
+ * @param {object} params
+ * @param {object} params.origin - {lat, lng}
+ * @param {object} params.destination - {lat, lng}
+ * @param {Array<object>} [params.waypoints] - [{lat, lng}]
+ * @returns {Promise<{path: Array, encodedPolyline: string, distance: number, duration: number, instruction: string, source: string}|null>}
+ */
+export async function computeRouteWithRoutesApi({ origin, destination, waypoints }) {
+  if (!GOOGLE_ROUTES_API_ENABLED) return null
+  if (!origin || !destination) return null
+
+  const body = {
+    origin: {
+      location: {
+        latLng: { latitude: origin.lat, longitude: origin.lng },
+      },
+    },
+    destination: {
+      location: {
+        latLng: { latitude: destination.lat, longitude: destination.lng },
+      },
+    },
+    travelMode: 'DRIVE',
+    routingPreference: 'TRAFFIC_AWARE',
+    computeAlternativeRoutes: false,
+    polylineQuality: 'HIGH_QUALITY',
+    languageCode: 'es-419',
+    units: 'METRIC',
+  }
+
+  // Add waypoints if provided
+  if (Array.isArray(waypoints) && waypoints.length > 0) {
+    body.intermediates = waypoints.map((wp) => ({
+      location: { latLng: { latitude: wp.lat, longitude: wp.lng } },
+    }))
+  }
+
+  try {
+    const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.localizedValues',
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) return null
+
+    const data = await response.json()
+    if (!data?.routes?.[0]) return null
+
+    const route = data.routes[0]
+    const encodedPolyline = route.polyline?.encodedPolyline
+    if (!encodedPolyline) return null
+
+    const path = decodePolyline(encodedPolyline)
+    if (path.length < 2) return null
+
+    // Extract distance from route
+    const distance = Number(route.distanceMeters) || 0
+    const duration = Math.ceil(Number(route.duration?.replace('s', '')) || 0)
+
+    // Get first step instruction
+    let instruction = ''
+    try {
+      if (route.legs?.[0]?.steps?.[0]?.navigationInstruction?.instructions) {
+        instruction = route.legs[0].steps[0].navigationInstruction.instructions.replace(/<[^>]*>/g, '')
+      }
+    } catch {
+      // ignore
+    }
+
+    return { path, encodedPolyline, distance, duration, instruction, source: 'routes_api' }
+  } catch {
     return null
   }
 }

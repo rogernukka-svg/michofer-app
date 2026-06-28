@@ -1282,38 +1282,87 @@ async function cancelActiveTrip() {
   }
 
     const liveDriverPoint = useMemo(() => {
-    if (
-      !activeTripDriver ||
-      !Number.isFinite(Number(activeTripDriver.lat)) ||
-      !Number.isFinite(Number(activeTripDriver.lng))
-    ) {
+    // Priority:
+    // 1. activeTrip.driver_road_lat / driver_road_lng (Roads API snapped)
+    // 2. activeTrip.driver_lat / driver_lng (raw GPS from driver updates)
+    // 3. activeTripDriver.lat / activeTripDriver.lng (driver_profiles fallback)
+
+    // Check Roads snapped coordinates first
+    const roadLat = Number(activeTrip?.driver_road_lat)
+    const roadLng = Number(activeTrip?.driver_road_lng)
+    const roadLatValid = Number.isFinite(roadLat)
+    const roadLngValid = Number.isFinite(roadLng)
+    const hasRoadCoords = roadLatValid && roadLngValid
+
+    // Check trip raw GPS
+    const tripLat = Number(activeTrip?.driver_lat)
+    const tripLng = Number(activeTrip?.driver_lng)
+    const tripLatValid = Number.isFinite(tripLat)
+    const tripLngValid = Number.isFinite(tripLng)
+    const hasTripCoords = tripLatValid && tripLngValid
+
+    // Check driver profile fallback
+    const driverLat = Number(activeTripDriver?.lat)
+    const driverLng = Number(activeTripDriver?.lng)
+    const driverLatValid = Number.isFinite(driverLat)
+    const driverLngValid = Number.isFinite(driverLng)
+    const hasDriverCoords = driverLatValid && driverLngValid
+
+    const parsedSnappedAt = activeTrip?.driver_road_snapped_at
+    const snappedAt = Number.isFinite(Number(parsedSnappedAt))
+      ? Number(parsedSnappedAt)
+      : Date.parse(parsedSnappedAt)
+    const roadFresh = hasRoadCoords && Number.isFinite(snappedAt) && Date.now() - snappedAt <= 15000
+
+    if (!roadFresh && !hasTripCoords && !hasDriverCoords) {
       return null
     }
 
+    const source = roadFresh
+      ? 'roads'
+      : hasTripCoords
+        ? 'trip'
+        : 'profile'
+
+    const bestLat = roadFresh ? roadLat : hasTripCoords ? tripLat : driverLat
+    const bestLng = roadFresh ? roadLng : hasTripCoords ? tripLng : driverLng
+    const updatedAt = roadFresh
+      ? activeTrip.driver_road_snapped_at
+      : hasTripCoords
+        ? activeTrip.updated_at
+        : activeTripDriver?.updated_at || null
+
     return {
-  ...activeTripDriver,
-  lat: Number(activeTripDriver.lat),
-  lng: Number(activeTripDriver.lng),
-  heading: Number.isFinite(Number(activeTrip?.driver_heading))
-    ? Number(activeTrip.driver_heading)
-    : Number.isFinite(Number(activeTripDriver?.heading))
-      ? Number(activeTripDriver.heading)
-      : null,
-  speed: Number.isFinite(Number(activeTrip?.driver_speed))
-    ? Number(activeTrip.driver_speed)
-    : Number.isFinite(Number(activeTripDriver?.speed))
-      ? Number(activeTripDriver.speed)
-      : null,
-  accuracy: Number.isFinite(Number(activeTrip?.driver_accuracy))
-    ? Number(activeTrip.driver_accuracy)
-    : Number.isFinite(Number(activeTripDriver?.accuracy))
-      ? Number(activeTripDriver.accuracy)
-      : null,
-}
+      ...activeTripDriver,
+      lat: bestLat,
+      lng: bestLng,
+      heading: Number.isFinite(Number(activeTrip?.driver_heading))
+        ? Number(activeTrip.driver_heading)
+        : Number.isFinite(Number(activeTripDriver?.heading))
+          ? Number(activeTripDriver.heading)
+          : null,
+      speed: Number.isFinite(Number(activeTrip?.driver_speed))
+        ? Number(activeTrip.driver_speed)
+        : Number.isFinite(Number(activeTripDriver?.speed))
+          ? Number(activeTripDriver.speed)
+          : null,
+      accuracy: Number.isFinite(Number(activeTrip?.driver_accuracy))
+        ? Number(activeTrip.driver_accuracy)
+        : Number.isFinite(Number(activeTripDriver?.accuracy))
+          ? Number(activeTripDriver.accuracy)
+          : null,
+      updated_at: updatedAt,
+      source,
+    }
    }, [
+    activeTrip?.driver_road_lat,
+    activeTrip?.driver_road_lng,
+    activeTrip?.driver_lat,
+    activeTrip?.driver_lng,
     activeTrip?.driver_heading,
     activeTrip?.driver_speed,
     activeTrip?.driver_accuracy,
+    activeTrip?.driver_road_snapped_at,
     activeTripDriver?.id,
     activeTripDriver?.user_id,
     activeTripDriver?.lat,
