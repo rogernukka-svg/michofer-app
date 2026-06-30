@@ -189,7 +189,7 @@ export default function Register() {
 
     if (step === 'start') return 'Crea tu cuenta.'
     if (step === 'name') return 'Tu nombre'
-    if (step === 'role') return 'Como queres usar MiChofer'
+    if (step === 'role') return '¿Cómo querés usar MiChofer?'
     if (step === 'photo') return role === 'driver' ? 'Verificación de chofer' : 'Tu perfil'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Creá tu clave'
@@ -202,7 +202,7 @@ export default function Register() {
     if (knownUser?.email && step === 'start') return 'Este dispositivo ya usó MiChofer.'
     if (step === 'start') return 'Entrá con Google o completá tus datos.'
     if (step === 'name') return 'Decinos cómo querés aparecer.'
-    if (step === 'role') return 'Elegi si vas a viajar o manejar.'
+    if (step === 'role') return 'Elegí tu modo para continuar.'
     if (step === 'photo') {
       return role === 'driver'
         ? 'Tu foto ayuda a que el pasajero viaje con confianza.'
@@ -699,20 +699,20 @@ export default function Register() {
                 disabled={busy}
               >
                 <span className="google-mark" aria-hidden="true" />
-                {busy ? 'Conectando...' : 'Continuar con Google'}
+                {busy ? 'Conectando...' : 'Accede con Google'}
               </button>
+
+              <a className="login-create-link" href="/login">
+                Ya soy usuario
+              </a>
 
               <button
                 type="button"
                 className="login-main-btn auth-mail-btn"
                 onClick={() => setStep('name')}
               >
-                Crear con correo
+                Crear cuenta nueva
               </button>
-
-              <a className="login-create-link" href="/login">
-                Ya tengo cuenta
-              </a>
             </div>
           )}
 
@@ -746,7 +746,7 @@ export default function Register() {
                 className="login-choice-btn"
                 onClick={() => nextFromRole('passenger')}
               >
-                Viajar como pasajero
+                Soy pasajero
               </button>
 
               <button
@@ -754,7 +754,7 @@ export default function Register() {
                 className="login-choice-btn"
                 onClick={() => nextFromRole('driver')}
               >
-                Registrarme como chofer
+                Soy chofer
               </button>
 
               <button

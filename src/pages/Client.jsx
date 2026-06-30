@@ -3,6 +3,7 @@ import {
   Banknote,
   CheckCircle2,
   ChevronRight,
+  Clock,
   CreditCard,
   HelpCircle,
   MapPin,
@@ -274,6 +275,94 @@ function clientLiveStatusUi(status, driverName, etaText, distanceMeters) {
   return rideStatusUi(status, driverName, etaText)
 }
 
+function clientTripHumanCopy(status, driverName, etaText, distanceMeters, rushSent = false) {
+  const name = firstName(driverName || 'tu chofer')
+  const eta = etaText || 'unos minutos'
+
+  if (status === 'pending') {
+    return {
+      title: 'Estamos esperando confirmación',
+      subtitle: 'Tu solicitud ya fue enviada. En breve el chofer responde.',
+      mood: 'waiting',
+      joke: 'Respirá tranqui. Estamos moviendo los hilos.',
+    }
+  }
+
+  if (status === 'accepted') {
+    return {
+      title: `${name} ya aceptó tu viaje`,
+      subtitle: `Va camino a buscarte. Llega en ${eta}.`,
+      mood: 'accepted',
+      joke: rushSent
+        ? 'Ya le avisamos que estás apurado. Seguridad primero, siempre.'
+        : 'Tu chofer ya viene. Vos prepará la ubicación.',
+    }
+  }
+
+  if (status === 'arriving') {
+    return {
+      title: `${name} está llegando`,
+      subtitle: 'Ya está muy cerca del punto de recogida. Verificá el auto y la chapa.',
+      mood: 'arriving',
+      joke: 'Está cerquita. Mirá alrededor y subí solo cuando confirmes el auto.',
+    }
+  }
+
+  if (status === 'in_progress') {
+    return {
+      title: 'Viaje en curso',
+      subtitle: 'Seguimos tu recorrido en tiempo real hasta el destino.',
+      mood: 'in_progress',
+      joke: 'Modo copiloto activado.',
+    }
+  }
+
+  if (status === 'completed') {
+    return {
+      title: 'Viaje finalizado',
+      subtitle: 'Lo guardamos en Mis viajes.',
+      mood: 'completed',
+      joke: 'Llegamos bien. Gracias por viajar con MiChofer.',
+    }
+  }
+
+  if (status === 'cancelled') {
+    return {
+      title: 'Viaje cancelado',
+      subtitle: 'Podés pedir otro chofer cuando quieras.',
+      mood: 'cancelled',
+      joke: 'Tranqui, buscamos otro camino.',
+    }
+  }
+
+  return {
+    title: 'Viaje actualizado',
+    subtitle: 'Estamos siguiendo el estado de tu viaje.',
+    mood: 'default',
+    joke: '',
+  }
+}
+
+function waitingMicrocopy(status, secondsWaiting, rushSent) {
+  if (rushSent) {
+    return 'Ya le avisamos al chofer. Seguridad primero, pero con ganas de llegar rápido.'
+  }
+
+  if (status === 'pending' && secondsWaiting > 20) {
+    return 'Seguimos esperando confirmación. Te acompañamos mientras responde.'
+  }
+
+  if (status === 'accepted' && secondsWaiting > 90) {
+    return 'Tu chofer sigue en camino. A veces el tráfico se cree protagonista.'
+  }
+
+  if (status === 'arriving') {
+    return 'Está cerquita. Mirá alrededor y verificá el auto antes de subir.'
+  }
+
+  return ''
+}
+
 export default function Client() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -303,6 +392,13 @@ const [locationReady, setLocationReady] = useState(false)
     const [activeTrip, setActiveTrip] = useState(null)
   const [activeTripDriver, setActiveTripDriver] = useState(null)
   const [liveSheetExpanded, setLiveSheetExpanded] = useState(false)
+  const [rushSending, setRushSending] = useState(false)
+  const [rushSentAt, setRushSentAt] = useState(null)
+  const [lastTripStatus, setLastTripStatus] = useState(null)
+  const [tripWaitingSeconds, setTripWaitingSeconds] = useState(0)
+  const [showTripsHistory, setShowTripsHistory] = useState(false)
+  const [tripHistory, setTripHistory] = useState([])
+  const [tripHistoryLoading, setTripHistoryLoading] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [showAvatarPreview, setShowAvatarPreview] = useState(false)
   const [googlePlacesError, setGooglePlacesError] = useState(null)
@@ -589,6 +685,20 @@ const [locationReady, setLocationReady] = useState(false)
     }
 
     setLiveSheetExpanded(false)
+  }, [activeTrip?.id, activeTrip?.status])
+
+  useEffect(() => {
+    setTripWaitingSeconds(0)
+
+    if (!activeTrip?.id || !['pending', 'accepted', 'arriving'].includes(activeTrip.status)) {
+      return undefined
+    }
+
+    const interval = window.setInterval(() => {
+      setTripWaitingSeconds((seconds) => seconds + 1)
+    }, 1000)
+
+    return () => window.clearInterval(interval)
   }, [activeTrip?.id, activeTrip?.status])
   useEffect(() => {
     if (!activeTrip?.id) return undefined
@@ -998,11 +1108,82 @@ if (!normalized.length) {
     if (messageText) setMessage(messageText)
   }
 
+  async function loadClientTripHistory() {
+    if (!user?.id) return
+
+    setTripHistoryLoading(true)
+
+    const { data, error } = await supabase
+      .from('trips')
+      .select('*')
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(30)
+
+    setTripHistoryLoading(false)
+
+    if (error) {
+      setMessage('No pude cargar tus viajes.')
+      return
+    }
+
+    setTripHistory(data || [])
+  }
+
+  async function sendRushSignal() {
+    if (!activeTrip?.id || !activeTrip?.driver_id || !user?.id || rushSending) return
+
+    const lastSent = rushSentAt ? new Date(rushSentAt).getTime() : 0
+    if (lastSent && Date.now() - lastSent < 60000) {
+      setMessage('Ya le avisamos al chofer. Podés reenviar en un minuto.')
+      return
+    }
+
+    const sentAt = new Date().toISOString()
+    const driverName = firstName(activeTripDriver?.name || selectedDriver?.name || 'tu chofer')
+
+    setRushSending(true)
+    setRushSentAt(sentAt)
+    setMessage(`Le avisamos a ${driverName}. Tu chofer ya sabe que estás apurado.`)
+    setActiveTrip((current) =>
+      current
+        ? {
+            ...current,
+            client_rush_at: sentAt,
+            client_rush_count: (Number(current.client_rush_count) || 0) + 1,
+          }
+        : current
+    )
+
+    try {
+      const { error } = await supabase.from('messages').insert({
+        trip_id: activeTrip.id,
+        sender_id: user.id,
+        body: 'El cliente está apurado y pidió avanzar apenas sea seguro. Seguridad primero.',
+      })
+
+      if (error) {
+        console.warn('MiChofer rush signal was kept local because messages insert failed:', error)
+      }
+    } finally {
+      setRushSending(false)
+    }
+  }
+
   async function handleTripUpdate(nextTrip) {
     if (!nextTrip?.id) return
 
+    const previousStatus = activeTrip?.status || lastTripStatus
+    const statusChanged = previousStatus !== nextTrip.status
+
     if (nextTrip.status === 'cancelled' || nextTrip.status === 'completed') {
-      clearLiveTrip(nextTrip.status === 'completed' ? 'Viaje finalizado. Ya podés pedir otro.' : 'Viaje cancelado.')
+      setLastTripStatus(nextTrip.status)
+      if (nextTrip.status === 'completed') {
+        loadClientTripHistory()
+        clearLiveTrip('Viaje finalizado. Lo guardamos en Mis viajes.')
+      } else {
+        clearLiveTrip('Viaje cancelado. Podés elegir otro chofer.')
+      }
       return
     }
 
@@ -1020,6 +1201,22 @@ if (!normalized.length) {
 
     if (!driver && nextTrip.driver_id) {
       driver = await loadActiveTripDriver(nextTrip.driver_id)
+    }
+
+    if (statusChanged) {
+      const clientName = firstName(profile?.full_name || user?.email || 'Roger')
+      const driverName = firstName(driver?.name || activeTripDriver?.name || selectedDriver?.name || 'tu chofer')
+      const statusMessages = {
+        pending: 'Solicitud enviada. Esperando confirmación.',
+        accepted: `${clientName}, ${driverName} ya aceptó tu viaje. Llegará pronto.`,
+        arriving: 'Tu chofer está llegando. Verificá el auto y la chapa.',
+        in_progress: 'Viaje iniciado. Seguimos tu ruta en tiempo real.',
+        completed: 'Viaje finalizado. Gracias por viajar con MiChofer.',
+        cancelled: 'Viaje cancelado. Podés elegir otro chofer.',
+      }
+
+      setLastTripStatus(nextTrip.status)
+      setMessage(statusMessages[nextTrip.status] || 'Viaje actualizado.')
     }
 
     if (Number.isFinite(Number(nextTrip.driver_lat)) && Number.isFinite(Number(nextTrip.driver_lng))) {
@@ -1092,6 +1289,10 @@ if (!normalized.length) {
 
     setActiveTrip(data)
     setActiveTripDriver(selectedDriver)
+    setLastTripStatus(data?.status || 'pending')
+    setTripWaitingSeconds(0)
+    setRushSentAt(null)
+    setMessage('Solicitud enviada. Esperando confirmación.')
   }
 
   function handleModeSelect(nextMode) {
@@ -1460,6 +1661,20 @@ setMessage('')
     liveEtaText,
     liveDistance
   )
+  const rushWasSent = Boolean(rushSentAt || activeTrip?.client_rush_at || Number(activeTrip?.client_rush_count) > 0)
+  const rushLocked = rushSending || (rushSentAt && Date.now() - new Date(rushSentAt).getTime() < 60000)
+  const humanRideCopy = activeTrip
+    ? clientTripHumanCopy(
+        activeTrip.status,
+        activeTripDriver?.name || selectedDriver?.name,
+        liveEtaText,
+        liveDistance,
+        rushWasSent
+      )
+    : null
+  const liveMicrocopy = activeTrip
+    ? waitingMicrocopy(activeTrip.status, tripWaitingSeconds, rushWasSent) || humanRideCopy?.joke || ''
+    : ''
 
     const rideProgressWidth = `${rideUi.progress}%`
   const canChatInRide = Boolean(activeTrip?.id && rideUi.chatEnabled)
@@ -1511,13 +1726,25 @@ setMessage('')
     <main className="app-shell">
       <section className={`${mode === 'ella' ? 'phone client-phone women-client-mode' : 'phone client-phone'} client-premium`}>
         <header className="client-top premium-map-header">
-          <section className="map-search-bar" aria-label="Elegir destino">
-            <MapPin className="map-search-icon" size={18} />
+          <section className="route-search-card map-search-bar" aria-label="Elegir ruta">
+            <div className="route-point-stack" aria-hidden="true">
+              <span className="route-point-dot route-point-origin" />
+              <span className="route-point-line" />
+              <span className="route-point-dot route-point-destination" />
+            </div>
 
-            <div className="map-search-copy">
-              <label htmlFor="destination">Destino</label>
+            <div className="map-search-copy route-search-fields">
+              <div className="route-point-row route-origin-row">
+                <div className="route-point-copy">
+                  <span>Punto de salida</span>
+                  <strong>Tu ubicacion actual</strong>
+                </div>
+              </div>
+
+              <label className="route-point-row route-destination-row route-point-copy" htmlFor="destination">Punto de llegada</label>
               <input
                 id="destination"
+                className="route-input"
                 value={destination}
                 onChange={(event) => {
   setDestination(event.target.value)
@@ -1557,7 +1784,7 @@ setMessage('')
             )}
 
             <button
-              className="avatar-button header-avatar"
+              className="avatar-button header-avatar route-account-button"
               type="button"
               onClick={() => setShowMenu(true)}
               aria-label="Abrir cuenta"
@@ -1600,7 +1827,7 @@ setMessage('')
 
             {activeTrip && activeTripDriver && (
           <section
-            className={`michofer-live-sheet ${liveSheetExpanded ? 'is-expanded' : 'is-minimized'} status-${activeTrip.status || 'pending'}`}
+            className={`michofer-live-sheet client-live-sheet ${liveSheetExpanded ? 'is-expanded' : 'is-minimized'} status-${activeTrip.status || 'pending'}`}
             aria-label="Estado del viaje"
           >
             <button
@@ -1632,8 +1859,8 @@ setMessage('')
 
                 <div className="michofer-live-compact-copy">
                   <span>{rideUi.badge}</span>
-                  <strong>{rideUi.title}</strong>
-                  <small>{activeTrip.status === 'in_progress' ? 'Viaje en curso' : `${firstName(activeTripDriver.name)} viene hacia vos`}</small>
+                  <strong>{humanRideCopy?.title || rideUi.title}</strong>
+                  <small>{humanRideCopy?.subtitle || (activeTrip.status === 'in_progress' ? 'Viaje en curso' : `${firstName(activeTripDriver.name)} viene hacia vos`)}</small>
                 </div>
 
                 <button type="button" className="michofer-live-expand-action" onClick={() => setLiveSheetExpanded(true)}>
@@ -1658,8 +1885,9 @@ setMessage('')
 
                   <div className="michofer-live-copy">
                     <span className="michofer-live-pill">{rideUi.badge}</span>
-                    <h2>{rideUi.title}</h2>
-                    <p>{rideUi.subtitle}</p>
+                    <h2>{humanRideCopy?.title || rideUi.title}</h2>
+                    <p>{humanRideCopy?.subtitle || rideUi.subtitle}</p>
+                    {liveMicrocopy && <small className="michofer-live-microcopy">{liveMicrocopy}</small>}
                   </div>
                 </div>
 
@@ -1690,7 +1918,7 @@ setMessage('')
 
                 <div className="michofer-live-actions">
                   <a
-                    className={canChatInRide ? 'michofer-chat-action' : 'michofer-chat-action disabled'}
+                    className={canChatInRide ? 'michofer-chat-action chat-button' : 'michofer-chat-action chat-button disabled'}
                     href={canChatInRide ? `/chat?trip=${activeTrip.id}` : '#'}
                     onClick={(event) => {
                       if (!canChatInRide) {
@@ -1703,7 +1931,28 @@ setMessage('')
                     {canChatInRide ? 'Chatear' : 'Chat al aceptar'}
                   </a>
 
-                  <button type="button" className="michofer-cancel-action" onClick={cancelActiveTrip}>
+                  {activeTrip.status !== 'in_progress' && (
+                    <button
+                      type="button"
+                      className={`michofer-rush-action rush-button ${rushWasSent ? 'sent' : ''}`}
+                      onClick={sendRushSignal}
+                      disabled={rushLocked || !activeTrip.driver_id}
+                    >
+                      <Clock size={18} />
+                      <span>
+                        <strong>{rushLocked ? 'Aviso enviado' : 'Estoy apurado'}</strong>
+                        <small>Avisar al chofer</small>
+                      </span>
+                    </button>
+                  )}
+
+                  {rushWasSent && (
+                    <div className="michofer-rush-note">
+                      Pedido enviado con respeto. La seguridad va primero.
+                    </div>
+                  )}
+
+                  <button type="button" className="michofer-cancel-action cancel-button" onClick={cancelActiveTrip}>
                     <X size={18} />
                     Cancelar
                   </button>
@@ -1777,13 +2026,13 @@ setMessage('')
                 <MapPin size={17} />
                 Choferes cerca
               </span>
-              <strong>{canOpenDrivers ? 'Ver opciones disponibles' : 'Elegí destino'}</strong>
+              <strong>{canOpenDrivers ? 'Ver opciones de viaje' : 'Elegí destino'}</strong>
               <ChevronRight size={20} />
             </button>
           </section>
         )}
 
-        {!routeGuidance && !fares && !showMenu && !showDriverChooser && !selectedDriver && !activeTrip && !showDestinationSuggestions && (
+        {destinationPoint && !routeGuidance && !fares && !showMenu && !showDriverChooser && !selectedDriver && !activeTrip && !showDestinationSuggestions && (
           <div className="client-bottom-start-card client-empty-start-card" aria-label="Elegir chofer">
             <button
               type="button"
@@ -1818,9 +2067,9 @@ setMessage('')
               </div>
 
               <div className="driver-confirm-copy">
-                <span>Chofer seleccionado</span>
+                <span>Tu chofer elegido</span>
                 <strong>{selectedDriver.name}</strong>
-                {selectedDriver.vehicle && <small>{selectedDriver.vehicle}</small>}
+                <small>{selectedDriver.vehicle || 'Listo para llevarte con seguridad.'}</small>
               </div>
             </div>
 
@@ -1843,7 +2092,7 @@ setMessage('')
                 onClick={requestRide}
                 disabled={requesting || !destinationPoint}
               >
-                {requesting ? 'Solicitando...' : currentFare ? `Solicitar · ${formatGs(currentFare)}` : 'Solicitar'}
+                {requesting ? 'Solicitando...' : currentFare ? `Solicitar viaje · ${formatGs(currentFare)}` : 'Solicitar viaje'}
               </button>
             </div>
           </article>
@@ -1851,18 +2100,14 @@ setMessage('')
 
        {showDriverChooser && (
           <div className="driver-panel-backdrop driver-picker-backdrop" onClick={() => setShowDriverChooser(false)}>
-            <section className="client-sheet floating-driver-panel driver-picker-sheet driver-picker-pro" onClick={(event) => event.stopPropagation()}>
+            <section className="client-sheet floating-driver-panel driver-picker-sheet driver-picker-pro driver-chooser" onClick={(event) => event.stopPropagation()}>
               <div className="sheet-handle" />
 
-                            <header className="driver-picker-pro-header driver-picker-focus-header">
+              <header className="driver-picker-pro-header driver-picker-focus-header driver-chooser-header driver-select-header">
                 <div>
-                  <p className="eyebrow">CHOFERES CERCA</p>
-                  <h1>Elegí chofer</h1>
-                  <span>
-                    {destinationPoint
-                      ? `${visibleDrivers.length} cerca`
-                      : 'Elegí un destino'}
-                  </span>
+                  <p className="eyebrow">MiChofer Select</p>
+                  <h1>Elegí tu viaje</h1>
+                  <span>Choferes verificados cerca de vos</span>
                 </div>
 
                 <button className="panel-close" type="button" onClick={() => setShowDriverChooser(false)} aria-label="Cerrar">
@@ -1870,14 +2115,17 @@ setMessage('')
                 </button>
               </header>
 
-              <section className="driver-picker-pro-trip driver-picker-focus-trip" aria-label="Resumen del viaje">
+              <section className="driver-picker-pro-trip driver-picker-focus-trip driver-chooser-summary" aria-label="Resumen del viaje">
                 <div>
-                  <span>Viaje</span>
+                  <span>Distancia</span>
                   <strong>
                     {fares?.details?.distanceKm != null ? `${fares.details.distanceKm.toFixed(1)} km` : '---'}
-                    {' · '}
-                    {fares?.details?.durationMin != null ? `${Math.ceil(fares.details.durationMin)} min` : '---'}
                   </strong>
+                </div>
+
+                <div>
+                  <span>Tiempo</span>
+                  <strong>{fares?.details?.durationMin != null ? `${Math.ceil(fares.details.durationMin)} min` : '---'}</strong>
                 </div>
 
                 <div>
@@ -1932,7 +2180,7 @@ setMessage('')
                     <button
                       key={category.code}
                       type="button"
-                      className={`ride-mode-pill ${mode === category.code ? 'active' : ''} ${category.code}`}
+                      className={`ride-mode-pill ride-category-card ${mode === category.code ? 'active' : ''} ${category.code}`}
                       onClick={() => handleModeSelect(category.code)}
                       aria-label={`${copy.label}${fareText}`}
                       title={`${copy.label}${fareText}`}
@@ -1989,21 +2237,28 @@ setMessage('')
                   </div>
                 ) : (
                   <div className="driver-picker-pro-list">
-                    {visibleDrivers.map((driver) => {
+                    {visibleDrivers.map((driver, index) => {
                       const driverFare = getDriverFare(driver)
 
                       return (
                         <button
                           key={driver.id}
                           type="button"
-                          className="driver-picker-pro-card"
+                          className={`driver-picker-pro-card driver-option-card ${index === 0 ? 'recommended' : ''}`}
                           onClick={() => {
                             setSelectedDriver(driver)
                             setShowDriverChooser(false)
                           }}
                           disabled={!destinationPoint}
                         >
-                          <div className="driver-picker-pro-avatar">
+                          {index === 0 && (
+                            <span className="driver-recommended-badge">
+                              Mejor opción
+                              <small>Cerca de vos</small>
+                            </span>
+                          )}
+
+                          <div className="driver-picker-pro-avatar driver-avatar-premium">
                             {driver.avatar ? (
                               <img src={driver.avatar} alt={driver.name} />
                             ) : (
@@ -2018,20 +2273,23 @@ setMessage('')
                               {isWomenDriver(driver) && <em>Ella</em>}
                             </div>
 
-                            {driver.vehicle && <small>{driver.vehicle}</small>}
+                            <small>{driver.vehicle || 'Chofer verificado'}</small>
+                            <small className="driver-picker-safety-copy">
+                              Chofer verificado
+                            </small>
 
                             <div className="driver-picker-pro-meta">
                               <span>
                                 <Star size={12} /> {Number(driver.rating || 5).toFixed(2)}
                               </span>
-                              {driver.eta && <span>{driver.eta}</span>}
+                              {driver.eta && <span>{String(driver.eta).includes('min') ? `Llega en ${driver.eta}` : driver.eta}</span>}
                               {driver.distance && <span>{driver.distance}</span>}
                             </div>
                           </div>
 
                           <div className="driver-picker-pro-action">
                             <strong>{driverFare ? formatGs(driverFare) : '---'}</strong>
-                            <span>Elegir</span>
+                            <span className="choose-driver-btn">Elegir</span>
                           </div>
                         </button>
                       )
@@ -2039,6 +2297,10 @@ setMessage('')
                   </div>
                 )}
               </div>
+
+              <p className="driver-picker-care-note">
+                MiChofer te acompaña antes, durante y después del viaje.
+              </p>
             </section>
           </div>
         )}
@@ -2089,6 +2351,69 @@ setMessage('')
               <button type="button" className="login-text-btn" onClick={() => setCategorySheet(null)}>
                 Cerrar
               </button>
+            </section>
+          </div>
+        )}
+
+        {showTripsHistory && (
+          <div className="trips-history-backdrop" onClick={() => setShowTripsHistory(false)}>
+            <section className="trips-history-panel" onClick={(event) => event.stopPropagation()}>
+              <button
+                className="panel-close trips-history-close"
+                type="button"
+                onClick={() => setShowTripsHistory(false)}
+                aria-label="Cerrar historial"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="trips-history-head">
+                <span>MiChofer te cuida</span>
+                <h2>Tus viajes</h2>
+                <p>Acá guardamos tus últimos viajes en MiChofer.</p>
+              </div>
+
+              <div className="trips-history-list">
+                {tripHistoryLoading ? (
+                  <div className="trips-history-empty">Cargando tus viajes...</div>
+                ) : tripHistory.length === 0 ? (
+                  <div className="trips-history-empty">
+                    Todavía no tenés viajes guardados. Cuando hagas uno, va a aparecer acá.
+                  </div>
+                ) : (
+                  tripHistory.map((trip) => {
+                    const statusCopy = {
+                      completed: 'Finalizado',
+                      cancelled: 'Cancelado',
+                      pending: 'En curso',
+                      accepted: 'En curso',
+                      arriving: 'En curso',
+                      in_progress: 'En curso',
+                    }[trip.status] || 'Viaje'
+                    const createdAt = trip.created_at
+                      ? new Date(trip.created_at).toLocaleDateString('es-PY', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : ''
+
+                    return (
+                      <article key={trip.id} className={`trips-history-item ${trip.status}`}>
+                        <div>
+                          <span>{statusCopy}</span>
+                          <strong>{trip.destination_text || 'Destino guardado'}</strong>
+                          <small>
+                            {[createdAt, trip.payment_method || 'cash'].filter(Boolean).join(' · ')}
+                          </small>
+                        </div>
+                        <b>{formatGs(trip.price)}</b>
+                      </article>
+                    )
+                  })
+                )}
+              </div>
             </section>
           </div>
         )}
@@ -2164,11 +2489,17 @@ setMessage('')
                   <ChevronRight size={17} />
                 </a>
 
-                <a href="/viajes">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTripsHistory(true)
+                    loadClientTripHistory()
+                  }}
+                >
                   <MapPin size={19} />
                   <span>Mis viajes</span>
                   <ChevronRight size={17} />
-                </a>
+                </button>
 
                 <a href="/chat">
                   <MessageCircle size={19} />

@@ -348,7 +348,7 @@ export default function Login() {
     if (step === 'welcome') return 'Movilidad conectada.'
     if (step === 'email') return 'Entrar con correo'
     if (step === 'password') return 'Tu clave'
-    if (step === 'role') return 'Como queres usar MiChofer'
+    if (step === 'role') return '¿Cómo querés usar MiChofer?'
     if (step === 'driverDetails') return 'Datos de chofer'
     if (step === 'loading') return 'Entrando...'
 
@@ -363,7 +363,7 @@ export default function Login() {
     if (step === 'welcome') return 'Acceso rapido, claro y seguro.'
     if (step === 'email') return 'Usa tu correo y clave de MiChofer.'
     if (step === 'password') return 'Ultimo paso y seguimos.'
-    if (step === 'role') return 'Google ya valido tu identidad. Ahora elegi como vas a usar MiChofer.'
+    if (step === 'role') return 'Elegí tu modo para continuar.'
     if (step === 'driverDetails') return 'Carga tus datos. Admin aprueba tu perfil antes de que recibas viajes.'
     if (step === 'loading') return 'Verificando acceso.'
 
@@ -787,7 +787,7 @@ export default function Login() {
                 disabled={busy}
               >
                 <span className="google-mark" aria-hidden="true" />
-                {busy ? 'Conectando...' : 'Continuar con Google'}
+                {busy ? 'Conectando...' : 'Accede con Google'}
               </button>
 
               <button
@@ -795,7 +795,7 @@ export default function Login() {
                 className="login-main-btn auth-mail-btn"
                 onClick={() => setStep('email')}
               >
-                Entrar con correo
+                Ya soy usuario
               </button>
 
               <a className="login-create-link" href="/registro">
@@ -889,7 +889,7 @@ export default function Login() {
                 onClick={() => handleRoleChoice('passenger')}
                 disabled={busy}
               >
-                Viajar como pasajero
+                Soy pasajero
               </button>
 
               <button
@@ -898,7 +898,7 @@ export default function Login() {
                 onClick={() => handleRoleChoice('driver')}
                 disabled={busy}
               >
-                Registrarme como chofer
+                Soy chofer
               </button>
 
               <button
@@ -917,7 +917,7 @@ export default function Login() {
                   setStep('welcome')
                 }}
               >
-                Usar otra cuenta
+                Cambiar cuenta
               </button>
             </div>
           )}

@@ -241,7 +241,7 @@ export function decodePolyline(encoded) {
  * @param {object} params.origin - {lat, lng}
  * @param {object} params.destination - {lat, lng}
  * @param {Array<object>} [params.waypoints] - [{lat, lng}]
- * @returns {Promise<{path: Array, encodedPolyline: string, distance: number, duration: number, instruction: string, source: string}|null>}
+ * @returns {Promise<{path: Array, encodedPolyline: string, distance: number, duration: number, instruction: string, steps: Array, source: string}|null>}
  */
 export async function computeRouteWithRoutesApi({ origin, destination, waypoints }) {
   if (!GOOGLE_ROUTES_API_ENABLED) return null
@@ -279,7 +279,7 @@ export async function computeRouteWithRoutesApi({ origin, destination, waypoints
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.localizedValues',
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs.steps.navigationInstruction,routes.legs.steps.distanceMeters,routes.legs.steps.staticDuration,routes.legs.steps.startLocation,routes.legs.steps.endLocation,routes.localizedValues',
       },
       body: JSON.stringify(body),
     })
@@ -310,7 +310,11 @@ export async function computeRouteWithRoutesApi({ origin, destination, waypoints
       // ignore
     }
 
-    return { path, encodedPolyline, distance, duration, instruction, source: 'routes_api' }
+    const steps = Array.isArray(route.legs)
+      ? route.legs.flatMap((leg) => Array.isArray(leg.steps) ? leg.steps : [])
+      : []
+
+    return { path, encodedPolyline, distance, duration, instruction, steps, source: 'routes_api' }
   } catch {
     return null
   }

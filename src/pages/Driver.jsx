@@ -46,6 +46,10 @@ const ARRIVED_DESTINATION_METERS = 22
 const VERY_CLOSE_METERS = 45
 const ROADS_MIN_POINTS = 3
 const ROADS_SYNC_INTERVAL_MS = 5200
+const MAX_DRIVER_GPS_ACCURACY = 100
+const POOR_DRIVER_GPS_ACCURACY = 70
+const IMPOSSIBLE_DRIVER_SPEED_MPS = 45
+const DRIVER_STATIONARY_SPEED_MPS = 0.35
 
 const SAFETY_ZONES_CDE = [
   {
@@ -91,6 +95,52 @@ function distanceKm(a, b) {
       Math.cos((Number(b.lat) * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
+}
+
+function estimateSpeedMps(previousPoint, nextPoint) {
+  if (!previousPoint || !nextPoint) return null
+
+  const prevTime = Number(previousPoint._timestamp || previousPoint.timestamp || previousPoint.updated_at || 0)
+  const nextTime = Number(nextPoint._timestamp || nextPoint.timestamp || Date.now())
+  const seconds = Math.max(0.25, (nextTime - prevTime) / 1000)
+  const km = distanceKm(previousPoint, nextPoint)
+  const meters = km == null ? null : km * 1000
+
+  if (!Number.isFinite(meters) || !Number.isFinite(seconds) || seconds <= 0) return null
+
+  return meters / seconds
+}
+
+function shouldAcceptDriverGpsPoint(location, previousLocation) {
+  if (!isValidParaguayCoord(location)) {
+    return { accepted: false, reason: 'invalid_coord', movedMeters: 0, estimatedSpeed: null, moving: false }
+  }
+
+  const locationWithTs = { ...location, _timestamp: location._timestamp || Date.now() }
+  const movedMeters = previousLocation ? (distanceKm(previousLocation, locationWithTs) || 0) * 1000 : 999
+  const accuracy = Number(location.accuracy)
+  const speed = Number(location.speed)
+  const estimatedSpeed = estimateSpeedMps(previousLocation, locationWithTs)
+  const effectiveSpeed = Number.isFinite(speed) ? speed : estimatedSpeed
+  const moving = Number.isFinite(effectiveSpeed) && effectiveSpeed >= DRIVER_STATIONARY_SPEED_MPS
+
+  if (Number.isFinite(accuracy) && accuracy > MAX_DRIVER_GPS_ACCURACY) {
+    return { accepted: false, reason: 'accuracy_gt_100', movedMeters, estimatedSpeed, moving }
+  }
+
+  if (previousLocation && Number.isFinite(estimatedSpeed) && estimatedSpeed > IMPOSSIBLE_DRIVER_SPEED_MPS) {
+    return { accepted: false, reason: 'impossible_speed', movedMeters, estimatedSpeed, moving }
+  }
+
+  if (previousLocation && Number.isFinite(accuracy) && accuracy > POOR_DRIVER_GPS_ACCURACY && movedMeters < 8) {
+    return { accepted: false, reason: 'poor_accuracy_micro_move', movedMeters, estimatedSpeed, moving }
+  }
+
+  if (previousLocation && !moving && movedMeters < 5) {
+    return { accepted: false, reason: 'stationary_micro_move', movedMeters, estimatedSpeed, moving }
+  }
+
+  return { accepted: true, reason: 'accepted', movedMeters, estimatedSpeed, moving }
 }
 
 function bearingBetween(a, b) {
@@ -249,6 +299,7 @@ export default function Driver() {
   const [loading, setLoading] = useState(true)
     const [message, setMessage] = useState('')
   const [routeGuidance, setRouteGuidance] = useState(null)
+  const [clientRushNotice, setClientRushNotice] = useState(false)
   const [showSideMenu, setShowSideMenu] = useState(false)
   const [tripAction, setTripAction] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -287,6 +338,49 @@ export default function Driver() {
   const isReceivingTrips = isOnline && isAvailable && hasDriverLocation
 
   const activeTrip = useMemo(() => trips.find((trip) => trip.status !== 'pending') || null, [trips])
+  useEffect(() => {
+    if (!activeTrip?.id || !user?.id) {
+      setClientRushNotice(false)
+      return undefined
+    }
+
+    let cancelled = false
+    const rushText = 'El cliente está apurado'
+
+    const readRushNotice = async () => {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id, body, created_at')
+        .eq('trip_id', activeTrip.id)
+        .ilike('body', `${rushText}%`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (!cancelled && !error) {
+        setClientRushNotice(Boolean(data?.length))
+      }
+    }
+
+    readRushNotice()
+
+    const channel = supabase
+      .channel(`driver-rush-${activeTrip.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `trip_id=eq.${activeTrip.id}` },
+        ({ new: message }) => {
+          if (String(message?.body || '').startsWith(rushText)) {
+            setClientRushNotice(true)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      supabase.removeChannel(channel)
+    }
+  }, [activeTrip?.id, user?.id])
   const pendingTrips = useMemo(
     () =>
       trips
@@ -363,6 +457,27 @@ export default function Driver() {
           side: destinationSide,
         })
       : null
+  const routeInstructionText = (() => {
+    const instruction = String(routeGuidance?.instruction || activeTrip?.destination_text || 'Seguimos por la ruta')
+      .replace(/^En\s+\d+\s*m\s+/i, '')
+      .replace(/^Ahora\s+/i, '')
+      .trim()
+    const meters = Number(routeGuidance?.distance)
+
+    if (!Number.isFinite(meters)) return instruction
+    if (meters > 250) return `Prepará: ${instruction}`
+    if (meters >= 80) return `En ${Math.round(meters)} m: ${instruction}`
+    return `Ahora: ${instruction}`
+  })()
+  const radarTargetLabel = activeTrip?.status === 'in_progress' ? 'Destino' : 'Cliente'
+  const destinationRadarText = activeTrip && navigationTarget
+    ? `${radarTargetLabel} ${destinationSide}`
+    : ''
+  const hasClientRushNotice = Boolean(
+    clientRushNotice ||
+    activeTrip?.client_rush_at ||
+    Number(activeTrip?.client_rush_count) > 0
+  )
 
   const driverAvatar = driverProfile?.avatar_url || profile?.avatar_url || ''
    const focusDistance = useMemo(
@@ -406,6 +521,7 @@ export default function Driver() {
           accuracy: pos.coords.accuracy,
           speed: pos.coords.speed,
           heading: pos.coords.heading,
+          _timestamp: pos.timestamp || Date.now(),
         },
         activeTrip
       )
@@ -503,10 +619,17 @@ export default function Driver() {
     setTrips(data || [])
   }
 
- function getStoredLocation() {
+function getStoredLocation() {
   const lat = Number(driverProfile?.lat)
   const lng = Number(driverProfile?.lng)
-  const stored = { lat, lng }
+  const stored = {
+    lat,
+    lng,
+    speed: Number.isFinite(Number(driverProfile?.speed)) ? Number(driverProfile.speed) : null,
+    heading: Number.isFinite(Number(driverProfile?.heading)) ? Number(driverProfile.heading) : null,
+    accuracy: Number.isFinite(Number(driverProfile?.accuracy)) ? Number(driverProfile.accuracy) : null,
+    _timestamp: driverProfile?.updated_at ? new Date(driverProfile.updated_at).getTime() : Date.now(),
+  }
 
   if (!isValidParaguayCoord(stored)) return null
 
@@ -528,6 +651,7 @@ async function getCurrentLocation() {
           accuracy: pos.coords.accuracy,
           speed: pos.coords.speed,
           heading: pos.coords.heading,
+          _timestamp: pos.timestamp || Date.now(),
         }
 
         if (!isValidParaguayCoord(nextLocation)) {
@@ -555,22 +679,28 @@ async function getCurrentLocation() {
   }
 
     const previousLocation = liveLastStoredPointRef.current || getStoredLocation()
-    const movedMeters = previousLocation ? (distanceKm(previousLocation, location) || 0) * 1000 : 999
+    const locationWithTs = { ...location, _timestamp: location._timestamp || Date.now() }
     const accuracy = Number(location.accuracy)
     const speed = Number(location.speed)
+    const gpsDecision = shouldAcceptDriverGpsPoint(locationWithTs, previousLocation)
+    const movedMeters = gpsDecision.movedMeters
+    const estimatedSpeed = gpsDecision.estimatedSpeed
+    const effectiveSpeed = Number.isFinite(speed) ? speed : estimatedSpeed
     const now = Date.now()
-
-    if (Number.isFinite(accuracy) && accuracy > 55 && previousLocation) {
-      return previousLocation
-    }
-
-    const moving = Number.isFinite(speed) && speed >= 1.2
-
-    if (previousLocation && !moving && movedMeters < 10) {
-      return previousLocation
-    }
-
-    if (previousLocation && moving && movedMeters < 3) {
+    const moving = Number.isFinite(effectiveSpeed) && effectiveSpeed >= DRIVER_STATIONARY_SPEED_MPS
+    if (!gpsDecision.accepted) {
+      if (import.meta.env.DEV) {
+        console.info('[MiChofer GPS]', {
+          rawPoint: locationWithTs,
+          goodPoint: false,
+          reason: gpsDecision.reason,
+          rawSpeed: Number.isFinite(speed) ? speed : null,
+          estimatedSpeed,
+          accuracy: Number.isFinite(accuracy) ? accuracy : null,
+          movedMeters,
+          moving,
+        })
+      }
       return previousLocation
     }
 
@@ -583,7 +713,19 @@ async function getCurrentLocation() {
     }
 
     liveLastSyncAtRef.current = now
-    liveLastStoredPointRef.current = location
+    liveLastStoredPointRef.current = locationWithTs
+
+   if (import.meta.env.DEV) {
+    console.info('[MiChofer GPS]', {
+      rawPoint: locationWithTs,
+      goodPoint: true,
+      rawSpeed: Number.isFinite(speed) ? speed : null,
+      estimatedSpeed,
+      accuracy: Number.isFinite(accuracy) ? accuracy : null,
+      movedMeters,
+      moving,
+    })
+  }
 
    if (GOOGLE_ROADS_API_ENABLED && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
   gpsBufferRef.current.push({ lat: location.lat, lng: location.lng })
@@ -693,26 +835,54 @@ if (!isValidParaguayCoord(location)) {
 }
 
     const storedLocation = getStoredLocation()
-    const movedMeters = storedLocation ? (distanceKm(storedLocation, location) || 0) * 1000 : 999
+    const locationWithTs = { ...location, _timestamp: location._timestamp || Date.now() }
     const accuracy = Number(location.accuracy)
     const speed = Number(location.speed)
+    const gpsDecision = shouldAcceptDriverGpsPoint(locationWithTs, storedLocation)
+    const movedMeters = gpsDecision.movedMeters
+    const estimatedSpeed = gpsDecision.estimatedSpeed
+    const effectiveSpeed = Number.isFinite(speed) ? speed : estimatedSpeed
+    const looksStationary = !Number.isFinite(effectiveSpeed) || effectiveSpeed < DRIVER_STATIONARY_SPEED_MPS
+    const meaningfulMovement = movedMeters >= 3 || !looksStationary
+
+    if (!gpsDecision.accepted) {
+      if (import.meta.env.DEV) {
+        console.info('[MiChofer GPS]', {
+          rawPoint: locationWithTs,
+          goodPoint: false,
+          reason: gpsDecision.reason,
+          rawSpeed: Number.isFinite(speed) ? speed : null,
+          estimatedSpeed,
+          accuracy: Number.isFinite(accuracy) ? accuracy : null,
+          movedMeters,
+          moving: !looksStationary,
+        })
+      }
+      return storedLocation
+    }
 
     // Si el GPS viene muy impreciso, no movemos el auto.
     // En interiores esto evita que el mapa cambie dirección estando quieto.
-    if (Number.isFinite(accuracy) && accuracy > 45 && storedLocation) {
+    if (Number.isFinite(accuracy) && accuracy > 45 && storedLocation && !meaningfulMovement) {
       return storedLocation
     }
 
     // Si el chofer parece quieto, ignoramos saltos pequeños/medianos del GPS.
-    const looksStationary = !Number.isFinite(speed) || speed < 1
-
-    if (storedLocation && looksStationary && movedMeters < 18) {
+    if (storedLocation && looksStationary && movedMeters < 5) {
       return storedLocation
     }
 
     // En movimiento real, dejamos pasar cambios más pequeños para curvas y giros.
-    if (storedLocation && !looksStationary && movedMeters < 5) {
-      return storedLocation
+    if (import.meta.env.DEV) {
+      console.info('[MiChofer GPS]', {
+        rawPoint: locationWithTs,
+        goodPoint: true,
+        rawSpeed: Number.isFinite(speed) ? speed : null,
+        estimatedSpeed,
+        accuracy: Number.isFinite(accuracy) ? accuracy : null,
+        movedMeters,
+        moving: !looksStationary,
+      })
     }
 
     if (GOOGLE_ROADS_API_ENABLED && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
@@ -1006,6 +1176,13 @@ if (!isValidParaguayCoord(location)) {
             </div>
           )}
 
+          {hasClientRushNotice && (
+            <div className="driver-rush-notice">
+              <strong>Cliente apurado</strong>
+              <span>Avanzá apenas sea seguro. Seguridad primero.</span>
+            </div>
+          )}
+
           {/* Navigation instruction card */}
           <header className="driver-navigation-instruction">
             <div className="driver-navigation-turn-icon">
@@ -1015,10 +1192,10 @@ if (!isValidParaguayCoord(location)) {
                         <div className="driver-navigation-copy">
               <span>{guidanceDistance}</span>
               <strong>
-                {closeArrival?.title || routeGuidance?.instruction || activeTrip.destination_text || 'Seguimos por la ruta'}
+                {closeArrival?.title || routeInstructionText}
               </strong>
               <small>
-                {closeArrival?.subtitle || `${guidanceEta} · ${activeTrip.status === 'in_progress' ? 'al destino' : 'al cliente'}`}
+                {closeArrival?.subtitle || `${destinationRadarText} · ${guidanceEta}`}
               </small>
             </div>
 
@@ -1199,7 +1376,7 @@ if (!isValidParaguayCoord(location)) {
         {pendingTrips.length > 0 && (
           <div className="driver-idle-request">
             {pendingTrips.slice(0, 1).map((trip) => (
-              <article key={trip.id} className="driver-idle-request-card">
+              <article key={trip.id} className="driver-idle-request-card driver-trip-card">
                 <div className="driver-idle-request-top">
                   <span>Solicitud de viaje</span>
                   <strong>{formatGs(trip.price)}</strong>
@@ -1213,11 +1390,15 @@ if (!isValidParaguayCoord(location)) {
                       ))
                     : ''} · Cliente te eligió
                 </p>
+                <div className="driver-idle-request-proof">
+                  <span>Ruta segura calculada</span>
+                  <span>GPS activo</span>
+                </div>
                 <div className="driver-idle-request-actions">
-                  <button className="driver-idle-accept" onClick={() => updateTrip(trip, 'accepted')}>
-                    <CheckCircle2 size={18} /> Aceptar
+                  <button className="driver-idle-accept driver-trip-action" onClick={() => updateTrip(trip, 'accepted')}>
+                    <CheckCircle2 size={18} /> Aceptar viaje
                   </button>
-                  <button className="driver-idle-reject" onClick={() => updateTrip(trip, 'cancelled')}>
+                  <button className="driver-idle-reject driver-trip-action secondary" onClick={() => updateTrip(trip, 'cancelled')}>
                     <XCircle size={18} /> Rechazar
                   </button>
                   <a href={`/chat?trip=${trip.id}`} className="driver-idle-chat-link" aria-label="Chat">

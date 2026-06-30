@@ -9,9 +9,11 @@ export const supabase = createClient(
 )
 
 export function signInWithGoogle() {
+  const appUrl = import.meta.env.VITE_APP_URL
+  const baseUrl = appUrl || (typeof window !== 'undefined' ? window.location.origin : '')
   const redirectTo =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/login`
+    baseUrl
+      ? `${baseUrl.replace(/\/$/, '')}/login`
       : undefined
 
   return supabase.auth.signInWithOAuth({
