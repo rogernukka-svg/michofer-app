@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import InteractiveRouteMap from '../components/InteractiveRouteMap'
+import TripChatModal from '../components/TripChatModal'
 import {
   getAvailableDrivers,
   getAvailableDriversViaLocalProxy,
@@ -392,6 +393,7 @@ const [locationReady, setLocationReady] = useState(false)
     const [activeTrip, setActiveTrip] = useState(null)
   const [activeTripDriver, setActiveTripDriver] = useState(null)
   const [liveSheetExpanded, setLiveSheetExpanded] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
   const [rushSending, setRushSending] = useState(false)
   const [rushSentAt, setRushSentAt] = useState(null)
   const [lastTripStatus, setLastTripStatus] = useState(null)
@@ -1921,10 +1923,12 @@ setMessage('')
                     className={canChatInRide ? 'michofer-chat-action chat-button' : 'michofer-chat-action chat-button disabled'}
                     href={canChatInRide ? `/chat?trip=${activeTrip.id}` : '#'}
                     onClick={(event) => {
+                      event.preventDefault()
                       if (!canChatInRide) {
-                        event.preventDefault()
                         setMessage('El chat se activa cuando el chofer acepta tu solicitud.')
+                        return
                       }
+                      setChatOpen(true)
                     }}
                   >
                     <MessageCircle size={18} />
@@ -2417,6 +2421,14 @@ setMessage('')
             </section>
           </div>
         )}
+
+        <TripChatModal
+          tripId={activeTrip?.id}
+          open={chatOpen && canChatInRide}
+          onClose={() => setChatOpen(false)}
+          currentUser={user}
+          trip={activeTrip}
+        />
 
                 {showMenu && (
           <div className="side-backdrop account-overlay" onClick={() => setShowMenu(false)}>

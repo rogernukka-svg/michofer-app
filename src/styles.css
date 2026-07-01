@@ -20176,3 +20176,421 @@ body.route-client .choose-driver-btn {
   color: #041315 !important;
   background: linear-gradient(135deg, #22e6c5, #88fff0) !important;
 }
+
+/* ==================== Trip Chat Modal ==================== */
+
+.trip-chat-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background:
+    linear-gradient(180deg, rgba(4, 8, 12, 0) 0%, rgba(4, 8, 12, 0.18) 58%, rgba(4, 8, 12, 0.34) 100%);
+  pointer-events: auto;
+}
+
+.trip-chat-page-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 14px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(35, 242, 155, 0.12), transparent 32%),
+    linear-gradient(180deg, #111827, #050505);
+}
+
+.trip-chat-panel {
+  width: min(100%, 406px);
+  height: min(45svh, 420px);
+  min-height: 330px;
+  max-height: calc(100svh - 26px);
+  border-radius: 30px 30px 24px 24px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(35, 242, 155, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(11, 18, 27, 0.92), rgba(5, 8, 13, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(24px) saturate(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  color: #ffffff;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.trip-chat-panel.is-expanded {
+  height: min(78svh, 720px);
+}
+
+.trip-chat-panel.is-page {
+  height: calc(100svh - 28px);
+  max-height: 760px;
+  border-radius: 32px;
+}
+
+.trip-chat-handle {
+  width: 42px;
+  height: 5px;
+  border-radius: 999px;
+  margin: 8px auto 2px;
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.trip-chat-header {
+  min-height: 58px;
+  padding: 6px 10px 8px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 38px 38px;
+  align-items: center;
+  gap: 8px;
+}
+
+.trip-chat-panel.is-page .trip-chat-header {
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
+}
+
+.trip-chat-panel.is-page .trip-chat-header .trip-chat-call-btn {
+  grid-column: 3;
+}
+
+.trip-chat-icon-btn,
+.trip-chat-call-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.trip-chat-call-btn {
+  color: #031013;
+  background: linear-gradient(135deg, #22e6c5, #88fff0);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.trip-chat-person {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.trip-chat-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.trip-chat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trip-chat-person strong,
+.trip-chat-person span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-chat-person strong {
+  font-size: 14px;
+  line-height: 1.05;
+  font-weight: 950;
+}
+
+.trip-chat-person span {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.trip-chat-notice {
+  margin: 0 12px 8px;
+  border-radius: 16px;
+  padding: 9px 11px;
+  color: #ffe9b8;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 850;
+}
+
+.trip-chat-trip {
+  min-height: 34px;
+  margin: 0 12px 8px;
+  border-radius: 999px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 11px;
+  font-weight: 900;
+  overflow: hidden;
+}
+
+.trip-chat-trip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-chat-messages {
+  min-height: 0;
+  padding: 4px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.trip-chat-messages::-webkit-scrollbar {
+  display: none;
+}
+
+.trip-chat-empty {
+  align-self: center;
+  max-width: 280px;
+  margin: auto 0;
+  border-radius: 18px;
+  padding: 14px;
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.07);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 850;
+}
+
+.trip-chat-bubble {
+  max-width: 78%;
+  border-radius: 19px 19px 19px 7px;
+  padding: 10px 11px 7px;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.trip-chat-bubble.me {
+  align-self: flex-end;
+  border-radius: 19px 19px 7px 19px;
+  color: #041013;
+  background: linear-gradient(135deg, #22e6c5, #88fff0);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.trip-chat-bubble.failed {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fff1f2;
+}
+
+.trip-chat-bubble p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.28;
+  font-weight: 780;
+  overflow-wrap: anywhere;
+}
+
+.trip-chat-bubble small {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.trip-chat-bubble.me small {
+  color: rgba(4, 16, 19, 0.62);
+}
+
+.trip-chat-bubble small span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.trip-chat-typing {
+  width: 54px;
+  min-height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.trip-chat-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  animation: tripChatTyping 1s ease-in-out infinite;
+}
+
+.trip-chat-typing span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.trip-chat-typing span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+@keyframes tripChatTyping {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.52;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.trip-chat-quick-row {
+  padding: 0 12px 8px;
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.trip-chat-quick-row::-webkit-scrollbar {
+  display: none;
+}
+
+.trip-chat-quick-row button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0 11px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.trip-chat-quick-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.trip-chat-input {
+  margin: 0 10px 10px;
+  min-height: 50px;
+  border-radius: 19px;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trip-chat-input input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  border-radius: 15px;
+  padding: 0 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.trip-chat-input input::placeholder {
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.trip-chat-input button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  color: #041013;
+  background: linear-gradient(135deg, #22e6c5, #88fff0);
+}
+
+.trip-chat-input button:disabled,
+.trip-chat-input input:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.trip-chat-ended {
+  margin: -4px 12px 10px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+body.route-driver .driver-navigation-chat {
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  padding: 0 !important;
+}
+
+@media (min-width: 700px) {
+  .trip-chat-overlay {
+    padding-bottom: 28px;
+  }
+
+  .trip-chat-panel {
+    height: 430px;
+  }
+
+  .trip-chat-panel.is-expanded {
+    height: 660px;
+  }
+}
+
+@media (max-width: 380px) {
+  .trip-chat-panel {
+    height: min(45svh, 388px);
+    min-height: 310px;
+    border-radius: 26px 26px 22px 22px;
+  }
+
+  .trip-chat-header {
+    grid-template-columns: 36px minmax(0, 1fr) 36px 36px;
+    gap: 6px;
+  }
+
+  .trip-chat-icon-btn,
+  .trip-chat-call-btn {
+    width: 36px;
+    height: 36px;
+  }
+}

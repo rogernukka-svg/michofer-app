@@ -21,6 +21,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import InteractiveRouteMap from '../components/InteractiveRouteMap'
+import TripChatModal from '../components/TripChatModal'
 import {
   getOwnDriverTrips,
   getOwnDriverProfile,
@@ -307,6 +308,7 @@ export default function Driver() {
   const [showSideMenu, setShowSideMenu] = useState(false)
   const [tripAction, setTripAction] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
   const liveWatchIdRef = useRef(null)
   const liveSyncBusyRef = useRef(false)
   const liveLastSyncAtRef = useRef(0)
@@ -1252,9 +1254,14 @@ if (!isValidParaguayCoord(location)) {
                 </button>
               )}
 
-                            <a href={`/chat?trip=${activeTrip.id}`} className="driver-navigation-chat" aria-label="Abrir chat">
+                            <button
+                              type="button"
+                              className="driver-navigation-chat"
+                              onClick={() => setChatOpen(true)}
+                              aria-label="Abrir chat"
+                            >
                 <MessageCircle size={20} />
-              </a>
+              </button>
 
                 <button
                 type="button"
@@ -1322,6 +1329,13 @@ if (!isValidParaguayCoord(location)) {
             </div>
           )}
           </section>
+          <TripChatModal
+            tripId={activeTrip.id}
+            open={chatOpen}
+            onClose={() => setChatOpen(false)}
+            currentUser={user}
+            trip={activeTrip}
+          />
         </section>
       </main>
     )
