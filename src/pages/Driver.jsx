@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  BellRing,
   CarFront,
   CheckCircle2,
   Clock,
@@ -1200,10 +1201,17 @@ if (!isValidParaguayCoord(location)) {
           )}
 
           {hasClientRushNotice && (
-            <div className="driver-rush-notice">
-              <strong>Cliente apurado</strong>
-              <span>Avanzá apenas sea seguro. Seguridad primero.</span>
-            </div>
+            <article className="driver-rush-notice priority-live-alert" role="status" aria-live="polite">
+              <span className="driver-rush-icon" aria-hidden="true">
+                <BellRing size={20} />
+              </span>
+
+              <div className="driver-rush-copy">
+                <span className="driver-rush-badge">PRIORIDAD</span>
+                <strong>Cliente con prisa</strong>
+                <small>Avanza apenas sea seguro. Seguridad primero.</small>
+              </div>
+            </article>
           )}
 
           {/* Navigation instruction card */}

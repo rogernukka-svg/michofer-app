@@ -1918,7 +1918,7 @@ setMessage('')
                   </div>
                 </div>
 
-                <div className="michofer-live-actions">
+                <div className="michofer-live-actions ride-action-stack">
                   <a
                     className={canChatInRide ? 'michofer-chat-action chat-button' : 'michofer-chat-action chat-button disabled'}
                     href={canChatInRide ? `/chat?trip=${activeTrip.id}` : '#'}
@@ -1942,10 +1942,12 @@ setMessage('')
                       onClick={sendRushSignal}
                       disabled={rushLocked || !activeTrip.driver_id}
                     >
-                      <Clock size={18} />
-                      <span>
-                        <strong>{rushLocked ? 'Aviso enviado' : 'Estoy apurado'}</strong>
-                        <small>Avisar al chofer</small>
+                      <span className="rush-button-icon" aria-hidden="true">
+                        {rushWasSent ? <CheckCircle2 size={19} /> : <Clock size={19} />}
+                      </span>
+                      <span className="rush-button-copy">
+                        <strong>{rushWasSent ? 'Avisado' : 'Tengo prisa'}</strong>
+                        <small>{rushWasSent ? 'El chofer ya lo sabe' : 'Avisar al chofer'}</small>
                       </span>
                     </button>
                   )}
