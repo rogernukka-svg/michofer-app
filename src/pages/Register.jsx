@@ -900,6 +900,11 @@ export default function Register() {
                 </button>
               </div>
 
+              <p className="auth-terms-copy">
+                Al continuar aceptás los <a href="/terms">Terminos</a> y la{' '}
+                <a href="/privacy">Politica de Privacidad</a>.
+              </p>
+
               <button
                 className="login-main-btn"
                 disabled={busy}

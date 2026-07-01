@@ -2,19 +2,22 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { LocateFixed, Map, Navigation } from 'lucide-react'
 import { loadGoogleMaps, GOOGLE_MAPS_MAP_ID, getAutoMapTheme, getMapIdForTheme, snapToRoads, GpsBuffer, GOOGLE_ROADS_API_ENABLED, GOOGLE_ROUTES_API_ENABLED, computeRouteWithRoutesApi } from '../lib/googleMaps'
 
+import carBackImg from '../assets/128vistadeatras.png'
 import carTopImg from '../assets/128vistaarriba.png'
+import carRightImg from '../assets/128derecha.png'
+import carLeftImg from '../assets/128izquierda.png'
 
 const DEFAULT_CENTER = { lat: -25.5167, lng: -54.6167 }
 const DEFAULT_PADDING = { top: 96, bottom: 122, left: 58, right: 58 }
 const MAX_DRIVER_MARKERS = 6
 
 // Cámara tipo Google Maps navegación - estilo Uber/Bolt/Waze
-const NAVIGATION_ZOOM = 20.0
-const NAVIGATION_MOBILE_ZOOM = 20.7
-const NAVIGATION_DESKTOP_ZOOM = 20.4
-const NAVIGATION_DRIVER_TILT = 62
-const NAVIGATION_CAMERA_AHEAD_METERS = 13
-const NAVIGATION_CAMERA_AHEAD_METERS_FAST = 22
+const NAVIGATION_ZOOM = 21.0
+const NAVIGATION_MOBILE_ZOOM = 21.25
+const NAVIGATION_DESKTOP_ZOOM = 20.85
+const NAVIGATION_DRIVER_TILT = 66
+const NAVIGATION_CAMERA_AHEAD_METERS = 22
+const NAVIGATION_CAMERA_AHEAD_METERS_FAST = 34
 const NAVIGATION_CAMERA_MIN_UPDATE_MS = 450
 const NAVIGATION_CAMERA_MIN_MOVE_METERS = 1.2
 const NAVIGATION_LOOK_AHEAD_RATIO = 0.09
@@ -29,7 +32,14 @@ const NAVIGATION_OFF_ROUTE_METERS = 75
 const NAVIGATION_REROUTE_COOLDOWN_MS = 4200
 const NAVIGATION_BACKTRACK_TOLERANCE = 2
 const NAVIGATION_FORWARD_SEARCH = 55
+const NAVIGATION_SOFT_OFF_ROUTE_METERS = 52
+const NAVIGATION_HARD_OFF_ROUTE_METERS = 75
+const NAVIGATION_RECALCULATE_HEADING_DEG = 68
+const NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS = 240
 const CAR_SPRITE_ROTATION_OFFSET = 0
+const CAR_SPRITE_TURN_ENTER_DEG = 14
+const CAR_SPRITE_TURN_EXIT_DEG = 7
+const CAR_SPRITE_MIN_CHANGE_MS = 420
 
 // GPS filtering constants
 const MAX_ACCURACY_AGGRESSIVE = 70
@@ -393,6 +403,261 @@ function getNextRouteInstruction(currentPoint, steps, destination) {
   }
 }
 
+function normalizeManeuver(value = '') {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/_/g, '-')
+    .replace(/^maneuver-/, '')
+}
+
+function inferManeuverFromText(instruction = '') {
+  const text = String(instruction || '').toLowerCase()
+  if (text.includes('derecha')) return 'turn-right'
+  if (text.includes('izquierda')) return 'turn-left'
+  if (text.includes('rotonda')) return 'roundabout'
+  if (text.includes('retorn')) return 'u-turn-left'
+  if (text.includes('salida')) return text.includes('izquierda') ? 'ramp-left' : 'ramp-right'
+  if (text.includes('destino') || text.includes('lleg')) return 'arrive'
+  return ''
+}
+
+function inferManeuverFromRoute(routePath, step, fallbackManeuver = '') {
+  const normalized = normalizeManeuver(fallbackManeuver || inferManeuverFromText(step?.instruction))
+  if (normalized) return normalized
+
+  if (!Array.isArray(routePath) || routePath.length < 2) return 'straight'
+
+  const beforeHeading = getBearingBetweenPoints(step?.start_location, step?.end_location)
+  const afterHeading = getBearingBetweenPoints(step?.end_location, routePath?.[Math.min((step?.routeEndIndex || 1) + 2, routePath.length - 1)])
+  const diff = shortestAngleDiff(beforeHeading, afterHeading)
+
+  if (diff > 25) return 'turn-right'
+  if (diff < -25) return 'turn-left'
+  return 'straight'
+}
+
+function getManeuverCopy(maneuver, instruction = '') {
+  const normalized = normalizeManeuver(maneuver || inferManeuverFromText(instruction))
+
+  if (normalized.includes('right') && normalized.includes('u-turn')) return 'Retorná a la derecha'
+  if (normalized.includes('left') && normalized.includes('u-turn')) return 'Retorná a la izquierda'
+  if (normalized.includes('right') && normalized.includes('ramp')) return 'Tomá la salida a la derecha'
+  if (normalized.includes('left') && normalized.includes('ramp')) return 'Tomá la salida a la izquierda'
+  if (normalized.includes('right')) return 'Girá a la derecha'
+  if (normalized.includes('left')) return 'Girá a la izquierda'
+  if (normalized.includes('roundabout')) return 'Entrá a la rotonda'
+  if (normalized.includes('merge')) return 'Incorporate'
+  if (normalized.includes('arrive')) return 'Llegaste'
+  if (normalized.includes('straight')) return 'Seguí derecho'
+
+  return cleanRouteInstruction(instruction) || 'Seguí por la ruta'
+}
+
+function getRoutePathWithProjection(routePath, projection) {
+  const routePoints = Array.isArray(routePath)
+    ? routePath.map((point) => normalizeMapPoint(point, null)).filter(isValidCoord)
+    : []
+
+  if (!projection || routePoints.length < 2) return routePoints
+
+  const index = Math.max(1, Math.min(projection.index, routePoints.length - 1))
+  return [projection.point, ...routePoints.slice(index)]
+}
+
+function getDistanceAlongRouteFromProjection(routePath, fromProjection, toPoint) {
+  const routePoints = Array.isArray(routePath)
+    ? routePath.map((point) => normalizeMapPoint(point, null)).filter(isValidCoord)
+    : []
+
+  if (!fromProjection || !isValidCoord(fromProjection.point) || !isValidCoord(toPoint) || routePoints.length < 2) {
+    return isValidCoord(fromProjection?.point) && isValidCoord(toPoint)
+      ? getDistanceMeters(fromProjection.point, toPoint)
+      : 0
+  }
+
+  const toProjection = getClosestRouteProjection(toPoint, routePoints, {
+    fromIndex: Math.max(1, fromProjection.index),
+  })
+
+  if (!toProjection) return getDistanceMeters(fromProjection.point, toPoint)
+
+  const startIndex = Math.max(1, Math.min(fromProjection.index, routePoints.length - 1))
+  const endIndex = Math.max(startIndex, Math.min(toProjection.index, routePoints.length - 1))
+  let distance = 0
+  let previous = fromProjection.point
+
+  for (let index = startIndex; index < endIndex; index += 1) {
+    const current = routePoints[index]
+    distance += getDistanceMeters(previous, current)
+    previous = current
+  }
+
+  return distance + getDistanceMeters(previous, toProjection.point)
+}
+
+function getRoutePathSliceFromProjection(routePath, projection, maxMeters) {
+  const routePoints = getRoutePathWithProjection(routePath, projection)
+  if (routePoints.length < 2) return routePoints
+
+  const result = [routePoints[0]]
+  let travelled = 0
+
+  for (let index = 1; index < routePoints.length; index += 1) {
+    const previous = routePoints[index - 1]
+    const current = routePoints[index]
+    const segment = getDistanceMeters(previous, current)
+
+    if (travelled + segment >= maxMeters) {
+      const remaining = maxMeters - travelled
+      const fraction = segment > 0 ? remaining / segment : 0
+      result.push(interpolateLatLng(previous, current, fraction))
+      return result
+    }
+
+    result.push(current)
+    travelled += segment
+  }
+
+  return result
+}
+
+function formatInstructionDistance(meters) {
+  const value = Number(meters)
+  if (!Number.isFinite(value)) return ''
+  if (value >= 950) return `${(value / 1000).toFixed(value >= 1000 ? 1 : 0)} km`
+  if (value > 600) return `${Math.round(value / 50) * 50} m`
+  if (value > 300) return `${Math.round(value / 25) * 25} m`
+  if (value > 100) return `${Math.round(value / 10) * 10} m`
+  return `${Math.max(10, Math.round(value / 5) * 5)} m`
+}
+
+function getSmartNavigationInstruction({
+  currentPoint,
+  routePath,
+  routeSteps,
+  destination,
+  currentProjection,
+  heading,
+}) {
+  if (!isValidCoord(currentPoint)) return null
+
+  const initialProjection = currentProjection || getClosestRouteProjection(currentPoint, routePath)
+  const hasRoutePath = Array.isArray(routePath) && routePath.length >= 2
+  const destinationDistance = isValidCoord(destination)
+    ? hasRoutePath && initialProjection
+      ? getDistanceAlongRouteFromProjection(routePath, initialProjection, destination)
+      : getDistanceMeters(currentPoint, destination)
+    : Infinity
+
+  if (destinationDistance <= 35) {
+    return {
+      distance: destinationDistance,
+      duration: 0,
+      instruction: 'Llegaste al destino',
+      shortInstruction: 'Llegaste',
+      maneuver: 'arrive',
+      nextManeuver: null,
+      nextStreet: '',
+      alertLevel: 'arrived',
+      progress: 1,
+      remainingMeters: destinationDistance,
+      distanceToNextStep: 0,
+      shouldRecalculate: false,
+    }
+  }
+
+  const projection = initialProjection
+  const routeDistance = getRouteDistanceMeters(routePath)
+  const remainingMeters = projection
+    ? getRouteDistanceMeters(getRoutePathWithProjection(routePath, projection))
+    : destinationDistance
+  const validSteps = Array.isArray(routeSteps) ? routeSteps.filter(Boolean) : []
+
+  let nextStep = null
+  let nextStepDistance = Infinity
+
+  validSteps.forEach((step) => {
+    const distanceToStep = projection
+      ? getDistanceAlongRouteFromProjection(routePath, projection, step.start_location)
+      : getDistanceMeters(currentPoint, step.start_location)
+    if (distanceToStep >= -5 && distanceToStep < nextStepDistance) {
+      nextStep = step
+      nextStepDistance = Math.max(0, distanceToStep)
+    }
+  })
+
+  if (!nextStep && validSteps.length) {
+    nextStep = validSteps[validSteps.length - 1]
+    nextStepDistance = Math.min(remainingMeters, nextStep.distance || remainingMeters)
+  }
+
+  const routeHeading = projection
+    ? getRouteHeadingFromProjection(routePath, projection, destination)
+    : getBearingBetweenPoints(currentPoint, destination)
+  const headingDiff = Math.abs(shortestAngleDiff(routeHeading, Number(heading)))
+  const shouldRecalculate = Boolean(
+    projection &&
+    projection.distance >= NAVIGATION_SOFT_OFF_ROUTE_METERS &&
+    headingDiff >= NAVIGATION_RECALCULATE_HEADING_DEG
+  )
+
+  if (!nextStep) {
+    return {
+      distance: remainingMeters,
+      duration: 0,
+      instruction: `Seguimos por ${formatInstructionDistance(remainingMeters)}`,
+      shortInstruction: 'Seguimos por la ruta',
+      maneuver: 'straight',
+      nextManeuver: null,
+      nextStreet: '',
+      alertLevel: 'far',
+      progress: routeDistance > 0 ? clamp(1 - remainingMeters / routeDistance, 0, 1) : 0,
+      remainingMeters,
+      distanceToNextStep: remainingMeters,
+      shouldRecalculate,
+    }
+  }
+
+  const maneuver = inferManeuverFromRoute(routePath, nextStep, nextStep.maneuver)
+  const action = getManeuverCopy(maneuver, nextStep.instruction)
+  const cleanInstruction = cleanRouteInstruction(nextStep.instruction)
+  let alertLevel = 'far'
+  let instruction = cleanInstruction || action
+  let shortInstruction = action
+
+  if (nextStepDistance <= 35) {
+    alertLevel = 'now'
+    instruction = `Ahora ${action.toLowerCase()}`
+    shortInstruction = action
+  } else if (nextStepDistance <= 100) {
+    alertLevel = 'soon'
+    instruction = `En ${formatInstructionDistance(nextStepDistance)} ${action.toLowerCase()}`
+  } else if (nextStepDistance <= 300) {
+    alertLevel = 'prepare'
+    instruction = `En ${formatInstructionDistance(nextStepDistance)} preparate para ${action.toLowerCase()}`
+  } else if (nextStepDistance <= 600) {
+    alertLevel = 'prepare'
+    instruction = `En ${formatInstructionDistance(nextStepDistance)} ${action.toLowerCase()}`
+  } else {
+    instruction = `Seguimos por ${formatInstructionDistance(nextStepDistance)}`
+  }
+
+  return {
+    distance: remainingMeters,
+    duration: nextStep.duration,
+    instruction,
+    shortInstruction,
+    maneuver,
+    nextManeuver: maneuver,
+    nextStreet: cleanInstruction,
+    alertLevel,
+    progress: routeDistance > 0 ? clamp(1 - remainingMeters / routeDistance, 0, 1) : 0,
+    remainingMeters,
+    distanceToNextStep: nextStepDistance,
+    shouldRecalculate,
+  }
+}
+
 function getRouteLookAheadPoint(routePath, fallbackOrigin, fallbackDestination) {
   const routePoints = Array.isArray(routePath)
     ? routePath.map((point) => normalizeMapPoint(point, null)).filter(isValidCoord)
@@ -667,7 +932,7 @@ function applyNavigationCamera(map, center, heading, options = {}) {
     zoom: clamp(
       Number.isFinite(options.zoom) ? options.zoom : getNavigationZoom(),
       18.5,
-      21.0
+      21.5
     ),
     tilt: clamp(
       Number.isFinite(options.tilt) ? options.tilt : NAVIGATION_DRIVER_TILT,
@@ -720,6 +985,58 @@ function normalizeHeading(heading = 0) {
 
 function getCarScreenHeading(heading = 0) {
   return normalizeHeading(heading + CAR_SPRITE_ROTATION_OFFSET)
+}
+
+function getVehicleSpriteSource(spriteType) {
+  if (spriteType === 'right') return carRightImg
+  if (spriteType === 'left') return carLeftImg
+  if (spriteType === 'top') return carTopImg
+  return carBackImg
+}
+
+function getCarScreenRotation({ navigationMode, vehicleHeading }) {
+  if (navigationMode) return 0
+  return getCarScreenHeading(vehicleHeading)
+}
+
+function getVehicleSpriteType({
+  navigationMode,
+  heading,
+  previousHeading,
+  speed,
+  currentType = 'back',
+  lastChangeAt = 0,
+  now = Date.now(),
+}) {
+  if (!navigationMode) return 'top'
+
+  const speedNumber = Number(speed)
+  if (!Number.isFinite(speedNumber) || speedNumber < 0.45) return 'back'
+
+  const headingNumber = Number(heading)
+  const previousHeadingNumber = Number(previousHeading)
+  const elapsedSinceChange = now - Number(lastChangeAt || 0)
+
+  if (!Number.isFinite(headingNumber) || !Number.isFinite(previousHeadingNumber)) {
+    return currentType === 'left' || currentType === 'right' ? currentType : 'back'
+  }
+
+  const turnDelta = shortestAngleDiff(previousHeadingNumber, headingNumber)
+  const absTurn = Math.abs(turnDelta)
+
+  if ((currentType === 'left' || currentType === 'right') && absTurn > CAR_SPRITE_TURN_EXIT_DEG) {
+    return currentType
+  }
+
+  if (elapsedSinceChange < CAR_SPRITE_MIN_CHANGE_MS) {
+    return currentType === 'top' ? 'back' : currentType
+  }
+
+  if (absTurn >= CAR_SPRITE_TURN_ENTER_DEG) {
+    return turnDelta > 0 ? 'right' : 'left'
+  }
+
+  return 'back'
 }
 
 function getBestVehicleHeading(origin, routeHeading, previousHeading) {
@@ -915,7 +1232,7 @@ function createClientOverlay(clientAvatar, name, google, onCenter) {
  * Creates a navigation overlay with requestAnimationFrame-based smooth animation.
  * Replaces the old CSS-transition-based overlay for smooth GPS tracking.
  */
-function createNavigationOverlaySmooth(position, google, heading = 0) {
+function createNavigationOverlaySmooth(position, google, heading = 0, spriteType = 'back') {
   const overlay = new google.maps.OverlayView()
   const element = document.createElement('div')
   const image = document.createElement('img')
@@ -939,6 +1256,7 @@ function createNavigationOverlaySmooth(position, google, heading = 0) {
   overlay._animFrameId = null
   overlay._firstPosition = true
   overlay.__modeKey = 'car'
+  overlay.currentSpriteType = spriteType
 
   element.className = 'google-navigation-marker car-navigation-marker'
   element.style.position = 'absolute'
@@ -948,7 +1266,7 @@ function createNavigationOverlaySmooth(position, google, heading = 0) {
 
   image.className = 'navigation-car-img'
   image.alt = 'Auto en navegación'
-  image.src = carTopImg
+  image.src = getVehicleSpriteSource(spriteType)
   image.style.display = 'block'
   image.style.transformOrigin = '50% 50%'
   image.style.transform = `rotate(${overlay.currentHeading}deg)`
@@ -1008,6 +1326,21 @@ function createNavigationOverlaySmooth(position, google, heading = 0) {
       this._animFrameId = null
     }
     this._animating = false
+  }
+
+  overlay.updateVehicleVisual = function (nextSpriteType, nextRotation) {
+    const spriteTypeValue = nextSpriteType || 'back'
+    if (this.currentSpriteType !== spriteTypeValue) {
+      this.currentSpriteType = spriteTypeValue
+      image.src = getVehicleSpriteSource(spriteTypeValue)
+    }
+
+    const rotationNumber = Number(nextRotation)
+    if (Number.isFinite(rotationNumber) && !this._animating) {
+      this.currentHeading = normalizeHeading(rotationNumber)
+      this.targetHeading = this.currentHeading
+      image.style.transform = `rotate(${this.currentHeading}deg)`
+    }
   }
 
   /**
@@ -1164,6 +1497,8 @@ export default function InteractiveRouteMap({
   const directionsServiceRef = useRef(null)
   const routePolylineRef = useRef(null)
   const focusRouteGlowRef = useRef(null)
+  const routeCompletedPolylineRef = useRef(null)
+  const routeNextStepPolylineRef = useRef(null)
   const activeRoutePathRef = useRef([])
   const markersRef = useRef([])
   const originOverlayRef = useRef(null)
@@ -1179,6 +1514,9 @@ export default function InteractiveRouteMap({
   const lastMatchedRouteIndexRef = useRef(1)
   const lastMatchedPointRef = useRef(null)
   const lastRerouteAtRef = useRef(0)
+  const offRouteCountRef = useRef(0)
+  const lastOffRouteAtRef = useRef(0)
+  const rerouteReasonRef = useRef('')
   const routeOriginRef = useRef(null)
   const [routeRefreshToken, setRouteRefreshToken] = useState(0)
 
@@ -1217,6 +1555,9 @@ export default function InteractiveRouteMap({
   const cameraAnimToHeadingRef = useRef(0)
   const cameraAnimStartRef = useRef(0)
   const cameraAnimDurationRef = useRef(0)
+  const currentCarSpriteRef = useRef('back')
+  const lastSpriteChangeAtRef = useRef(0)
+  const lastSpriteHeadingRef = useRef(0)
 
   function runProgrammaticCameraMove(callback) {
     isProgrammaticCameraMoveRef.current = true
@@ -1227,6 +1568,88 @@ export default function InteractiveRouteMap({
         isProgrammaticCameraMoveRef.current = false
       }, 450)
     }
+  }
+
+  function getCurrentVehicleVisual(nextHeading, speed) {
+    const now = Date.now()
+    const previousHeading = lastSpriteHeadingRef.current
+    const nextSpriteType = getVehicleSpriteType({
+      navigationMode,
+      heading: nextHeading,
+      previousHeading,
+      speed,
+      currentType: currentCarSpriteRef.current,
+      lastChangeAt: lastSpriteChangeAtRef.current,
+      now,
+    })
+
+    if (currentCarSpriteRef.current !== nextSpriteType) {
+      currentCarSpriteRef.current = nextSpriteType
+      lastSpriteChangeAtRef.current = now
+    }
+
+    if (Number.isFinite(Number(nextHeading))) {
+      lastSpriteHeadingRef.current = normalizeHeading(nextHeading)
+    }
+
+    return {
+      spriteType: nextSpriteType,
+      rotation: getCarScreenRotation({
+        navigationMode,
+        vehicleHeading: nextHeading,
+      }),
+    }
+  }
+
+  function updateNavigationRouteVisuals(routePath, projection, smartInstruction = null) {
+    if (!Array.isArray(routePath) || routePath.length < 2) return
+
+    const currentPolyline = routePolylineRef.current
+    const currentFocusGlow = focusRouteGlowRef.current
+    const completedPolyline = routeCompletedPolylineRef.current
+    const nextStepPolyline = routeNextStepPolylineRef.current
+
+    if (!projection) {
+      currentPolyline?.setPath(routePath)
+      currentFocusGlow?.setPath(routePath)
+      completedPolyline?.setPath([])
+      nextStepPolyline?.setPath([])
+      return
+    }
+
+    const index = Math.max(1, Math.min(projection.index, routePath.length - 1))
+    const completedPath = [...routePath.slice(0, index), projection.point]
+    const remainingPath = [projection.point, ...routePath.slice(index)]
+    const highlightMeters = Math.min(
+      NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS,
+      Math.max(80, Number(smartInstruction?.distanceToNextStep) || NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS)
+    )
+    const nextStepPath = getRoutePathSliceFromProjection(routePath, projection, highlightMeters)
+    const recalculating = smartInstruction?.alertLevel === 'recalculating' || smartInstruction?.recalculating
+
+    completedPolyline?.setOptions({
+      strokeOpacity: navigationMode ? 0.24 : 0,
+      strokeWeight: navigationMode ? 6 : 0,
+    })
+    currentFocusGlow?.setOptions({
+      strokeColor: '#18e7ff',
+      strokeOpacity: navigationMode ? (recalculating ? 0.16 : 0.3) : 0,
+      strokeWeight: navigationMode ? 17 : 0,
+    })
+    currentPolyline?.setOptions({
+      strokeColor: navigationMode ? '#2f45ff' : '#1f7aff',
+      strokeOpacity: recalculating ? 0.62 : 1,
+      strokeWeight: navigationMode ? 8 : 5,
+    })
+    nextStepPolyline?.setOptions({
+      strokeOpacity: navigationMode && !recalculating ? 0.95 : 0,
+      strokeWeight: navigationMode ? 10 : 0,
+    })
+
+    completedPolyline?.setPath(completedPath)
+    currentFocusGlow?.setPath(remainingPath)
+    currentPolyline?.setPath(remainingPath)
+    nextStepPolyline?.setPath(nextStepPath)
   }
 
 const visibleDrivers = useMemo(() => {
@@ -1368,6 +1791,28 @@ const visibleDrivers = useMemo(() => {
           zIndex: 4,
         })
 
+        routeCompletedPolylineRef.current = new google.maps.Polyline({
+          map,
+          path: [],
+          strokeColor: '#7aa7ff',
+          strokeOpacity: navigationMode ? 0.22 : 0,
+          strokeWeight: navigationMode ? 6 : 0,
+          clickable: false,
+          geodesic: true,
+          zIndex: 2,
+        })
+
+        routeNextStepPolylineRef.current = new google.maps.Polyline({
+          map,
+          path: [],
+          strokeColor: '#00d9ff',
+          strokeOpacity: navigationMode ? 0.92 : 0,
+          strokeWeight: navigationMode ? 10 : 0,
+          clickable: false,
+          geodesic: true,
+          zIndex: 5,
+        })
+
         trafficLayerRef.current = new google.maps.TrafficLayer()
 
         setMapReady(true)
@@ -1426,6 +1871,16 @@ const visibleDrivers = useMemo(() => {
       if (focusRouteGlowRef.current) {
         focusRouteGlowRef.current.setMap(null)
         focusRouteGlowRef.current = null
+      }
+
+      if (routeCompletedPolylineRef.current) {
+        routeCompletedPolylineRef.current.setMap(null)
+        routeCompletedPolylineRef.current = null
+      }
+
+      if (routeNextStepPolylineRef.current) {
+        routeNextStepPolylineRef.current.setMap(null)
+        routeNextStepPolylineRef.current = null
       }
 
       if (trafficLayerRef.current) {
@@ -1578,8 +2033,11 @@ const visibleDrivers = useMemo(() => {
           // Update overlay with predicted position
           if (originOverlayRef.current?.__modeKey === 'car' &&
               typeof originOverlayRef.current.updatePositionSmooth === 'function') {
-            const carHeading = getCarScreenHeading(heading)
-            originOverlayRef.current.updatePositionSmooth(finalPredicted, carHeading, 400)
+            const vehicleVisual = getCurrentVehicleVisual(heading, speed)
+            if (typeof originOverlayRef.current.updateVehicleVisual === 'function') {
+              originOverlayRef.current.updateVehicleVisual(vehicleVisual.spriteType, vehicleVisual.rotation)
+            }
+            originOverlayRef.current.updatePositionSmooth(finalPredicted, vehicleVisual.rotation, 400)
           }
 
           if (navigationMode && isFollowingDriver && mapRef.current) {
@@ -1711,6 +2169,11 @@ const visibleDrivers = useMemo(() => {
       lastRawDriverPositionRef.current = null
       visualHeadingRef.current = 0
       lastGoodHeadingRef.current = 0
+      currentCarSpriteRef.current = 'back'
+      lastSpriteChangeAtRef.current = 0
+      lastSpriteHeadingRef.current = 0
+      offRouteCountRef.current = 0
+      rerouteReasonRef.current = ''
       gpsBufferRef.current = []
       stopDeadReckoning()
 
@@ -1808,6 +2271,8 @@ const visibleDrivers = useMemo(() => {
 
           if (matchedProjection && matchedProjection.distance <= NAVIGATION_SNAP_METERS) {
             matchedOrigin = matchedProjection.point
+            offRouteCountRef.current = 0
+            rerouteReasonRef.current = ''
 
             lastMatchedRouteIndexRef.current = Math.max(
               currentIndex - NAVIGATION_BACKTRACK_TOLERANCE,
@@ -1820,12 +2285,48 @@ const visibleDrivers = useMemo(() => {
           } else {
             // Off route
             const now = Date.now()
-            const isOffRoute = matchedProjection?.distance >= NAVIGATION_OFF_ROUTE_METERS
+            const projectionDistance = Number(matchedProjection?.distance)
+            const routeHeading = matchedProjection
+              ? getRouteHeadingFromProjection(routePath, matchedProjection, destination)
+              : navigationHeadingRef.current
+            const headingDiff = Math.abs(shortestAngleDiff(routeHeading, navigationHeadingRef.current))
+            const softOffRoute = Number.isFinite(projectionDistance) && projectionDistance >= NAVIGATION_SOFT_OFF_ROUTE_METERS
+            const hardOffRoute = Number.isFinite(projectionDistance) && projectionDistance >= NAVIGATION_HARD_OFF_ROUTE_METERS
+            const headingOffRoute = softOffRoute && headingDiff >= NAVIGATION_RECALCULATE_HEADING_DEG
 
-            if (navigationMode && isOffRoute && now - lastRerouteAtRef.current > NAVIGATION_REROUTE_COOLDOWN_MS) {
+            if (softOffRoute) {
+              offRouteCountRef.current += 1
+              lastOffRouteAtRef.current = now
+              rerouteReasonRef.current = hardOffRoute ? 'off-route-distance' : headingOffRoute ? 'off-route-heading' : 'possible-off-route'
+            } else {
+              offRouteCountRef.current = 0
+              rerouteReasonRef.current = ''
+            }
+
+            const shouldReroute = navigationMode &&
+              (hardOffRoute || headingOffRoute || offRouteCountRef.current >= 2) &&
+              now - lastRerouteAtRef.current > NAVIGATION_REROUTE_COOLDOWN_MS
+
+            if (shouldReroute) {
               lastRerouteAtRef.current = now
-              routeOriginRef.current = toLatLng(origin)
+              routeOriginRef.current = isValidCoord(matchedOrigin) ? toLatLng(matchedOrigin) : toLatLng(origin)
               routeSignatureRef.current = ''
+              onRouteUpdate?.({
+                distance: isValidCoord(destination) ? getDistanceMeters(matchedOrigin, destination) : 0,
+                duration: 0,
+                instruction: 'Recalculando ruta...',
+                shortInstruction: 'Recalculando',
+                maneuver: 'recalculating',
+                heading: navigationHeadingRef.current,
+                alertLevel: 'recalculating',
+                distanceToNextStep: 0,
+                nextInstruction: null,
+                nextManeuver: null,
+                remainingMeters: isValidCoord(destination) ? getDistanceMeters(matchedOrigin, destination) : 0,
+                progress: 0,
+                recalculating: true,
+                rerouteReason: rerouteReasonRef.current,
+              })
               setRouteRefreshToken((value) => value + 1)
             }
 
@@ -1863,17 +2364,35 @@ const visibleDrivers = useMemo(() => {
       navigationHeadingRef.current = getSmoothNavigationHeading(navigationHeadingRef.current, nextHeading)
 
       if (navigationMode) {
-        const nextInstruction = getNextRouteInstruction(matchedOrigin, routeStepsRef.current, destination)
+        const nextInstruction = getSmartNavigationInstruction({
+          currentPoint: matchedOrigin,
+          routePath,
+          routeSteps: routeStepsRef.current,
+          destination,
+          currentProjection: matchedProjection,
+          heading: navigationHeadingRef.current,
+        }) || getNextRouteInstruction(matchedOrigin, routeStepsRef.current, destination)
         if (nextInstruction) {
-          const distanceToDestination = isValidCoord(destination)
+          updateNavigationRouteVisuals(routePath, matchedProjection, nextInstruction)
+          const distanceToDestination = Number.isFinite(Number(nextInstruction.remainingMeters))
+            ? Number(nextInstruction.remainingMeters)
+            : isValidCoord(destination)
             ? getDistanceMeters(matchedOrigin, destination)
             : nextInstruction.distanceMeters
           const navUpdate = {
             distance: distanceToDestination,
-            duration: nextInstruction.durationSeconds,
+            duration: nextInstruction.duration ?? nextInstruction.durationSeconds,
             instruction: nextInstruction.instruction,
             maneuver: nextInstruction.maneuver,
             heading: navigationHeadingRef.current,
+            shortInstruction: nextInstruction.shortInstruction,
+            alertLevel: nextInstruction.alertLevel,
+            distanceToNextStep: nextInstruction.distanceToNextStep,
+            nextInstruction: nextInstruction.nextStreet,
+            nextManeuver: nextInstruction.nextManeuver,
+            remainingMeters: nextInstruction.remainingMeters ?? distanceToDestination,
+            progress: nextInstruction.progress,
+            recalculating: false,
           }
 
           lastRouteUpdateRef.current = navUpdate
@@ -1901,11 +2420,16 @@ const visibleDrivers = useMemo(() => {
         currentOverlay.setMap(null)
       }
 
-      const carHeading = getCarScreenHeading(navigationHeadingRef.current)
+      const vehicleVisual = getCurrentVehicleVisual(navigationHeadingRef.current, effectiveSpeed)
 
       if (showCarAsOrigin) {
         // Use smooth overlay for car
-        originOverlayRef.current = createNavigationOverlaySmooth(matchedOrigin, googleApi, carHeading)
+        originOverlayRef.current = createNavigationOverlaySmooth(
+          matchedOrigin,
+          googleApi,
+          vehicleVisual.rotation,
+          vehicleVisual.spriteType
+        )
         originOverlayRef.current._firstPosition = true
       } else {
         originOverlayRef.current = createClientOverlay(clientAvatar, 'Tu ubicación', googleApi, matchedOrigin)
@@ -1919,12 +2443,19 @@ const visibleDrivers = useMemo(() => {
           originOverlayRef.current.currentPosition || previousPoint,
           pointWithTs
         )
-        originOverlayRef.current.updatePositionSmooth(matchedOrigin, getCarScreenHeading(navigationHeadingRef.current), duration)
+        const vehicleVisual = getCurrentVehicleVisual(navigationHeadingRef.current, effectiveSpeed)
+        if (typeof originOverlayRef.current.updateVehicleVisual === 'function') {
+          originOverlayRef.current.updateVehicleVisual(vehicleVisual.spriteType, vehicleVisual.rotation)
+        }
+        originOverlayRef.current.updatePositionSmooth(matchedOrigin, vehicleVisual.rotation, duration)
       } else {
         // Fallback for legacy overlay
         originOverlayRef.current.updatePosition(matchedOrigin)
         if (typeof originOverlayRef.current.updateHeading === 'function') {
-          originOverlayRef.current.updateHeading(getCarScreenHeading(navigationHeadingRef.current))
+          originOverlayRef.current.updateHeading(getCarScreenRotation({
+            navigationMode,
+            vehicleHeading: navigationHeadingRef.current,
+          }))
         }
       }
     } else {
@@ -2086,6 +2617,8 @@ const visibleDrivers = useMemo(() => {
     const directionsService = directionsServiceRef.current
     const routePolyline = routePolylineRef.current
     const focusRouteGlow = focusRouteGlowRef.current
+    const completedPolyline = routeCompletedPolylineRef.current
+    const nextStepPolyline = routeNextStepPolylineRef.current
 
     const emitRouteUpdate = (nextValue) => {
       const previous = lastRouteUpdateRef.current
@@ -2104,6 +2637,8 @@ const visibleDrivers = useMemo(() => {
         routeStepsRef.current = []
         lastMatchedRouteIndexRef.current = 1
         lastMatchedPointRef.current = null
+        offRouteCountRef.current = 0
+        rerouteReasonRef.current = ''
         routeOriginRef.current = null
 
         if (routePolyline) {
@@ -2111,6 +2646,12 @@ const visibleDrivers = useMemo(() => {
         }
         if (focusRouteGlow) {
           focusRouteGlow.setPath([])
+        }
+        if (completedPolyline) {
+          completedPolyline.setPath([])
+        }
+        if (nextStepPolyline) {
+          nextStepPolyline.setPath([])
         }
       } catch (error) {
         console.warn('No pude limpiar la ruta:', error)
@@ -2171,6 +2712,8 @@ const visibleDrivers = useMemo(() => {
       const currentMap = mapRef.current
       const currentPolyline = routePolylineRef.current
       const currentFocusGlow = focusRouteGlowRef.current
+      const currentCompletedPolyline = routeCompletedPolylineRef.current
+      const currentNextStepPolyline = routeNextStepPolylineRef.current
       if (!currentMap || !currentPolyline || !googleApi) return
 
       let routeResult = null
@@ -2188,6 +2731,8 @@ const visibleDrivers = useMemo(() => {
         activeRoutePathRef.current = routePath
         routeStepsRef.current = steps.map(normalizeRouteStep).filter(Boolean)
         currentPolyline.setPath(routePath)
+        if (currentCompletedPolyline) currentCompletedPolyline.setPath([])
+        if (currentNextStepPolyline) currentNextStepPolyline.setPath([])
         if (currentFocusGlow) {
           currentFocusGlow.setOptions({
             strokeOpacity: navigationMode ? 0.28 : 0,
@@ -2224,29 +2769,52 @@ const visibleDrivers = useMemo(() => {
           originOverlayRef.current?.__modeKey === 'car' &&
           typeof originOverlayRef.current.updatePositionSmooth === 'function'
         ) {
+          const vehicleVisual = getCurrentVehicleVisual(smoothHeading, Number(origin?.speed))
+          if (typeof originOverlayRef.current.updateVehicleVisual === 'function') {
+            originOverlayRef.current.updateVehicleVisual(vehicleVisual.spriteType, vehicleVisual.rotation)
+          }
           originOverlayRef.current.updatePositionSmooth(
             originOverlayRef.current.currentPosition || normalizedOrigin,
-            getCarScreenHeading(smoothHeading),
+            vehicleVisual.rotation,
             900
           )
         } else if (
           originOverlayRef.current?.__modeKey === 'car' &&
           typeof originOverlayRef.current.updateHeading === 'function'
         ) {
-          originOverlayRef.current.updateHeading(getCarScreenHeading(smoothHeading))
+          originOverlayRef.current.updateHeading(getCarScreenRotation({
+            navigationMode,
+            vehicleHeading: smoothHeading,
+          }))
         }
 
-        const currentInstruction = getNextRouteInstruction(
+        const currentInstruction = getSmartNavigationInstruction({
+          currentPoint: lastMatchedPointRef.current || normalizedOrigin,
+          routePath,
+          routeSteps: routeStepsRef.current,
+          destination: normalizedDestination,
+          currentProjection,
+          heading: smoothHeading,
+        }) || getNextRouteInstruction(
           lastMatchedPointRef.current || normalizedOrigin,
           routeStepsRef.current,
           normalizedDestination
         )
+        updateNavigationRouteVisuals(routePath, currentProjection, currentInstruction)
         emitRouteUpdate({
-          distance,
-          duration,
+          distance: currentInstruction?.remainingMeters ?? distance,
+          duration: currentInstruction?.duration ?? duration,
           instruction: currentInstruction?.instruction || instruction,
           maneuver: currentInstruction?.maneuver || null,
           heading: smoothHeading,
+          shortInstruction: currentInstruction?.shortInstruction,
+          alertLevel: currentInstruction?.alertLevel,
+          distanceToNextStep: currentInstruction?.distanceToNextStep,
+          nextInstruction: currentInstruction?.nextStreet,
+          nextManeuver: currentInstruction?.nextManeuver,
+          remainingMeters: currentInstruction?.remainingMeters,
+          progress: currentInstruction?.progress,
+          recalculating: false,
         })
 
         if (!navigationMode && !userCameraTouchedRef.current && !hasAutoFittedRouteRef.current) {
@@ -2303,6 +2871,8 @@ const visibleDrivers = useMemo(() => {
       if (!directionsService) {
         currentPolyline.setPath([])
         if (currentFocusGlow) currentFocusGlow.setPath([])
+        if (currentCompletedPolyline) currentCompletedPolyline.setPath([])
+        if (currentNextStepPolyline) currentNextStepPolyline.setPath([])
         emitRouteUpdate(null)
         return
       }
@@ -2323,6 +2893,8 @@ const visibleDrivers = useMemo(() => {
         const currentMap = mapRef.current
         const currentPolyline = routePolylineRef.current
         const currentFocusGlow = focusRouteGlowRef.current
+        const currentCompletedPolyline = routeCompletedPolylineRef.current
+        const currentNextStepPolyline = routeNextStepPolylineRef.current
 
         if (!currentMap || !currentPolyline || !googleApi) return
 
@@ -2346,10 +2918,15 @@ const visibleDrivers = useMemo(() => {
 
           currentPolyline.setPath([])
           if (currentFocusGlow) currentFocusGlow.setPath([])
+          if (currentCompletedPolyline) currentCompletedPolyline.setPath([])
+          if (currentNextStepPolyline) currentNextStepPolyline.setPath([])
           emitRouteUpdate(null)
         } catch (error) {
           console.warn('Error seguro en route callback:', error)
           currentPolyline.setPath([])
+          if (currentFocusGlow) currentFocusGlow.setPath([])
+          if (currentCompletedPolyline) currentCompletedPolyline.setPath([])
+          if (currentNextStepPolyline) currentNextStepPolyline.setPath([])
           emitRouteUpdate(null)
         }
       })

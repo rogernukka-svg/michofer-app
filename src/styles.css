@@ -18382,8 +18382,9 @@ body.route-client .driver-picker-pro-card .driver-side button {
 /* ==================== CAR NAVIGATION MARKER STABLE ==================== */
 
 .car-navigation-marker {
-  width: 54px !important;
-  height: 54px !important;
+  width: 68px !important;
+  height: 68px !important;
+  transform: translate(-50%, -50%) scale(1) !important;
   will-change: left, top, transform;
   pointer-events: none !important;
   backface-visibility: hidden;
@@ -18399,15 +18400,40 @@ body.route-client .driver-picker-pro-card .driver-side button {
 }
 
 .navigation-car-img {
-  width: 54px;
-  height: 54px;
+  width: 68px;
+  height: 68px;
   display: block;
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   image-rendering: auto;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.32));
   transition: none !important; /* animation handled by JS */
+}
+
+@media (min-width: 900px) {
+  .car-navigation-marker {
+    width: 72px !important;
+    height: 72px !important;
+  }
+
+  .navigation-car-img {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+body.route-driver .google-navigation-marker.car-navigation-marker {
+  width: 68px !important;
+  height: 68px !important;
+  transform: translate(-50%, -50%) scale(1) !important;
+}
+
+@media (min-width: 900px) {
+  body.route-driver .google-navigation-marker.car-navigation-marker {
+    width: 72px !important;
+    height: 72px !important;
+  }
 }
 
 /* ==================== MAP CONTAINER STABILITY ==================== */
@@ -18433,6 +18459,223 @@ body.route-client .driver-picker-pro-card .driver-side button {
 
 .google-navigation-marker.is-stale .navigation-car-img {
   opacity: 0.75;
+}
+
+body.route-driver .driver-navigation-instruction.alert-prepare {
+  background:
+    linear-gradient(135deg, rgba(4, 128, 120, 0.98), rgba(0, 98, 143, 0.96)) !important;
+}
+
+body.route-driver .driver-navigation-instruction.alert-soon,
+body.route-driver .driver-navigation-instruction.alert-now {
+  background:
+    linear-gradient(135deg, rgba(8, 105, 192, 0.98), rgba(4, 71, 159, 0.96)) !important;
+}
+
+body.route-driver .driver-navigation-instruction.alert-recalculating {
+  background:
+    linear-gradient(135deg, rgba(42, 55, 79, 0.98), rgba(16, 22, 36, 0.96)) !important;
+}
+
+body.route-driver .driver-navigation-instruction.alert-arrived {
+  background:
+    linear-gradient(135deg, rgba(3, 133, 83, 0.98), rgba(7, 98, 68, 0.96)) !important;
+}
+
+/* ==================== Legal / Play Store Pages ==================== */
+
+.legal-screen {
+  min-height: 100vh;
+  padding: 22px;
+  color: #eef7ff;
+  background:
+    radial-gradient(circle at top left, rgba(20, 241, 229, 0.16), transparent 34%),
+    linear-gradient(145deg, #071116 0%, #101923 46%, #081014 100%);
+}
+
+.legal-shell {
+  width: min(920px, 100%);
+  margin: 0 auto;
+}
+
+.legal-back,
+.legal-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  color: #b9f7f0;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.legal-card {
+  margin-top: 12px;
+  padding: clamp(20px, 4vw, 38px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(7, 14, 20, 0.88);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+}
+
+.legal-header {
+  margin-bottom: 26px;
+}
+
+.legal-header span {
+  display: block;
+  margin-bottom: 10px;
+  color: #22e5cf;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.legal-header h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(30px, 7vw, 48px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.legal-header p,
+.legal-section p,
+.legal-section li,
+.legal-note,
+.legal-status {
+  color: rgba(238, 247, 255, 0.78);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.legal-section {
+  padding: 18px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.legal-section h2 {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 19px;
+  letter-spacing: 0;
+}
+
+.legal-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.legal-section a,
+.legal-actions a,
+.legal-link-grid a,
+.auth-legal-links a,
+.auth-terms-copy a {
+  color: #26e7d2;
+  font-weight: 850;
+}
+
+.legal-form {
+  display: grid;
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.legal-form label {
+  display: grid;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.legal-form input,
+.legal-form textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 13px 14px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+}
+
+.legal-primary {
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  color: #031013;
+  background: linear-gradient(135deg, #23f29b, #00d5ff);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.legal-primary:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.legal-actions,
+.legal-link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.legal-actions a,
+.legal-link-grid a {
+  min-height: 48px;
+  padding: 13px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  text-decoration: none;
+}
+
+.legal-note {
+  margin-top: 22px;
+  font-size: 13px;
+}
+
+.auth-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 14px;
+  margin-top: 18px;
+  font-size: 12px;
+}
+
+.auth-legal-links a,
+.auth-terms-copy a {
+  text-decoration: none;
+}
+
+.auth-terms-copy {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.driver-side-legal-links {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.driver-side-legal-links a {
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
 }
 
 /* ==================== DARK MODE ADAPTATIONS ==================== */

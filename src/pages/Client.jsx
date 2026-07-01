@@ -2535,11 +2535,31 @@ setMessage('')
                   <ChevronRight size={17} />
                 </button>
 
-                <button type="button">
+                <a href="/support">
                   <HelpCircle size={19} />
                   <span>Ayuda y soporte</span>
                   <ChevronRight size={17} />
-                </button>
+                </a>
+              </div>
+
+              <div className="account-section">
+                <a href="/privacy">
+                  <HelpCircle size={19} />
+                  <span>Politica de privacidad</span>
+                  <ChevronRight size={17} />
+                </a>
+
+                <a href="/terms">
+                  <HelpCircle size={19} />
+                  <span>Terminos</span>
+                  <ChevronRight size={17} />
+                </a>
+
+                <a href="/delete-account">
+                  <HelpCircle size={19} />
+                  <span>Eliminar cuenta</span>
+                  <ChevronRight size={17} />
+                </a>
               </div>
 
               <button

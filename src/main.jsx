@@ -6,9 +6,13 @@ import App from './App'
 import Admin from './pages/Admin'
 import Chat from './pages/Chat'
 import Client from './pages/Client'
+import DeleteAccount from './pages/DeleteAccount'
 import Driver from './pages/Driver'
 import Login from './pages/Login'
+import PrivacyPolicy from './pages/PrivacyPolicy'
 import Register from './pages/Register'
+import Support from './pages/Support'
+import Terms from './pages/Terms'
 import Trips from './pages/Trips'
 
 const routes = {
@@ -20,6 +24,10 @@ const routes = {
   '/viajes': Trips,
   '/chat': Chat,
   '/admin': Admin,
+  '/privacy': PrivacyPolicy,
+  '/terms': Terms,
+  '/delete-account': DeleteAccount,
+  '/support': Support,
 }
 
 const currentPath = window.location.pathname

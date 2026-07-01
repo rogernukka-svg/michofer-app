@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
   CarFront,
   CheckCircle2,
   Clock,
@@ -9,6 +12,7 @@ import {
   Navigation,
   Play,
   RefreshCw,
+  RotateCcw,
   ShieldCheck,
   Square,
   ToggleLeft,
@@ -436,7 +440,9 @@ export default function Driver() {
   )
   const navigationEta = estimateEta(navigationDistance)
   const guidanceDistance = formatMeters(routeGuidance?.distance) || formatKm(navigationDistance)
+  const guidanceStepDistance = formatMeters(routeGuidance?.distanceToNextStep) || guidanceDistance
   const guidanceEta = formatSeconds(routeGuidance?.duration) || navigationEta
+  const guidanceAlertLevel = routeGuidance?.alertLevel || 'far'
 
   const navigationMeters = Number.isFinite(Number(routeGuidance?.distance))
     ? Number(routeGuidance.distance)
@@ -458,6 +464,7 @@ export default function Driver() {
         })
       : null
   const routeInstructionText = (() => {
+    if (routeGuidance?.shortInstruction) return routeGuidance.shortInstruction
     const instruction = String(routeGuidance?.instruction || activeTrip?.destination_text || 'Seguimos por la ruta')
       .replace(/^En\s+\d+\s*m\s+/i, '')
       .replace(/^Ahora\s+/i, '')
@@ -469,10 +476,24 @@ export default function Driver() {
     if (meters >= 80) return `En ${Math.round(meters)} m: ${instruction}`
     return `Ahora: ${instruction}`
   })()
+  const routeInstructionDetail = routeGuidance?.nextInstruction || routeGuidance?.instruction || ''
+  const GuidanceTurnIcon = (() => {
+    const maneuver = String(routeGuidance?.maneuver || '').toLowerCase()
+    if (guidanceAlertLevel === 'arrived') return CheckCircle2
+    if (guidanceAlertLevel === 'recalculating') return RotateCcw
+    if (maneuver.includes('left')) return ArrowLeft
+    if (maneuver.includes('right')) return ArrowRight
+    if (maneuver.includes('roundabout') || maneuver.includes('merge')) return Navigation
+    return ArrowUp
+  })()
   const radarTargetLabel = activeTrip?.status === 'in_progress' ? 'Destino' : 'Cliente'
   const destinationRadarText = activeTrip && navigationTarget
     ? `${radarTargetLabel} ${destinationSide}`
     : ''
+  const guidanceSecondaryText = closeArrival?.subtitle ||
+    (routeInstructionDetail
+      ? `Luego ${routeInstructionDetail} · ${guidanceEta}`
+      : `${destinationRadarText} · ${guidanceEta}`)
   const hasClientRushNotice = Boolean(
     clientRushNotice ||
     activeTrip?.client_rush_at ||
@@ -1184,18 +1205,18 @@ if (!isValidParaguayCoord(location)) {
           )}
 
           {/* Navigation instruction card */}
-          <header className="driver-navigation-instruction">
+          <header className={`driver-navigation-instruction alert-${guidanceAlertLevel}`}>
             <div className="driver-navigation-turn-icon">
-              <Navigation size={30} />
+              <GuidanceTurnIcon size={30} />
             </div>
 
                         <div className="driver-navigation-copy">
-              <span>{guidanceDistance}</span>
+              <span>{guidanceStepDistance}</span>
               <strong>
                 {closeArrival?.title || routeInstructionText}
               </strong>
               <small>
-                {closeArrival?.subtitle || `${destinationRadarText} · ${guidanceEta}`}
+                {guidanceSecondaryText}
               </small>
             </div>
 
@@ -1503,6 +1524,13 @@ if (!isValidParaguayCoord(location)) {
                   )
                 })}
               </div>
+
+              <nav className="driver-side-legal-links" aria-label="Links legales">
+                <a href="/support">Soporte</a>
+                <a href="/privacy">Politica de privacidad</a>
+                <a href="/terms">Terminos</a>
+                <a href="/delete-account">Eliminar cuenta</a>
+              </nav>
 
               <button className="driver-side-logout" type="button" onClick={async () => {
                 await supabase.auth.signOut()

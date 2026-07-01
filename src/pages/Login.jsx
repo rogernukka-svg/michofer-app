@@ -991,6 +991,12 @@ export default function Login() {
               <div className="login-spinner" />
             </div>
           )}
+
+          <nav className="auth-legal-links" aria-label="Links legales">
+            <a href="/privacy">Privacidad</a>
+            <a href="/terms">Terminos</a>
+            <a href="/delete-account">Eliminar cuenta</a>
+          </nav>
         </div>
       </div>
     </div>
