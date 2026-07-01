@@ -1188,6 +1188,7 @@ if (!isValidParaguayCoord(location)) {
             animateCamera
             showRouteSummary={false}
                        navigationMode
+            navigationVariant="driver"
             showMapTypeControl={false}
             safetyZones={SAFETY_ZONES_CDE}
             onRouteUpdate={setRouteGuidance}

@@ -12,20 +12,21 @@ const DEFAULT_PADDING = { top: 96, bottom: 122, left: 58, right: 58 }
 const MAX_DRIVER_MARKERS = 6
 
 // Cámara tipo Google Maps navegación - estilo Uber/Bolt/Waze
-const NAVIGATION_ZOOM = 21.0
-const NAVIGATION_MOBILE_ZOOM = 21.25
-const NAVIGATION_DESKTOP_ZOOM = 20.85
-const NAVIGATION_DRIVER_TILT = 66
-const NAVIGATION_CAMERA_AHEAD_METERS = 22
-const NAVIGATION_CAMERA_AHEAD_METERS_FAST = 34
-const NAVIGATION_CAMERA_MIN_UPDATE_MS = 450
-const NAVIGATION_CAMERA_MIN_MOVE_METERS = 1.2
+const NAVIGATION_ZOOM = 19.0
+const NAVIGATION_MOBILE_ZOOM = 19.1
+const NAVIGATION_DESKTOP_ZOOM = 18.8
+const NAVIGATION_DRIVER_TILT = 50
+const NAVIGATION_DRIVER_STATIONARY_TILT = 45
+const NAVIGATION_CAMERA_AHEAD_METERS = 62
+const NAVIGATION_CAMERA_AHEAD_METERS_FAST = 74
+const NAVIGATION_CAMERA_MIN_UPDATE_MS = 850
+const NAVIGATION_CAMERA_MIN_MOVE_METERS = 3.5
 const NAVIGATION_LOOK_AHEAD_RATIO = 0.09
 const NAVIGATION_MIN_LOOK_AHEAD_METERS = 30
 const NAVIGATION_MAX_LOOK_AHEAD_METERS = 95
 const NAVIGATION_HEADING_DISTANCE_METERS = 82
-const NAVIGATION_MIN_HEADING_CHANGE = 3
-const NAVIGATION_HEADING_SMOOTHING = 0.18
+const NAVIGATION_MIN_HEADING_CHANGE = 6
+const NAVIGATION_HEADING_SMOOTHING = 0.1
 
 const NAVIGATION_SNAP_METERS = 55
 const NAVIGATION_OFF_ROUTE_METERS = 75
@@ -37,9 +38,11 @@ const NAVIGATION_HARD_OFF_ROUTE_METERS = 75
 const NAVIGATION_RECALCULATE_HEADING_DEG = 68
 const NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS = 240
 const CAR_SPRITE_ROTATION_OFFSET = 0
-const CAR_SPRITE_TURN_ENTER_DEG = 14
-const CAR_SPRITE_TURN_EXIT_DEG = 7
-const CAR_SPRITE_MIN_CHANGE_MS = 420
+const CAR_SPRITE_TURN_ENTER_DEG = 24
+const CAR_SPRITE_TURN_EXIT_DEG = 12
+const CAR_SPRITE_MIN_CHANGE_MS = 900
+const CAR_SPRITE_MIN_LATERAL_SPEED_MPS = 0.8
+const CAR_SPRITE_STARTUP_STABLE_MS = 1800
 
 // GPS filtering constants
 const MAX_ACCURACY_AGGRESSIVE = 70
@@ -832,20 +835,22 @@ function getAngleDiff(from, to) {
   return ((to - from + 540) % 360) - 180
 }
 
-function getSmoothNavigationHeading(previousHeading, nextHeading) {
+function getSmoothNavigationHeading(previousHeading, nextHeading, options = {}) {
   const previous = Number(previousHeading)
   const next = Number(nextHeading)
+  const minChange = Number.isFinite(options.minChange) ? options.minChange : NAVIGATION_MIN_HEADING_CHANGE
+  const smoothing = Number.isFinite(options.smoothing) ? options.smoothing : NAVIGATION_HEADING_SMOOTHING
 
   if (!Number.isFinite(previous)) return next
   if (!Number.isFinite(next)) return previous
 
   const diff = getAngleDiff(previous, next)
 
-  if (Math.abs(diff) < NAVIGATION_MIN_HEADING_CHANGE) {
+  if (Math.abs(diff) < minChange) {
     return previous
   }
 
-  return normalizeAngle(previous + diff * NAVIGATION_HEADING_SMOOTHING)
+  return normalizeAngle(previous + diff * smoothing)
 }
 
 function movePointByBearing(point, bearingDeg, distanceMeters) {
@@ -875,6 +880,30 @@ function movePointByBearing(point, bearingDeg, distanceMeters) {
 
 function getNavigationZoom() {
   return window.innerWidth <= 700 ? NAVIGATION_MOBILE_ZOOM : NAVIGATION_DESKTOP_ZOOM
+}
+
+function isDriverNavigationVariant(navigationMode, navigationVariant) {
+  return navigationMode && navigationVariant === 'driver'
+}
+
+function isMovingForNavigation(point) {
+  const speed = Number(point?.speed)
+  return Number.isFinite(speed) && speed >= CAR_SPRITE_MIN_LATERAL_SPEED_MPS
+}
+
+function isReliableHeading(point) {
+  const heading = Number(point?.heading)
+  const accuracy = Number(point?.accuracy)
+  const speed = Number(point?.speed)
+
+  if (!Number.isFinite(heading)) return false
+  if (heading === 0 && (!Number.isFinite(speed) || speed < 1.4)) return false
+  if (Number.isFinite(accuracy) && accuracy > 60) return false
+  return Number.isFinite(speed) && speed >= CAR_SPRITE_MIN_LATERAL_SPEED_MPS
+}
+
+function getNavigationTiltForPoint(point) {
+  return isMovingForNavigation(point) ? NAVIGATION_DRIVER_TILT : NAVIGATION_DRIVER_STATIONARY_TILT
 }
 
 /**
@@ -932,12 +961,12 @@ function applyNavigationCamera(map, center, heading, options = {}) {
     zoom: clamp(
       Number.isFinite(options.zoom) ? options.zoom : getNavigationZoom(),
       18.5,
-      21.5
+      19.6
     ),
     tilt: clamp(
       Number.isFinite(options.tilt) ? options.tilt : NAVIGATION_DRIVER_TILT,
       40,
-      67
+      55
     ),
     heading: Number.isFinite(Number(heading)) ? Number(heading) : 0,
   }
@@ -1006,25 +1035,35 @@ function getVehicleSpriteType({
   speed,
   currentType = 'back',
   lastChangeAt = 0,
+  navigationStartedAt = 0,
   now = Date.now(),
 }) {
   if (!navigationMode) return 'top'
 
   const speedNumber = Number(speed)
-  if (!Number.isFinite(speedNumber) || speedNumber < 0.45) return 'back'
+  if (!Number.isFinite(speedNumber) || speedNumber < CAR_SPRITE_MIN_LATERAL_SPEED_MPS) return 'back'
 
   const headingNumber = Number(heading)
   const previousHeadingNumber = Number(previousHeading)
   const elapsedSinceChange = now - Number(lastChangeAt || 0)
+  const elapsedSinceNavigationStart = now - Number(navigationStartedAt || now)
+
+  if (elapsedSinceNavigationStart < CAR_SPRITE_STARTUP_STABLE_MS) {
+    return 'back'
+  }
 
   if (!Number.isFinite(headingNumber) || !Number.isFinite(previousHeadingNumber)) {
-    return currentType === 'left' || currentType === 'right' ? currentType : 'back'
+    return 'back'
   }
 
   const turnDelta = shortestAngleDiff(previousHeadingNumber, headingNumber)
   const absTurn = Math.abs(turnDelta)
 
-  if ((currentType === 'left' || currentType === 'right') && absTurn > CAR_SPRITE_TURN_EXIT_DEG) {
+  if (
+    (currentType === 'left' || currentType === 'right') &&
+    speedNumber >= 1.2 &&
+    absTurn > CAR_SPRITE_TURN_EXIT_DEG
+  ) {
     return currentType
   }
 
@@ -1039,11 +1078,12 @@ function getVehicleSpriteType({
   return 'back'
 }
 
-function getBestVehicleHeading(origin, routeHeading, previousHeading) {
+function getBestVehicleHeading(origin, routeHeading, previousHeading, options = {}) {
   const gpsHeading = Number(origin?.heading)
   const speed = Number(origin?.speed)
+  const preferRouteHeading = options.preferRouteHeading || !isReliableHeading(origin)
 
-  if (Number.isFinite(gpsHeading) && (!Number.isFinite(speed) || speed >= 0.6)) {
+  if (!preferRouteHeading && Number.isFinite(gpsHeading) && Number.isFinite(speed) && speed >= CAR_SPRITE_MIN_LATERAL_SPEED_MPS) {
     return normalizeHeading(gpsHeading)
   }
 
@@ -1449,6 +1489,118 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
   return overlay
 }
 
+function createDriverRouteOverlay(google, containerElement) {
+  const overlay = new google.maps.OverlayView()
+  const element = document.createElement('div')
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  const casing = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
+  const glow = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
+
+  overlay.currentPath = []
+  overlay.__modeKey = 'driver-route'
+
+  element.className = 'driver-route-visual-overlay'
+  element.style.position = 'absolute'
+  element.style.left = '0'
+  element.style.top = '0'
+  element.style.right = '0'
+  element.style.bottom = '0'
+  element.style.width = '100%'
+  element.style.height = '100%'
+  element.style.pointerEvents = 'none'
+  element.style.zIndex = '7'
+  element.style.overflow = 'hidden'
+
+  svg.setAttribute('width', '100%')
+  svg.setAttribute('height', '100%')
+  svg.style.position = 'absolute'
+  svg.style.left = '0'
+  svg.style.top = '0'
+  svg.style.width = '100%'
+  svg.style.height = '100%'
+  svg.style.overflow = 'visible'
+  svg.style.pointerEvents = 'none'
+
+  ;[
+    [casing, '#ffffff', '18', '0.92'],
+    [glow, '#4de7ff', '26', '0.34'],
+    [line, '#1269ff', '12', '1'],
+  ].forEach(([node, color, width, opacity]) => {
+    node.setAttribute('fill', 'none')
+    node.setAttribute('stroke', color)
+    node.setAttribute('stroke-width', width)
+    node.setAttribute('stroke-opacity', opacity)
+    node.setAttribute('stroke-linecap', 'round')
+    node.setAttribute('stroke-linejoin', 'round')
+    node.setAttribute('vector-effect', 'non-scaling-stroke')
+  })
+
+  svg.appendChild(glow)
+  svg.appendChild(casing)
+  svg.appendChild(line)
+  element.appendChild(svg)
+
+  overlay.updatePath = function (nextPath) {
+    this.currentPath = Array.isArray(nextPath) ? nextPath.filter(isValidCoord).map(toLatLng) : []
+    this.draw()
+  }
+
+  overlay.onAdd = function () {
+    const host = containerElement || this.getMap()?.getDiv()?.parentElement
+    if (host) host.appendChild(element)
+  }
+
+  overlay.draw = function () {
+    const projection = this.getProjection()
+    if (!projection || !Array.isArray(this.currentPath) || this.currentPath.length < 2) {
+      element.style.display = 'none'
+      casing.setAttribute('points', '')
+      glow.setAttribute('points', '')
+      line.setAttribute('points', '')
+      return
+    }
+
+    const pixels = this.currentPath
+      .map((point) => {
+        if (typeof projection.fromLatLngToContainerPixel === 'function') {
+          return projection.fromLatLngToContainerPixel(new google.maps.LatLng(point.lat, point.lng))
+        }
+        return projection.fromLatLngToDivPixel(new google.maps.LatLng(point.lat, point.lng))
+      })
+      .filter((pixel) => pixel && Number.isFinite(pixel.x) && Number.isFinite(pixel.y))
+
+    if (pixels.length < 2) {
+      element.style.display = 'none'
+      casing.setAttribute('points', '')
+      glow.setAttribute('points', '')
+      line.setAttribute('points', '')
+      return
+    }
+
+    const points = pixels
+      .map((pixel) => `${pixel.x},${pixel.y}`)
+      .join(' ')
+
+    element.style.display = 'block'
+    const width = containerElement?.clientWidth || this.getMap()?.getDiv()?.clientWidth || 1
+    const height = containerElement?.clientHeight || this.getMap()?.getDiv()?.clientHeight || 1
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
+
+    casing.setAttribute('points', points)
+    glow.setAttribute('points', points)
+    line.setAttribute('points', points)
+  }
+
+  overlay.onRemove = function () {
+    if (element.parentNode) {
+      element.parentNode.removeChild(element)
+    }
+  }
+
+  return overlay
+}
+
 // ==================== COMPONENT ====================
 
 export default function InteractiveRouteMap({
@@ -1466,6 +1618,7 @@ export default function InteractiveRouteMap({
   animateCamera = true,
   showRouteSummary = true,
   navigationMode = false,
+  navigationVariant = 'default',
   showOriginCar = false,
   showMapTypeControl = true,
   safetyZones = [],
@@ -1478,6 +1631,7 @@ export default function InteractiveRouteMap({
   const [googleApi, setGoogleApi] = useState(null)
   const [mapTheme, setMapTheme] = useState(() => getAutoMapTheme())
   const [isFollowingDriver, setIsFollowingDriver] = useState(true)
+  const stableDriverNavigation = isDriverNavigationVariant(navigationMode, navigationVariant) || (navigationMode && showOriginCar)
   const isProgrammaticCameraMoveRef = useRef(false)
   const gpsSignalStatus = useMemo(() => {
     const accuracy = Number(origin?.accuracy)
@@ -1499,6 +1653,7 @@ export default function InteractiveRouteMap({
   const focusRouteGlowRef = useRef(null)
   const routeCompletedPolylineRef = useRef(null)
   const routeNextStepPolylineRef = useRef(null)
+  const driverRouteOverlayRef = useRef(null)
   const activeRoutePathRef = useRef([])
   const markersRef = useRef([])
   const originOverlayRef = useRef(null)
@@ -1558,6 +1713,7 @@ export default function InteractiveRouteMap({
   const currentCarSpriteRef = useRef('back')
   const lastSpriteChangeAtRef = useRef(0)
   const lastSpriteHeadingRef = useRef(0)
+  const navigationStartedAtRef = useRef(0)
 
   function runProgrammaticCameraMove(callback) {
     isProgrammaticCameraMoveRef.current = true
@@ -1572,6 +1728,9 @@ export default function InteractiveRouteMap({
 
   function getCurrentVehicleVisual(nextHeading, speed) {
     const now = Date.now()
+    if (navigationMode && !navigationStartedAtRef.current) {
+      navigationStartedAtRef.current = now
+    }
     const previousHeading = lastSpriteHeadingRef.current
     const nextSpriteType = getVehicleSpriteType({
       navigationMode,
@@ -1580,6 +1739,7 @@ export default function InteractiveRouteMap({
       speed,
       currentType: currentCarSpriteRef.current,
       lastChangeAt: lastSpriteChangeAtRef.current,
+      navigationStartedAt: stableDriverNavigation ? navigationStartedAtRef.current : 0,
       now,
     })
 
@@ -1601,6 +1761,29 @@ export default function InteractiveRouteMap({
     }
   }
 
+  function getCurrentNavigationTilt() {
+    return stableDriverNavigation ? getNavigationTiltForPoint(origin) : NAVIGATION_DRIVER_TILT
+  }
+
+  function updateDriverRouteOverlay(routePath) {
+    const map = mapRef.current
+    if (!stableDriverNavigation || !map || !googleApi || !Array.isArray(routePath) || routePath.length < 2) {
+      if (driverRouteOverlayRef.current) {
+        driverRouteOverlayRef.current.setMap(null)
+        driverRouteOverlayRef.current = null
+      }
+      return
+    }
+
+    if (!driverRouteOverlayRef.current) {
+      const routeOverlayHost = mapContainerRef.current?.closest('.mobility-map') || mapContainerRef.current?.parentElement
+      driverRouteOverlayRef.current = createDriverRouteOverlay(googleApi, routeOverlayHost)
+      driverRouteOverlayRef.current.setMap(map)
+    }
+
+    driverRouteOverlayRef.current.updatePath(routePath)
+  }
+
   function updateNavigationRouteVisuals(routePath, projection, smartInstruction = null) {
     if (!Array.isArray(routePath) || routePath.length < 2) return
 
@@ -1608,18 +1791,34 @@ export default function InteractiveRouteMap({
     const currentFocusGlow = focusRouteGlowRef.current
     const completedPolyline = routeCompletedPolylineRef.current
     const nextStepPolyline = routeNextStepPolylineRef.current
+    const routePathLength = routePath.length
+    const projectionDistance = Number(projection?.distance)
 
     if (!projection) {
       currentPolyline?.setPath(routePath)
       currentFocusGlow?.setPath(routePath)
+      updateDriverRouteOverlay(routePath)
       completedPolyline?.setPath([])
       nextStepPolyline?.setPath([])
+      if (import.meta.env.DEV && stableDriverNavigation) {
+        console.info('[MiChofer Driver Route]', {
+          originValid: isValidCoord(origin),
+          destinationValid: isValidCoord(destination),
+          routePathLength,
+          projectionDistance: null,
+          remainingPathLength: routePathLength,
+          fallback: 'no-projection-full-route',
+        })
+      }
       return
     }
 
     const index = Math.max(1, Math.min(projection.index, routePath.length - 1))
     const completedPath = [...routePath.slice(0, index), projection.point]
-    const remainingPath = [projection.point, ...routePath.slice(index)]
+    const remainingPath = [projection.point, ...routePath.slice(index)].filter(isValidCoord)
+    const remainingVisiblePath = remainingPath.length < 2 ? routePath : remainingPath
+    const mainVisiblePath = stableDriverNavigation ? routePath : remainingVisiblePath
+    const usedFallbackPath = remainingVisiblePath === routePath
     const highlightMeters = Math.min(
       NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS,
       Math.max(80, Number(smartInstruction?.distanceToNextStep) || NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS)
@@ -1628,28 +1827,46 @@ export default function InteractiveRouteMap({
     const recalculating = smartInstruction?.alertLevel === 'recalculating' || smartInstruction?.recalculating
 
     completedPolyline?.setOptions({
-      strokeOpacity: navigationMode ? 0.24 : 0,
-      strokeWeight: navigationMode ? 6 : 0,
+      strokeColor: stableDriverNavigation ? '#ffffff' : '#7aa7ff',
+      strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.78 : 0.24) : 0,
+      strokeWeight: navigationMode ? (stableDriverNavigation ? 17 : 6) : 0,
+      zIndex: stableDriverNavigation ? 900 : 2,
     })
     currentFocusGlow?.setOptions({
-      strokeColor: '#18e7ff',
-      strokeOpacity: navigationMode ? (recalculating ? 0.16 : 0.3) : 0,
-      strokeWeight: navigationMode ? 17 : 0,
+      strokeColor: stableDriverNavigation ? '#4de7ff' : '#18e7ff',
+      strokeOpacity: navigationMode ? (recalculating ? 0.2 : stableDriverNavigation ? 0.46 : 0.3) : 0,
+      strokeWeight: navigationMode ? (stableDriverNavigation ? 25 : 17) : 0,
+      zIndex: stableDriverNavigation ? 910 : 3,
     })
     currentPolyline?.setOptions({
-      strokeColor: navigationMode ? '#2f45ff' : '#1f7aff',
+      strokeColor: navigationMode ? (stableDriverNavigation ? '#1269ff' : '#2f45ff') : '#1f7aff',
       strokeOpacity: recalculating ? 0.62 : 1,
-      strokeWeight: navigationMode ? 8 : 5,
+      strokeWeight: navigationMode ? (stableDriverNavigation ? 12 : 8) : 5,
+      zIndex: stableDriverNavigation ? 920 : 4,
     })
     nextStepPolyline?.setOptions({
       strokeOpacity: navigationMode && !recalculating ? 0.95 : 0,
-      strokeWeight: navigationMode ? 10 : 0,
+      strokeWeight: navigationMode ? (stableDriverNavigation ? 13 : 10) : 0,
+      zIndex: stableDriverNavigation ? 930 : 5,
     })
 
-    completedPolyline?.setPath(completedPath)
-    currentFocusGlow?.setPath(remainingPath)
-    currentPolyline?.setPath(remainingPath)
+    completedPolyline?.setPath(stableDriverNavigation ? mainVisiblePath : completedPath)
+    currentFocusGlow?.setPath(remainingVisiblePath)
+    currentPolyline?.setPath(mainVisiblePath)
     nextStepPolyline?.setPath(nextStepPath)
+    updateDriverRouteOverlay(mainVisiblePath)
+
+    if (import.meta.env.DEV && stableDriverNavigation) {
+      console.info('[MiChofer Driver Route]', {
+        originValid: isValidCoord(origin),
+        destinationValid: isValidCoord(destination),
+        routePathLength,
+        projectionDistance: Number.isFinite(projectionDistance) ? projectionDistance : null,
+        remainingPathLength: remainingPath.length,
+        mainPathLength: mainVisiblePath.length,
+        fallback: usedFallbackPath ? 'remaining-invalid-full-route' : stableDriverNavigation ? 'driver-full-route-with-remaining-focus' : 'remaining-route',
+      })
+    }
   }
 
 const visibleDrivers = useMemo(() => {
@@ -1675,6 +1892,12 @@ const visibleDrivers = useMemo(() => {
   useEffect(() => {
     if (navigationMode) {
       setIsFollowingDriver(true)
+      navigationStartedAtRef.current = Date.now()
+      currentCarSpriteRef.current = 'back'
+      lastSpriteChangeAtRef.current = Date.now()
+      lastSpriteHeadingRef.current = navigationHeadingRef.current
+    } else {
+      navigationStartedAtRef.current = 0
     }
   }, [navigationMode])
 
@@ -1721,8 +1944,8 @@ const visibleDrivers = useMemo(() => {
 
         const map = new google.maps.Map(mapContainerRef.current, {
           center: isValidCoord(origin) ? toLatLng(origin) : DEFAULT_CENTER,
-          zoom: navigationMode ? NAVIGATION_ZOOM : 14.1,
-          tilt: navigationMode ? NAVIGATION_DRIVER_TILT : isSatellite ? 45 : 0,
+          zoom: navigationMode ? getNavigationZoom() : 14.1,
+          tilt: navigationMode ? getCurrentNavigationTilt() : isSatellite ? 45 : 0,
           heading: navigationMode ? navigationHeadingRef.current : isSatellite ? -18 : 0,
           renderingType: google.maps.RenderingType?.VECTOR,
           mapId: effectiveMapId,
@@ -1772,34 +1995,34 @@ const visibleDrivers = useMemo(() => {
         focusRouteGlowRef.current = new google.maps.Polyline({
           map,
           path: [],
-          strokeColor: '#14f1e5',
-          strokeOpacity: navigationMode ? 0.28 : 0,
-          strokeWeight: navigationMode ? 16 : 0,
+          strokeColor: navigationMode ? '#4de7ff' : '#14f1e5',
+          strokeOpacity: navigationMode ? 0.46 : 0,
+          strokeWeight: navigationMode ? 25 : 0,
           clickable: false,
           geodesic: true,
-          zIndex: 3,
+          zIndex: navigationMode ? 910 : 3,
         })
 
         routePolylineRef.current = new google.maps.Polyline({
           map,
           path: [],
-          strokeColor: navigationMode ? '#3617ff' : '#1f7aff',
+          strokeColor: navigationMode ? '#1269ff' : '#1f7aff',
           strokeOpacity: 1,
-          strokeWeight: navigationMode ? 8 : 5,
+          strokeWeight: navigationMode ? 12 : 5,
           clickable: false,
           geodesic: true,
-          zIndex: 4,
+          zIndex: navigationMode ? 920 : 4,
         })
 
         routeCompletedPolylineRef.current = new google.maps.Polyline({
           map,
           path: [],
-          strokeColor: '#7aa7ff',
-          strokeOpacity: navigationMode ? 0.22 : 0,
-          strokeWeight: navigationMode ? 6 : 0,
+          strokeColor: navigationMode ? '#ffffff' : '#7aa7ff',
+          strokeOpacity: navigationMode ? 0.78 : 0,
+          strokeWeight: navigationMode ? 17 : 0,
           clickable: false,
           geodesic: true,
-          zIndex: 2,
+          zIndex: navigationMode ? 900 : 2,
         })
 
         routeNextStepPolylineRef.current = new google.maps.Polyline({
@@ -1807,10 +2030,10 @@ const visibleDrivers = useMemo(() => {
           path: [],
           strokeColor: '#00d9ff',
           strokeOpacity: navigationMode ? 0.92 : 0,
-          strokeWeight: navigationMode ? 10 : 0,
+          strokeWeight: navigationMode ? 13 : 0,
           clickable: false,
           geodesic: true,
-          zIndex: 5,
+          zIndex: navigationMode ? 930 : 5,
         })
 
         trafficLayerRef.current = new google.maps.TrafficLayer()
@@ -1883,6 +2106,11 @@ const visibleDrivers = useMemo(() => {
         routeNextStepPolylineRef.current = null
       }
 
+      if (driverRouteOverlayRef.current) {
+        driverRouteOverlayRef.current.setMap(null)
+        driverRouteOverlayRef.current = null
+      }
+
       if (trafficLayerRef.current) {
         trafficLayerRef.current.setMap(null)
         trafficLayerRef.current = null
@@ -1928,7 +2156,7 @@ const visibleDrivers = useMemo(() => {
       const effectiveMapId = getMapIdForTheme(currentTheme)
 
       map.setOptions({
-        tilt: NAVIGATION_DRIVER_TILT,
+        tilt: getCurrentNavigationTilt(),
         heading: navigationHeadingRef.current,
         mapId: effectiveMapId,
         mapTypeId: effectiveMapId ? undefined : 'roadmap',
@@ -2091,7 +2319,7 @@ const visibleDrivers = useMemo(() => {
       runProgrammaticCameraMove(() => {
         applyNavigationCamera(map, targetCenter, targetHeading, {
           zoom: getNavigationZoom(),
-          tilt: NAVIGATION_DRIVER_TILT,
+          tilt: getCurrentNavigationTilt(),
         })
       })
       cameraLastCenterRef.current = targetCenter
@@ -2126,7 +2354,7 @@ const visibleDrivers = useMemo(() => {
       runProgrammaticCameraMove(() => {
         applyNavigationCamera(map, interpCenter, interpHeading, {
           zoom: getNavigationZoom(),
-          tilt: NAVIGATION_DRIVER_TILT,
+          tilt: getCurrentNavigationTilt(),
         })
       })
 
@@ -2136,8 +2364,8 @@ const visibleDrivers = useMemo(() => {
         // Final snap
         runProgrammaticCameraMove(() => {
           applyNavigationCamera(map, cameraAnimToRef.current, cameraAnimToHeadingRef.current, {
-            zoom: getNavigationZoom(),
-            tilt: NAVIGATION_DRIVER_TILT,
+          zoom: getNavigationZoom(),
+          tilt: getCurrentNavigationTilt(),
           })
         })
         cameraLastCenterRef.current = cameraAnimToRef.current
@@ -2281,7 +2509,9 @@ const visibleDrivers = useMemo(() => {
 
             lastMatchedPointRef.current = matchedOrigin
             const routeHeading = getRouteHeadingFromProjection(routePath, matchedProjection, destination)
-            nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current)
+            nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current, {
+              preferRouteHeading: stableDriverNavigation && !isReliableHeading(origin),
+            })
           } else {
             // Off route
             const now = Date.now()
@@ -2338,7 +2568,9 @@ const visibleDrivers = useMemo(() => {
           }
         } else if (isValidCoord(destination)) {
           const routeHeading = getBearingBetweenPoints(matchedOrigin, destination)
-          nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current)
+          nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current, {
+            preferRouteHeading: stableDriverNavigation && !isReliableHeading(origin),
+          })
         }
 
         matchedOrigin = smoothVisualPosition(
@@ -2361,7 +2593,11 @@ const visibleDrivers = useMemo(() => {
       }
 
       // Smooth heading with angular interpolation
-      navigationHeadingRef.current = getSmoothNavigationHeading(navigationHeadingRef.current, nextHeading)
+      navigationHeadingRef.current = getSmoothNavigationHeading(navigationHeadingRef.current, nextHeading, {
+        minChange: stableDriverNavigation ? 7 : NAVIGATION_MIN_HEADING_CHANGE,
+        smoothing: stableDriverNavigation ? 0.1 : NAVIGATION_HEADING_SMOOTHING,
+      })
+      lastKnownHeadingRef.current = navigationHeadingRef.current
 
       if (navigationMode) {
         const nextInstruction = getSmartNavigationInstruction({
@@ -2518,6 +2754,7 @@ const visibleDrivers = useMemo(() => {
     googleApi,
     mapReady,
     navigationMode,
+    navigationVariant,
     origin?.lat,
     origin?.lng,
     origin?.heading,
@@ -2633,6 +2870,27 @@ const visibleDrivers = useMemo(() => {
 
     const clearRoute = () => {
       try {
+        const hasDriverVisibleRoute =
+          stableDriverNavigation &&
+          isValidCoord(origin) &&
+          isValidCoord(destination) &&
+          Array.isArray(activeRoutePathRef.current) &&
+          activeRoutePathRef.current.length >= 2
+
+        if (hasDriverVisibleRoute) {
+          if (import.meta.env.DEV) {
+            console.info('[MiChofer Driver Route]', {
+              originValid: true,
+              destinationValid: true,
+              routePathLength: activeRoutePathRef.current.length,
+              projectionDistance: null,
+              remainingPathLength: activeRoutePathRef.current.length,
+              fallback: 'preserve-existing-route-on-clear',
+            })
+          }
+          return
+        }
+
         activeRoutePathRef.current = []
         routeStepsRef.current = []
         lastMatchedRouteIndexRef.current = 1
@@ -2652,6 +2910,10 @@ const visibleDrivers = useMemo(() => {
         }
         if (nextStepPolyline) {
           nextStepPolyline.setPath([])
+        }
+        if (driverRouteOverlayRef.current) {
+          driverRouteOverlayRef.current.setMap(null)
+          driverRouteOverlayRef.current = null
         }
       } catch (error) {
         console.warn('No pude limpiar la ruta:', error)
@@ -2730,13 +2992,36 @@ const visibleDrivers = useMemo(() => {
       const handleRouteResult = (routePath, distance, duration, instruction, steps = []) => {
         activeRoutePathRef.current = routePath
         routeStepsRef.current = steps.map(normalizeRouteStep).filter(Boolean)
+        if (stableDriverNavigation) {
+          currentPolyline.setOptions({
+            strokeColor: '#1269ff',
+            strokeOpacity: 1,
+            strokeWeight: 12,
+            zIndex: 920,
+          })
+        }
         currentPolyline.setPath(routePath)
-        if (currentCompletedPolyline) currentCompletedPolyline.setPath([])
+        updateDriverRouteOverlay(routePath)
+        if (currentCompletedPolyline) {
+          if (stableDriverNavigation) {
+            currentCompletedPolyline.setOptions({
+              strokeColor: '#ffffff',
+              strokeOpacity: 0.78,
+              strokeWeight: 17,
+              zIndex: 900,
+            })
+            currentCompletedPolyline.setPath(routePath)
+          } else {
+            currentCompletedPolyline.setPath([])
+          }
+        }
         if (currentNextStepPolyline) currentNextStepPolyline.setPath([])
         if (currentFocusGlow) {
           currentFocusGlow.setOptions({
-            strokeOpacity: navigationMode ? 0.28 : 0,
-            strokeWeight: navigationMode ? 16 : 0,
+            strokeColor: stableDriverNavigation ? '#4de7ff' : '#14f1e5',
+            strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.46 : 0.28) : 0,
+            strokeWeight: navigationMode ? (stableDriverNavigation ? 25 : 16) : 0,
+            zIndex: stableDriverNavigation ? 910 : 3,
           })
           currentFocusGlow.setPath(routePath)
         }
@@ -2745,6 +3030,17 @@ const visibleDrivers = useMemo(() => {
           point: normalizedOrigin,
           index: 1,
           distance: 0,
+        }
+
+        if (import.meta.env.DEV && stableDriverNavigation) {
+          console.info('[MiChofer Driver Route]', {
+            originValid: isValidCoord(normalizedOrigin),
+            destinationValid: isValidCoord(normalizedDestination),
+            routePathLength: routePath.length,
+            projectionDistance: Number.isFinite(Number(currentProjection?.distance)) ? Number(currentProjection.distance) : null,
+            remainingPathLength: Math.max(0, routePath.length - Math.max(1, Number(currentProjection?.index) || 1) + 1),
+            fallback: currentProjection?.distance === 0 && currentProjection?.point === normalizedOrigin ? 'initial-origin-projection' : 'new-route',
+          })
         }
 
         lastMatchedRouteIndexRef.current = currentProjection.index
@@ -2759,9 +3055,15 @@ const visibleDrivers = useMemo(() => {
         const heading = getBestVehicleHeading(
           origin,
           routeHeading,
-          navigationHeadingRef.current
+          navigationHeadingRef.current,
+          {
+            preferRouteHeading: stableDriverNavigation && !isReliableHeading(origin),
+          }
         )
-        const smoothHeading = getSmoothNavigationHeading(navigationHeadingRef.current, heading)
+        const smoothHeading = getSmoothNavigationHeading(navigationHeadingRef.current, heading, {
+          minChange: stableDriverNavigation ? 7 : NAVIGATION_MIN_HEADING_CHANGE,
+          smoothing: stableDriverNavigation ? 0.1 : NAVIGATION_HEADING_SMOOTHING,
+        })
 
         navigationHeadingRef.current = smoothHeading
 
@@ -2843,7 +3145,7 @@ const visibleDrivers = useMemo(() => {
           const effectiveMapId = getMapIdForTheme(currentTheme)
 
           currentMap.setOptions({
-            tilt: NAVIGATION_DRIVER_TILT,
+            tilt: getCurrentNavigationTilt(),
             heading: navigationHeading,
             mapId: effectiveMapId,
             mapTypeId: effectiveMapId ? undefined : 'roadmap',
@@ -2853,7 +3155,7 @@ const visibleDrivers = useMemo(() => {
           runProgrammaticCameraMove(() => {
             applyNavigationCamera(currentMap, cameraCenter, navigationHeading, {
               zoom: getNavigationZoom(),
-              tilt: NAVIGATION_DRIVER_TILT,
+              tilt: getCurrentNavigationTilt(),
               force: true,
             })
           })
@@ -2869,6 +3171,23 @@ const visibleDrivers = useMemo(() => {
       }
 
       if (!directionsService) {
+        if (stableDriverNavigation && activeRoutePathRef.current.length >= 2 && isValidCoord(origin) && isValidCoord(destination)) {
+          currentPolyline.setPath(activeRoutePathRef.current)
+          if (currentFocusGlow) currentFocusGlow.setPath(activeRoutePathRef.current)
+          updateDriverRouteOverlay(activeRoutePathRef.current)
+          if (import.meta.env.DEV) {
+            console.info('[MiChofer Driver Route]', {
+              originValid: true,
+              destinationValid: true,
+              routePathLength: activeRoutePathRef.current.length,
+              projectionDistance: null,
+              remainingPathLength: activeRoutePathRef.current.length,
+              fallback: 'no-directions-service-preserve-route',
+            })
+          }
+          return
+        }
+
         currentPolyline.setPath([])
         if (currentFocusGlow) currentFocusGlow.setPath([])
         if (currentCompletedPolyline) currentCompletedPolyline.setPath([])
@@ -2916,6 +3235,23 @@ const visibleDrivers = useMemo(() => {
             }
           }
 
+          if (stableDriverNavigation && activeRoutePathRef.current.length >= 2 && isValidCoord(origin) && isValidCoord(destination)) {
+            currentPolyline.setPath(activeRoutePathRef.current)
+            if (currentFocusGlow) currentFocusGlow.setPath(activeRoutePathRef.current)
+            updateDriverRouteOverlay(activeRoutePathRef.current)
+            if (import.meta.env.DEV) {
+              console.info('[MiChofer Driver Route]', {
+                originValid: true,
+                destinationValid: true,
+                routePathLength: activeRoutePathRef.current.length,
+                projectionDistance: null,
+                remainingPathLength: activeRoutePathRef.current.length,
+                fallback: 'directions-failed-preserve-route',
+              })
+            }
+            return
+          }
+
           currentPolyline.setPath([])
           if (currentFocusGlow) currentFocusGlow.setPath([])
           if (currentCompletedPolyline) currentCompletedPolyline.setPath([])
@@ -2923,6 +3259,22 @@ const visibleDrivers = useMemo(() => {
           emitRouteUpdate(null)
         } catch (error) {
           console.warn('Error seguro en route callback:', error)
+          if (stableDriverNavigation && activeRoutePathRef.current.length >= 2 && isValidCoord(origin) && isValidCoord(destination)) {
+            currentPolyline.setPath(activeRoutePathRef.current)
+            if (currentFocusGlow) currentFocusGlow.setPath(activeRoutePathRef.current)
+            updateDriverRouteOverlay(activeRoutePathRef.current)
+            if (import.meta.env.DEV) {
+              console.info('[MiChofer Driver Route]', {
+                originValid: true,
+                destinationValid: true,
+                routePathLength: activeRoutePathRef.current.length,
+                projectionDistance: null,
+                remainingPathLength: activeRoutePathRef.current.length,
+                fallback: 'route-callback-error-preserve-route',
+              })
+            }
+            return
+          }
           currentPolyline.setPath([])
           if (currentFocusGlow) currentFocusGlow.setPath([])
           if (currentCompletedPolyline) currentCompletedPolyline.setPath([])
@@ -2948,6 +3300,7 @@ const visibleDrivers = useMemo(() => {
     googleApi,
     mapReady,
     navigationMode,
+    navigationVariant,
     onRouteUpdate,
     origin?.lat,
     origin?.lng,
@@ -2990,7 +3343,7 @@ const visibleDrivers = useMemo(() => {
     runProgrammaticCameraMove(() => {
       applyNavigationCamera(map, cameraCenter, navigationHeadingRef.current, {
         zoom: getNavigationZoom(),
-        tilt: NAVIGATION_DRIVER_TILT,
+        tilt: getCurrentNavigationTilt(),
         force: true,
       })
     })
@@ -3046,7 +3399,7 @@ const visibleDrivers = useMemo(() => {
               runProgrammaticCameraMove(() => {
                 applyNavigationCamera(map, cameraCenter, navigationHeadingRef.current, {
                   zoom: getNavigationZoom(),
-                  tilt: NAVIGATION_DRIVER_TILT,
+                  tilt: getCurrentNavigationTilt(),
                   force: true,
                 })
               })
