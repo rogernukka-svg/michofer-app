@@ -1666,6 +1666,7 @@ export default function InteractiveRouteMap({
   showMapTypeControl = true,
   safetyZones = [],
   onRouteUpdate,
+  onMapClick,
 }) {
   const [isSatellite, setIsSatellite] = useState(false)
   const [showTraffic, setShowTraffic] = useState(false)
@@ -1718,6 +1719,7 @@ export default function InteractiveRouteMap({
   const rerouteReasonRef = useRef('')
   const routeOriginRef = useRef(null)
   const [routeRefreshToken, setRouteRefreshToken] = useState(0)
+  const onMapClickRef = useRef(onMapClick)
 
   // GPS filtering refs for car position
   const visualDriverPositionRef = useRef(null)
@@ -1758,6 +1760,10 @@ export default function InteractiveRouteMap({
   const lastSpriteChangeAtRef = useRef(0)
   const lastSpriteHeadingRef = useRef(0)
   const navigationStartedAtRef = useRef(0)
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick
+  }, [onMapClick])
 
   function runProgrammaticCameraMove(callback) {
     isProgrammaticCameraMoveRef.current = true
@@ -2088,6 +2094,15 @@ const visibleDrivers = useMemo(() => {
         map.addListener('idle', () => {
           if (!navigationMode && !isProgrammaticCameraMoveRef.current) {
             setIsFollowingDriver(false)
+          }
+        })
+
+        map.addListener('click', (event) => {
+          if (typeof onMapClickRef.current !== 'function') return
+          const lat = Number(event.latLng?.lat?.())
+          const lng = Number(event.latLng?.lng?.())
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            onMapClickRef.current({ lat, lng })
           }
         })
 

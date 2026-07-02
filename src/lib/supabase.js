@@ -199,3 +199,125 @@ export function updateOwnDriverStatus({ isOnline, isAvailable, lat, lng }) {
     p_lng: Number.isFinite(Number(lng)) ? Number(lng) : null,
   })
 }
+
+function isMissingRpc(error, rpcName = '') {
+  const message = String(error?.message || error?.details || '').toLowerCase()
+  return (
+    error?.code === 'PGRST202' ||
+    message.includes('could not find the function') ||
+    (rpcName && message.includes(rpcName.toLowerCase()))
+  )
+}
+
+export async function adminCreateTestTrip(payload) {
+  const rpcPayload = {
+    p_client_id: payload.clientId,
+    p_driver_id: payload.driverId,
+    p_pickup_lat: Number(payload.pickupLat),
+    p_pickup_lng: Number(payload.pickupLng),
+    p_destination_lat: Number(payload.destinationLat),
+    p_destination_lng: Number(payload.destinationLng),
+    p_destination_text: payload.destinationText || 'Viaje test admin',
+    p_route_km: Number.isFinite(Number(payload.routeKm)) ? Number(payload.routeKm) : null,
+    p_price: Number.isFinite(Number(payload.price)) ? Number(payload.price) : 25000,
+  }
+
+  const rpcResult = await supabase.rpc('admin_create_test_trip', rpcPayload)
+  if (!rpcResult.error || !isMissingRpc(rpcResult.error, 'admin_create_test_trip')) return rpcResult
+
+  return supabase
+    .from('trips')
+    .insert({
+      client_id: payload.clientId,
+      driver_id: payload.driverId,
+      status: 'pending',
+      pickup_lat: Number(payload.pickupLat),
+      pickup_lng: Number(payload.pickupLng),
+      destination_lat: Number(payload.destinationLat),
+      destination_lng: Number(payload.destinationLng),
+      destination_text: payload.destinationText || 'Viaje test admin',
+      driver_lat: Number(payload.pickupLat),
+      driver_lng: Number(payload.pickupLng),
+      driver_heading: 0,
+      driver_speed: 0,
+      driver_accuracy: 10,
+      route_km: Number.isFinite(Number(payload.routeKm)) ? Number(payload.routeKm) : null,
+      price: Number.isFinite(Number(payload.price)) ? Number(payload.price) : 25000,
+      payment_method: 'cash',
+      ride_category: 'all',
+      is_test: true,
+      created_by_admin: payload.adminId || null,
+      updated_at: new Date().toISOString(),
+    })
+    .select('*')
+    .single()
+}
+
+export async function adminUpdateTestTripLocation({ tripId, driverId, lat, lng, heading, speed, accuracy, status }) {
+  const payload = {
+    p_trip_id: tripId,
+    p_driver_id: driverId,
+    p_lat: Number(lat),
+    p_lng: Number(lng),
+    p_heading: Number.isFinite(Number(heading)) ? Number(heading) : null,
+    p_speed: Number.isFinite(Number(speed)) ? Number(speed) : 0,
+    p_accuracy: Number.isFinite(Number(accuracy)) ? Number(accuracy) : 10,
+    p_status: status || null,
+  }
+
+  const rpcResult = await supabase.rpc('admin_update_test_trip_location', payload)
+  if (!rpcResult.error || !isMissingRpc(rpcResult.error, 'admin_update_test_trip_location')) return rpcResult
+
+  const nextUpdate = {
+    driver_lat: Number(lat),
+    driver_lng: Number(lng),
+    driver_heading: payload.p_heading,
+    driver_speed: payload.p_speed,
+    driver_accuracy: payload.p_accuracy,
+    updated_at: new Date().toISOString(),
+  }
+  if (status) nextUpdate.status = status
+
+  const tripResult = await supabase
+    .from('trips')
+    .update(nextUpdate)
+    .eq('id', tripId)
+    .select('*')
+    .single()
+
+  if (tripResult.error) return tripResult
+
+  if (driverId) {
+    await supabase
+      .from('driver_profiles')
+      .update({
+        lat: Number(lat),
+        lng: Number(lng),
+        heading: payload.p_heading,
+        speed: payload.p_speed,
+        accuracy: payload.p_accuracy,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', driverId)
+  }
+
+  return tripResult
+}
+
+export async function adminUpdateTestTripStatus({ tripId, status }) {
+  const rpcResult = await supabase.rpc('admin_update_test_trip_status', {
+    p_trip_id: tripId,
+    p_status: status,
+  })
+  if (!rpcResult.error || !isMissingRpc(rpcResult.error, 'admin_update_test_trip_status')) return rpcResult
+
+  return supabase
+    .from('trips')
+    .update({
+      status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', tripId)
+    .select('*')
+    .single()
+}
