@@ -241,7 +241,7 @@ export function decodePolyline(encoded) {
  * @param {object} params.origin - {lat, lng}
  * @param {object} params.destination - {lat, lng}
  * @param {Array<object>} [params.waypoints] - [{lat, lng}]
- * @returns {Promise<{path: Array, encodedPolyline: string, distance: number, duration: number, instruction: string, steps: Array, source: string}|null>}
+ * @returns {Promise<{path: Array, encodedPolyline: string, distance: number, duration: number, instruction: string, steps: Array, source: string, trafficStatus?: string}|null>}
  */
 export async function computeRouteWithRoutesApi({ origin, destination, waypoints }) {
   if (!GOOGLE_ROUTES_API_ENABLED) return null
@@ -279,7 +279,7 @@ export async function computeRouteWithRoutesApi({ origin, destination, waypoints
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs.steps.navigationInstruction,routes.legs.steps.distanceMeters,routes.legs.steps.staticDuration,routes.legs.steps.startLocation,routes.legs.steps.endLocation,routes.localizedValues',
+        'X-Goog-FieldMask': 'routes.duration,routes.staticDuration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.travelAdvisory.speedReadingIntervals,routes.legs.steps.navigationInstruction,routes.legs.steps.distanceMeters,routes.legs.steps.staticDuration,routes.legs.steps.startLocation,routes.legs.steps.endLocation,routes.localizedValues',
       },
       body: JSON.stringify(body),
     })
@@ -299,6 +299,24 @@ export async function computeRouteWithRoutesApi({ origin, destination, waypoints
     // Extract distance from route
     const distance = Number(route.distanceMeters) || 0
     const duration = Math.ceil(Number(route.duration?.replace('s', '')) || 0)
+    const staticDuration = Math.ceil(Number(route.staticDuration?.replace('s', '')) || 0)
+    const delayRatio = staticDuration > 0 && duration > 0 ? duration / staticDuration : 1
+    const speedIntervals = Array.isArray(route.travelAdvisory?.speedReadingIntervals)
+      ? route.travelAdvisory.speedReadingIntervals
+      : []
+    const hasSlowTraffic = speedIntervals.some((interval) =>
+      String(interval?.speed || '').toUpperCase().includes('SLOW')
+    )
+    const hasTrafficJam = speedIntervals.some((interval) =>
+      String(interval?.speed || '').toUpperCase().includes('TRAFFIC_JAM')
+    )
+    const trafficStatus = hasTrafficJam || delayRatio >= 1.35
+      ? 'heavy'
+      : hasSlowTraffic || delayRatio >= 1.15
+        ? 'moderate'
+        : staticDuration > 0
+          ? 'normal'
+          : null
 
     // Get first step instruction
     let instruction = ''
@@ -314,7 +332,17 @@ export async function computeRouteWithRoutesApi({ origin, destination, waypoints
       ? route.legs.flatMap((leg) => Array.isArray(leg.steps) ? leg.steps : [])
       : []
 
-    return { path, encodedPolyline, distance, duration, instruction, steps, source: 'routes_api' }
+    return {
+      path,
+      encodedPolyline,
+      distance,
+      duration,
+      staticDuration,
+      instruction,
+      steps,
+      source: 'routes_api',
+      trafficStatus,
+    }
   } catch {
     return null
   }

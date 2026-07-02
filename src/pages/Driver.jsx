@@ -90,6 +90,46 @@ function isValidParaguayCoord(point) {
   )
 }
 
+function finiteOrNull(value) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function mergeDriverLiveTelemetry(current, updatedDriver, location) {
+  const heading = finiteOrNull(location?.heading)
+  const speed = finiteOrNull(location?.speed)
+  const accuracy = finiteOrNull(location?.accuracy)
+
+  return {
+    ...(current || {}),
+    ...(updatedDriver || {}),
+    lat: Number(location.lat),
+    lng: Number(location.lng),
+    heading: heading ?? current?.heading ?? null,
+    speed: speed ?? current?.speed ?? null,
+    accuracy: accuracy ?? current?.accuracy ?? null,
+  }
+}
+
+function tripDriverTelemetryPayload(location) {
+  return {
+    driver_lat: location.lat,
+    driver_lng: location.lng,
+    driver_heading: finiteOrNull(location.heading),
+    driver_speed: finiteOrNull(location.speed),
+    driver_accuracy: finiteOrNull(location.accuracy),
+    updated_at: new Date().toISOString(),
+  }
+}
+
+function driverProfileTelemetryPayload(location) {
+  return {
+    heading: finiteOrNull(location.heading),
+    speed: finiteOrNull(location.speed),
+    accuracy: finiteOrNull(location.accuracy),
+  }
+}
+
 function distanceKm(a, b) {
   if (!isValidParaguayCoord(a) || !isValidParaguayCoord(b)) return null
   const R = 6371
@@ -446,6 +486,9 @@ export default function Driver() {
   const guidanceStepDistance = formatMeters(routeGuidance?.distanceToNextStep) || guidanceDistance
   const guidanceEta = formatSeconds(routeGuidance?.duration) || navigationEta
   const guidanceAlertLevel = routeGuidance?.alertLevel || 'far'
+  const guidanceProgress = Math.max(0, Math.min(1, Number(routeGuidance?.progress) || 0))
+  const guidanceTrafficText = routeGuidance?.trafficCopy || ''
+  const guidanceIsFallbackRoute = Boolean(routeGuidance?.fallbackRoute)
 
   const navigationMeters = Number.isFinite(Number(routeGuidance?.distance))
     ? Number(routeGuidance.distance)
@@ -497,6 +540,14 @@ export default function Driver() {
     (routeInstructionDetail
       ? `Luego ${routeInstructionDetail} · ${guidanceEta}`
       : `${destinationRadarText} · ${guidanceEta}`)
+  const guidanceSecondaryTextPremium = closeArrival?.subtitle ||
+    (guidanceIsFallbackRoute
+      ? `Ruta provisoria · ${guidanceEta}`
+      : guidanceTrafficText
+        ? `${guidanceTrafficText} · ${guidanceEta}`
+        : routeInstructionDetail
+          ? `Luego ${routeInstructionDetail} · ${guidanceEta}`
+          : `${destinationRadarText} · ${guidanceEta}`)
   const hasClientRushNotice = Boolean(
     clientRushNotice ||
     activeTrip?.client_rush_at ||
@@ -760,13 +811,7 @@ async function getCurrentLocation() {
 }
 
 setDriverProfile((current) =>
-      current
-        ? {
-            ...current,
-            lat: location.lat,
-            lng: location.lng,
-          }
-        : current
+      current ? mergeDriverLiveTelemetry(current, null, location) : current
     )
 
     liveSyncBusyRef.current = true
@@ -779,28 +824,19 @@ setDriverProfile((current) =>
         lng: location.lng,
       })
 
-      if (updatedDriver) setDriverProfile(updatedDriver)
+      if (updatedDriver) {
+        setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
+      }
 
      await supabase
   .from('trips')
-  .update({
-    driver_lat: location.lat,
-    driver_lng: location.lng,
-    driver_heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
-    driver_speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
-    driver_accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
-    updated_at: new Date().toISOString(),
-  })
+  .update(tripDriverTelemetryPayload(location))
   .eq('id', trip.id)
   .eq('driver_id', user.id)
 
 await supabase
   .from('driver_profiles')
-  .update({
-    heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
-    speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
-    accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
-  })
+  .update(driverProfileTelemetryPayload(location))
   .eq('user_id', user.id)
 
       let snappedPoint = null
@@ -913,6 +949,10 @@ if (!isValidParaguayCoord(location)) {
       gpsBufferRef.current.push({ lat: location.lat, lng: location.lng })
     }
 
+    setDriverProfile((current) =>
+      current ? mergeDriverLiveTelemetry(current, null, location) : current
+    )
+
     const { data: updatedDriver } = await updateOwnDriverStatus({
       isOnline: true,
       isAvailable,
@@ -920,28 +960,19 @@ if (!isValidParaguayCoord(location)) {
       lng: location.lng,
     })
 
-    if (updatedDriver) setDriverProfile(updatedDriver)
+    if (updatedDriver) {
+      setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
+    }
 
     await supabase
       .from('trips')
-      .update({
-        driver_lat: location.lat,
-        driver_lng: location.lng,
-        driver_heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
-        driver_speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
-        driver_accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(tripDriverTelemetryPayload(location))
       .eq('id', trip.id)
       .eq('driver_id', user.id)
 
     await supabase
       .from('driver_profiles')
-      .update({
-        heading: Number.isFinite(Number(location.heading)) ? Number(location.heading) : null,
-        speed: Number.isFinite(Number(location.speed)) ? Number(location.speed) : null,
-        accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
-      })
+      .update(driverProfileTelemetryPayload(location))
       .eq('user_id', user.id)
 
     if (GOOGLE_ROADS_API_ENABLED && gpsBufferRef.current.getForRoads().length >= ROADS_MIN_POINTS) {
@@ -996,16 +1027,19 @@ if (!isValidParaguayCoord(location)) {
     lng: location.lng,
   })
 
-  if (!error && updatedDriver) setDriverProfile(updatedDriver)
+  if (!error && updatedDriver) {
+    setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
+  }
+
+  await supabase
+    .from('driver_profiles')
+    .update(driverProfileTelemetryPayload(location))
+    .eq('user_id', user.id)
 
   if (trip?.id && LOCATION_STATUSES.includes(trip.status) && user?.id) {
     await supabase
       .from('trips')
-      .update({
-        driver_lat: location.lat,
-        driver_lng: location.lng,
-        updated_at: new Date().toISOString(),
-      })
+      .update(tripDriverTelemetryPayload(location))
       .eq('id', trip.id)
       .eq('driver_id', user.id)
   }
@@ -1040,7 +1074,9 @@ if (!isValidParaguayCoord(location)) {
     return
   }
 
-  if (updatedDriver) setDriverProfile(updatedDriver)
+  if (updatedDriver) {
+    setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
+  }
 
   if (!nextOnline) {
     setMessage('Desconectado.')
@@ -1118,9 +1154,7 @@ if (!isValidParaguayCoord(location)) {
             ? {
                 ...item,
                 status,
-                driver_lat: location.lat,
-                driver_lng: location.lng,
-                updated_at: new Date().toISOString(),
+                ...tripDriverTelemetryPayload(location),
               }
             : item
         )
@@ -1130,9 +1164,7 @@ if (!isValidParaguayCoord(location)) {
         .from('trips')
         .update({
           status,
-          driver_lat: location.lat,
-          driver_lng: location.lng,
-          updated_at: new Date().toISOString(),
+          ...tripDriverTelemetryPayload(location),
         })
         .eq('id', trip.id)
         .eq('driver_id', user.id)
@@ -1152,7 +1184,14 @@ if (!isValidParaguayCoord(location)) {
         lng: location.lng,
       })
 
-      if (updatedDriver) setDriverProfile(updatedDriver)
+      if (updatedDriver) {
+        setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
+      }
+
+      await supabase
+        .from('driver_profiles')
+        .update(driverProfileTelemetryPayload(location))
+        .eq('user_id', user.id)
 
       if (status === 'accepted') setMessage('Ruta lista. Vamos al punto de recogida.')
       else if (status === 'cancelled') setMessage('Viaje cancelado. El cliente será avisado.')
@@ -1227,8 +1266,16 @@ if (!isValidParaguayCoord(location)) {
                 {closeArrival?.title || routeInstructionText}
               </strong>
               <small>
-                {guidanceSecondaryText}
+                {guidanceSecondaryTextPremium}
               </small>
+              <div className="driver-navigation-progress" aria-hidden="true">
+                <i style={{ width: `${Math.round(guidanceProgress * 100)}%` }} />
+              </div>
+              {(guidanceTrafficText || guidanceIsFallbackRoute) && (
+                <em className={`driver-navigation-badge traffic-${routeGuidance?.trafficStatus || (guidanceIsFallbackRoute ? 'fallback' : 'normal')}`}>
+                  {guidanceIsFallbackRoute ? 'Ruta provisoria' : guidanceTrafficText}
+                </em>
+              )}
             </div>
 
             <button type="button" className="driver-navigation-refresh" onClick={() => syncDriverLocation(activeTrip)} aria-label="Actualizar ubicación">

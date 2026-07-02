@@ -296,6 +296,21 @@ function getRouteDistanceMeters(routePoints) {
   }, 0)
 }
 
+function createDriverFallbackRoutePath(origin, destination) {
+  if (!isValidCoord(origin) || !isValidCoord(destination)) return []
+
+  const start = toLatLng(origin)
+  const end = toLatLng(destination)
+  const points = []
+  const segments = 18
+
+  for (let index = 0; index <= segments; index += 1) {
+    points.push(interpolateLatLng(start, end, index / segments))
+  }
+
+  return points.filter(isValidCoord)
+}
+
 function getRoutePointAtDistance(routePoints, targetDistanceMeters) {
   if (!Array.isArray(routePoints) || routePoints.length === 0) return DEFAULT_CENTER
   if (routePoints.length === 1) return routePoints[0]
@@ -456,6 +471,13 @@ function getManeuverCopy(maneuver, instruction = '') {
   return cleanRouteInstruction(instruction) || 'Seguí por la ruta'
 }
 
+function getTrafficCopy(trafficStatus) {
+  if (trafficStatus === 'heavy') return 'Trafico pesado, sumamos unos minutos'
+  if (trafficStatus === 'moderate') return 'Trafico moderado adelante'
+  if (trafficStatus === 'normal') return 'Trafico fluido'
+  return ''
+}
+
 function getRoutePathWithProjection(routePath, projection) {
   const routePoints = Array.isArray(routePath)
     ? routePath.map((point) => normalizeMapPoint(point, null)).filter(isValidCoord)
@@ -603,6 +625,23 @@ function getSmartNavigationInstruction({
     projection.distance >= NAVIGATION_SOFT_OFF_ROUTE_METERS &&
     headingDiff >= NAVIGATION_RECALCULATE_HEADING_DEG
   )
+
+  if (projection && projection.distance >= NAVIGATION_HARD_OFF_ROUTE_METERS) {
+    return {
+      distance: remainingMeters,
+      duration: 0,
+      instruction: 'Recalculando ruta...',
+      shortInstruction: 'Recalculando ruta',
+      maneuver: 'recalculating',
+      nextManeuver: null,
+      nextStreet: '',
+      alertLevel: 'recalculating',
+      progress: routeDistance > 0 ? clamp(1 - remainingMeters / routeDistance, 0, 1) : 0,
+      remainingMeters,
+      distanceToNextStep: 0,
+      shouldRecalculate: true,
+    }
+  }
 
   if (!nextStep) {
     return {
@@ -906,6 +945,10 @@ function getNavigationTiltForPoint(point) {
   return isMovingForNavigation(point) ? NAVIGATION_DRIVER_TILT : NAVIGATION_DRIVER_STATIONARY_TILT
 }
 
+function getNavigationHeadingForMap(stableDriverNavigation, heading) {
+  return Number.isFinite(Number(heading)) ? Number(heading) : 0
+}
+
 /**
  * Smooth heading: evita giros bruscos de 180°.
  * Usa un factor de suavizado (más bajo = más suave).
@@ -956,6 +999,8 @@ function getDriverNavigationCameraCenter(carPoint, heading, routePath, projectio
 function applyNavigationCamera(map, center, heading, options = {}) {
   if (!map || !isValidCoord(center)) return
 
+  const tilt = Number.isFinite(options.tilt) ? options.tilt : NAVIGATION_DRIVER_TILT
+
   const camera = {
     center: toLatLng(center),
     zoom: clamp(
@@ -963,11 +1008,7 @@ function applyNavigationCamera(map, center, heading, options = {}) {
       18.5,
       19.6
     ),
-    tilt: clamp(
-      Number.isFinite(options.tilt) ? options.tilt : NAVIGATION_DRIVER_TILT,
-      40,
-      55
-    ),
+    tilt: clamp(tilt, 40, 55),
     heading: Number.isFinite(Number(heading)) ? Number(heading) : 0,
   }
 
@@ -1509,8 +1550,9 @@ function createDriverRouteOverlay(google, containerElement) {
   element.style.width = '100%'
   element.style.height = '100%'
   element.style.pointerEvents = 'none'
-  element.style.zIndex = '7'
+  element.style.zIndex = '18'
   element.style.overflow = 'hidden'
+  element.style.willChange = 'transform'
 
   svg.setAttribute('width', '100%')
   svg.setAttribute('height', '100%')
@@ -1563,10 +1605,11 @@ function createDriverRouteOverlay(google, containerElement) {
 
     const pixels = this.currentPath
       .map((point) => {
+        const latLng = new google.maps.LatLng(point.lat, point.lng)
         if (typeof projection.fromLatLngToContainerPixel === 'function') {
-          return projection.fromLatLngToContainerPixel(new google.maps.LatLng(point.lat, point.lng))
+          return projection.fromLatLngToContainerPixel(latLng)
         }
-        return projection.fromLatLngToDivPixel(new google.maps.LatLng(point.lat, point.lng))
+        return null
       })
       .filter((pixel) => pixel && Number.isFinite(pixel.x) && Number.isFinite(pixel.y))
 
@@ -1648,6 +1691,7 @@ export default function InteractiveRouteMap({
 
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
+  const mapResizeObserverRef = useRef(null)
   const directionsServiceRef = useRef(null)
   const routePolylineRef = useRef(null)
   const focusRouteGlowRef = useRef(null)
@@ -1763,6 +1807,10 @@ export default function InteractiveRouteMap({
 
   function getCurrentNavigationTilt() {
     return stableDriverNavigation ? getNavigationTiltForPoint(origin) : NAVIGATION_DRIVER_TILT
+  }
+
+  function getCurrentMapHeading() {
+    return getNavigationHeadingForMap(stableDriverNavigation, navigationHeadingRef.current)
   }
 
   function updateDriverRouteOverlay(routePath) {
@@ -1915,6 +1963,36 @@ const visibleDrivers = useMemo(() => {
   useEffect(() => {
     let cancelled = false
     let timeoutId = null
+    let animationFrameId = null
+    let resizeObserver = null
+
+    const waitForSizedContainer = () =>
+      new Promise((resolve, reject) => {
+        let attempts = 0
+
+        const checkSize = () => {
+          if (cancelled) {
+            reject(new Error('Mapa cancelado antes de inicializar.'))
+            return
+          }
+
+          const rect = mapContainerRef.current?.getBoundingClientRect()
+          if (rect?.width > 32 && rect?.height > 32) {
+            resolve()
+            return
+          }
+
+          attempts += 1
+          if (attempts > 90) {
+            reject(new Error('El contenedor del mapa no tiene tamano visible.'))
+            return
+          }
+
+          animationFrameId = requestAnimationFrame(checkSize)
+        }
+
+        animationFrameId = requestAnimationFrame(checkSize)
+      })
 
     setMapError(null)
 
@@ -1925,7 +2003,7 @@ const visibleDrivers = useMemo(() => {
     }, 10000)
 
     loadGoogleMaps()
-      .then((google) => {
+      .then(async (google) => {
         if (cancelled || !mapContainerRef.current || mapRef.current) return
 
         if (
@@ -1938,6 +2016,8 @@ const visibleDrivers = useMemo(() => {
         }
 
         setGoogleApi(google)
+        await waitForSizedContainer()
+        if (cancelled || !mapContainerRef.current || mapRef.current) return
 
         const currentTheme = getAutoMapTheme()
         const effectiveMapId = getMapIdForTheme(currentTheme)
@@ -1946,7 +2026,7 @@ const visibleDrivers = useMemo(() => {
           center: isValidCoord(origin) ? toLatLng(origin) : DEFAULT_CENTER,
           zoom: navigationMode ? getNavigationZoom() : 14.1,
           tilt: navigationMode ? getCurrentNavigationTilt() : isSatellite ? 45 : 0,
-          heading: navigationMode ? navigationHeadingRef.current : isSatellite ? -18 : 0,
+          heading: navigationMode ? getCurrentMapHeading() : isSatellite ? -18 : 0,
           renderingType: google.maps.RenderingType?.VECTOR,
           mapId: effectiveMapId,
           mapTypeId: effectiveMapId
@@ -1970,6 +2050,25 @@ const visibleDrivers = useMemo(() => {
 
         mapRef.current = map
         directionsServiceRef.current = new google.maps.DirectionsService()
+
+        if (typeof ResizeObserver !== 'undefined') {
+          resizeObserver = new ResizeObserver(() => {
+            const rect = mapContainerRef.current?.getBoundingClientRect()
+            if (!rect?.width || !rect?.height || !mapRef.current) return
+
+            if (google.maps.event?.trigger) {
+              google.maps.event.trigger(mapRef.current, 'resize')
+            }
+            const center = isValidCoord(origin) ? toLatLng(origin) : DEFAULT_CENTER
+            mapRef.current.setCenter(center)
+            if (driverRouteOverlayRef.current?.draw) {
+              driverRouteOverlayRef.current.draw()
+            }
+          })
+          resizeObserver.observe(mapContainerRef.current)
+          mapResizeObserverRef.current = resizeObserver
+        }
+
         ;['zoom_changed', 'tilt_changed', 'heading_changed'].forEach((eventName) => {
           map.addListener(eventName, () => {
             if (!navigationMode) {
@@ -2042,6 +2141,7 @@ const visibleDrivers = useMemo(() => {
         setMapError(null)
       })
       .catch((err) => {
+        if (cancelled) return
         console.error('Error cargando Google Maps:', err)
         setMapReady(false)
         setMapError(err || new Error('Error cargando Google Maps'))
@@ -2052,6 +2152,19 @@ const visibleDrivers = useMemo(() => {
 
       if (timeoutId) {
         clearTimeout(timeoutId)
+      }
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      }
+
+      if (mapResizeObserverRef.current) {
+        mapResizeObserverRef.current.disconnect()
+        mapResizeObserverRef.current = null
       }
 
       // Cancel any running smooth animation
@@ -2157,7 +2270,7 @@ const visibleDrivers = useMemo(() => {
 
       map.setOptions({
         tilt: getCurrentNavigationTilt(),
-        heading: navigationHeadingRef.current,
+        heading: getCurrentMapHeading(),
         mapId: effectiveMapId,
         mapTypeId: effectiveMapId ? undefined : 'roadmap',
         styles: effectiveMapId ? undefined : currentTheme === 'dark' ? MICHOFER_DARK_MAP_STYLE : MICHOFER_LIGHT_MAP_STYLE,
@@ -2961,6 +3074,93 @@ const visibleDrivers = useMemo(() => {
       hasAutoFittedRouteRef.current = false
     }
 
+    const applyDriverFallbackRoute = (reason = 'driver-fallback-route') => {
+      if (!stableDriverNavigation || !routePolyline || !isValidCoord(normalizedOrigin) || !isValidCoord(normalizedDestination)) {
+        return null
+      }
+
+      const fallbackPath = createDriverFallbackRoutePath(normalizedOrigin, normalizedDestination)
+      if (fallbackPath.length < 2) return null
+
+      const fallbackDistance = getDistanceMeters(normalizedOrigin, normalizedDestination)
+
+      activeRoutePathRef.current = fallbackPath
+      routeStepsRef.current = []
+      lastMatchedRouteIndexRef.current = 1
+      lastMatchedPointRef.current = normalizedOrigin
+
+      routePolyline.setOptions({
+        strokeColor: '#1269ff',
+        strokeOpacity: 1,
+        strokeWeight: 12,
+        zIndex: 920,
+      })
+      routePolyline.setPath(fallbackPath)
+
+      if (focusRouteGlow) {
+        focusRouteGlow.setOptions({
+          strokeColor: '#4de7ff',
+          strokeOpacity: 0.5,
+          strokeWeight: 25,
+          zIndex: 910,
+        })
+        focusRouteGlow.setPath(fallbackPath)
+      }
+
+      if (completedPolyline) completedPolyline.setPath([])
+      if (nextStepPolyline) nextStepPolyline.setPath([])
+      updateDriverRouteOverlay(fallbackPath)
+
+      emitRouteUpdate({
+        distance: fallbackDistance,
+        duration: Math.max(60, Math.round(fallbackDistance / 9)),
+        instruction: 'Seguimos por la ruta',
+        maneuver: 'straight',
+        heading: getBearingBetweenPoints(normalizedOrigin, normalizedDestination),
+        shortInstruction: 'Seguimos',
+        alertLevel: 'far',
+        distanceToNextStep: fallbackDistance,
+        nextInstruction: null,
+        nextManeuver: null,
+        remainingMeters: fallbackDistance,
+        progress: 0,
+        recalculating: false,
+        fallbackRoute: true,
+      })
+
+      if (import.meta.env.DEV) {
+        console.info('[MiChofer Driver Route]', {
+          originValid: true,
+          destinationValid: true,
+          routePathLength: fallbackPath.length,
+          projectionDistance: null,
+          remainingPathLength: fallbackPath.length,
+          fallback: reason,
+        })
+      }
+
+      return fallbackPath
+    }
+
+    if (stableDriverNavigation) {
+      emitRouteUpdate({
+        distance: isValidCoord(normalizedDestination) ? getDistanceMeters(normalizedOrigin, normalizedDestination) : 0,
+        duration: 0,
+        instruction: 'Calculando ruta...',
+        maneuver: 'straight',
+        heading: getBearingBetweenPoints(normalizedOrigin, normalizedDestination),
+        shortInstruction: 'Calculando ruta',
+        alertLevel: 'recalculating',
+        distanceToNextStep: 0,
+        nextInstruction: null,
+        nextManeuver: null,
+        remainingMeters: 0,
+        progress: 0,
+        recalculating: true,
+        fallbackRoute: false,
+      })
+    }
+
     const requestSerial = routeRequestSerialRef.current
     let cancelled = false
 
@@ -2989,7 +3189,7 @@ const visibleDrivers = useMemo(() => {
 
       if (cancelled || requestSerial !== routeRequestSerialRef.current) return
 
-      const handleRouteResult = (routePath, distance, duration, instruction, steps = []) => {
+      const handleRouteResult = (routePath, distance, duration, instruction, steps = [], routeMeta = {}) => {
         activeRoutePathRef.current = routePath
         routeStepsRef.current = steps.map(normalizeRouteStep).filter(Boolean)
         if (stableDriverNavigation) {
@@ -3117,6 +3317,10 @@ const visibleDrivers = useMemo(() => {
           remainingMeters: currentInstruction?.remainingMeters,
           progress: currentInstruction?.progress,
           recalculating: false,
+          fallbackRoute: Boolean(routeMeta.fallbackRoute),
+          routeSource: routeMeta.source || 'directions',
+          trafficStatus: routeMeta.trafficStatus || null,
+          trafficCopy: getTrafficCopy(routeMeta.trafficStatus),
         })
 
         if (!navigationMode && !userCameraTouchedRef.current && !hasAutoFittedRouteRef.current) {
@@ -3165,26 +3369,24 @@ const visibleDrivers = useMemo(() => {
       if (routeResult && Array.isArray(routeResult.path) && routeResult.path.length >= 2) {
         const routePath = routeResult.path.filter(isValidCoord)
         if (routePath.length >= 2) {
-          handleRouteResult(routePath, routeResult.distance, routeResult.duration, routeResult.instruction, routeResult.steps)
+          handleRouteResult(
+            routePath,
+            routeResult.distance,
+            routeResult.duration,
+            routeResult.instruction,
+            routeResult.steps,
+            {
+              source: routeResult.source,
+              trafficStatus: routeResult.trafficStatus,
+              fallbackRoute: false,
+            }
+          )
           return
         }
       }
 
       if (!directionsService) {
-        if (stableDriverNavigation && activeRoutePathRef.current.length >= 2 && isValidCoord(origin) && isValidCoord(destination)) {
-          currentPolyline.setPath(activeRoutePathRef.current)
-          if (currentFocusGlow) currentFocusGlow.setPath(activeRoutePathRef.current)
-          updateDriverRouteOverlay(activeRoutePathRef.current)
-          if (import.meta.env.DEV) {
-            console.info('[MiChofer Driver Route]', {
-              originValid: true,
-              destinationValid: true,
-              routePathLength: activeRoutePathRef.current.length,
-              projectionDistance: null,
-              remainingPathLength: activeRoutePathRef.current.length,
-              fallback: 'no-directions-service-preserve-route',
-            })
-          }
+        if (stableDriverNavigation && applyDriverFallbackRoute('no-directions-service-visible-fallback')) {
           return
         }
 
@@ -3229,26 +3431,14 @@ const visibleDrivers = useMemo(() => {
                 route.legs?.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0) || 0,
                 route.legs?.reduce((sum, leg) => sum + (leg.duration?.value || 0), 0) || 0,
                 cleanRouteInstruction(route.legs?.[0]?.steps?.[0]?.instructions),
-                route.legs?.flatMap((leg) => Array.isArray(leg.steps) ? leg.steps : []) || []
+                route.legs?.flatMap((leg) => Array.isArray(leg.steps) ? leg.steps : []) || [],
+                { source: 'directions', fallbackRoute: false }
               )
               return
             }
           }
 
-          if (stableDriverNavigation && activeRoutePathRef.current.length >= 2 && isValidCoord(origin) && isValidCoord(destination)) {
-            currentPolyline.setPath(activeRoutePathRef.current)
-            if (currentFocusGlow) currentFocusGlow.setPath(activeRoutePathRef.current)
-            updateDriverRouteOverlay(activeRoutePathRef.current)
-            if (import.meta.env.DEV) {
-              console.info('[MiChofer Driver Route]', {
-                originValid: true,
-                destinationValid: true,
-                routePathLength: activeRoutePathRef.current.length,
-                projectionDistance: null,
-                remainingPathLength: activeRoutePathRef.current.length,
-                fallback: 'directions-failed-preserve-route',
-              })
-            }
+          if (stableDriverNavigation && applyDriverFallbackRoute(`directions-${String(status || 'unknown').toLowerCase()}-visible-fallback`)) {
             return
           }
 
@@ -3259,20 +3449,7 @@ const visibleDrivers = useMemo(() => {
           emitRouteUpdate(null)
         } catch (error) {
           console.warn('Error seguro en route callback:', error)
-          if (stableDriverNavigation && activeRoutePathRef.current.length >= 2 && isValidCoord(origin) && isValidCoord(destination)) {
-            currentPolyline.setPath(activeRoutePathRef.current)
-            if (currentFocusGlow) currentFocusGlow.setPath(activeRoutePathRef.current)
-            updateDriverRouteOverlay(activeRoutePathRef.current)
-            if (import.meta.env.DEV) {
-              console.info('[MiChofer Driver Route]', {
-                originValid: true,
-                destinationValid: true,
-                routePathLength: activeRoutePathRef.current.length,
-                projectionDistance: null,
-                remainingPathLength: activeRoutePathRef.current.length,
-                fallback: 'route-callback-error-preserve-route',
-              })
-            }
+          if (stableDriverNavigation && applyDriverFallbackRoute('route-callback-error-visible-fallback')) {
             return
           }
           currentPolyline.setPath([])
