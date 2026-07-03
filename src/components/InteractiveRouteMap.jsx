@@ -3097,6 +3097,7 @@ const visibleDrivers = useMemo(() => {
       const fallbackPath = createDriverFallbackRoutePath(normalizedOrigin, normalizedDestination)
       if (fallbackPath.length < 2) return null
 
+      routeCompleted = true
       const fallbackDistance = getDistanceMeters(normalizedOrigin, normalizedDestination)
 
       activeRoutePathRef.current = fallbackPath
@@ -3191,8 +3192,20 @@ const visibleDrivers = useMemo(() => {
       const currentFocusGlow = focusRouteGlowRef.current
       const currentCompletedPolyline = routeCompletedPolylineRef.current
       const currentNextStepPolyline = routeNextStepPolylineRef.current
-      if (!currentMap || !currentPolyline || !googleApi) return
 
+      console.log('[DEBUG loadRoute] start', {
+        hasCurrentMap: !!currentMap,
+        hasCurrentPolyline: !!currentPolyline,
+        hasGoogleApi: !!googleApi,
+        GOOGLE_ROUTES_API_ENABLED,
+        routeOrigin,
+        normalizedDestination,
+      })
+
+      if (!currentMap || !currentPolyline || !googleApi) {
+        console.log('[DEBUG loadRoute] cortado en guard temprano')
+        return
+      }
       let routeResult = null
       if (GOOGLE_ROUTES_API_ENABLED) {
         routeResult = await computeRouteWithRoutesApi({
@@ -3200,11 +3213,16 @@ const visibleDrivers = useMemo(() => {
           destination: normalizedDestination,
           waypoints: normalizedSelectedDriver ? [normalizedSelectedDriver] : [],
         })
+        console.log('[DEBUG loadRoute] resultado Routes API', routeResult)
       }
 
-      if (cancelled || requestSerial !== routeRequestSerialRef.current) return
+      if (cancelled || requestSerial !== routeRequestSerialRef.current) {
+        console.log('[DEBUG loadRoute] cancelado (cancelled o serial distinto)', { cancelled, requestSerial, current: routeRequestSerialRef.current })
+        return
+      }
 
       const handleRouteResult = (routePath, distance, duration, instruction, steps = [], routeMeta = {}) => {
+        routeCompleted = true
         activeRoutePathRef.current = routePath
         routeStepsRef.current = steps.map(normalizeRouteStep).filter(Boolean)
         if (stableDriverNavigation) {
@@ -3423,6 +3441,8 @@ const visibleDrivers = useMemo(() => {
       }
 
       directionsService.route(routeRequest, (result, status) => {
+        console.log('[DEBUG directionsService callback]', { status, hasResult: !!result, routesCount: result?.routes?.length })
+        
         if (cancelled || requestSerial !== routeRequestSerialRef.current) return
 
         try {
@@ -3476,10 +3496,16 @@ const visibleDrivers = useMemo(() => {
       })
     }
 
+    let routeCompleted = false
+    const originalRouteSignature = routeSignature
+    
     loadRoute()
 
     return () => {
       cancelled = true
+      if (!routeCompleted && routeSignatureRef.current === originalRouteSignature) {
+        routeSignatureRef.current = ''
+      }
     }
 
     return () => {
