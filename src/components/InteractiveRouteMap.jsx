@@ -11,22 +11,65 @@ const DEFAULT_CENTER = { lat: -25.5167, lng: -54.6167 }
 const DEFAULT_PADDING = { top: 96, bottom: 122, left: 58, right: 58 }
 const MAX_DRIVER_MARKERS = 6
 
+const ROUTE_STYLE = {
+  shared: {
+    main: '#1173ff',
+    glow: '#22d3ee',
+    casing: '#ffffff',
+    completed: '#7f8ea3',
+    next: '#00f5d4',
+  },
+  client: {
+    main: '#1173ff',
+    glow: '#22d3ee',
+    casing: '#ffffff',
+    completed: '#7f8ea3',
+    next: '#00f5d4',
+    mainWeight: 7,
+    glowWeight: 12,
+    casingWeight: 11,
+    opacity: 0.9,
+  },
+  driver: {
+    main: '#1173ff',
+    glow: '#22d3ee',
+    casing: '#ffffff',
+    completed: '#7f8ea3',
+    next: '#00f5d4',
+    mainWeight: 9,
+    glowWeight: 16,
+    casingWeight: 14,
+    opacity: 0.96,
+  },
+}
+
+const MAP_LAYER_Z = {
+  completedRoute: 100,
+  routeGlow: 110,
+  routeCasing: 120,
+  routeMain: 130,
+  nextStep: 140,
+  destination: 500,
+  driverMarkers: 700,
+  vehicle: 9999,
+}
+
 // Cámara tipo Google Maps navegación - estilo Uber/Bolt/Waze
 const NAVIGATION_ZOOM = 19.0
-const NAVIGATION_MOBILE_ZOOM = 19.1
-const NAVIGATION_DESKTOP_ZOOM = 18.8
-const NAVIGATION_DRIVER_TILT = 50
-const NAVIGATION_DRIVER_STATIONARY_TILT = 45
-const NAVIGATION_CAMERA_AHEAD_METERS = 62
-const NAVIGATION_CAMERA_AHEAD_METERS_FAST = 74
-const NAVIGATION_CAMERA_MIN_UPDATE_MS = 850
+const NAVIGATION_MOBILE_ZOOM = 18.6
+const NAVIGATION_DESKTOP_ZOOM = 18.45
+const NAVIGATION_DRIVER_TILT = 58
+const NAVIGATION_DRIVER_STATIONARY_TILT = 52
+const NAVIGATION_CAMERA_AHEAD_METERS = 92
+const NAVIGATION_CAMERA_AHEAD_METERS_FAST = 112
+const NAVIGATION_CAMERA_MIN_UPDATE_MS = 750
 const NAVIGATION_CAMERA_MIN_MOVE_METERS = 3.5
 const NAVIGATION_LOOK_AHEAD_RATIO = 0.09
 const NAVIGATION_MIN_LOOK_AHEAD_METERS = 30
 const NAVIGATION_MAX_LOOK_AHEAD_METERS = 95
 const NAVIGATION_HEADING_DISTANCE_METERS = 82
 const NAVIGATION_MIN_HEADING_CHANGE = 6
-const NAVIGATION_HEADING_SMOOTHING = 0.1
+const NAVIGATION_HEADING_SMOOTHING = 0.08
 
 const NAVIGATION_SNAP_METERS = 55
 const NAVIGATION_OFF_ROUTE_METERS = 75
@@ -38,9 +81,9 @@ const NAVIGATION_HARD_OFF_ROUTE_METERS = 75
 const NAVIGATION_RECALCULATE_HEADING_DEG = 68
 const NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS = 240
 const CAR_SPRITE_ROTATION_OFFSET = 0
-const CAR_SPRITE_TURN_ENTER_DEG = 24
-const CAR_SPRITE_TURN_EXIT_DEG = 12
-const CAR_SPRITE_MIN_CHANGE_MS = 900
+const CAR_SPRITE_TURN_ENTER_DEG = 30
+const CAR_SPRITE_TURN_EXIT_DEG = 16
+const CAR_SPRITE_MIN_CHANGE_MS = 1100
 const CAR_SPRITE_MIN_LATERAL_SPEED_MPS = 0.8
 const CAR_SPRITE_STARTUP_STABLE_MS = 1800
 
@@ -186,11 +229,18 @@ function estimateSpeedMps(previousPoint, nextPoint) {
 }
 
 function getGpsAnimationDuration(previousPoint, nextPoint) {
+  const distance = getDistanceMeters(previousPoint, nextPoint)
+  if (Number.isFinite(distance)) {
+    if (distance < 2.5) return 820
+    if (distance < 22) return clamp(900 + distance * 22, 1100, 1600)
+    if (distance < 70) return clamp(1500 + distance * 9, 1800, 2300)
+  }
+
   const prevTime = Number(previousPoint?._timestamp || 0)
   const nextTime = Number(nextPoint?._timestamp || Date.now())
   const delta = nextTime && prevTime ? nextTime - prevTime : 1500
 
-  return clamp(delta * 0.85, 700, 2600)
+  return clamp(delta * 0.85, 700, 2300)
 }
 
 function getGpsSmoothingAlpha(accuracy, speed) {
@@ -971,23 +1021,23 @@ function smoothHeading(prevHeading, nextHeading, factor = 0.18) {
 function getDriverNavigationCameraCenter(carPoint, heading, routePath, projection, destination, speed) {
   if (!isValidCoord(carPoint)) return carPoint
 
-  let direction = Number(heading)
+  const routeDirection = projection && routePath?.length > 1
+    ? getRouteHeadingFromProjection(routePath, projection, destination)
+    : null
+  const headingNumber = Number(heading)
+  let direction = Number.isFinite(routeDirection) ? routeDirection : headingNumber
+
   if (!Number.isFinite(direction)) {
-    if (projection && routePath?.length > 1) {
-      direction = getRouteHeadingFromProjection(routePath, projection, destination)
-    } else if (isValidCoord(destination)) {
-      direction = getBearingBetweenPoints(carPoint, destination)
-    } else {
-      direction = 0
-    }
-  } else if (projection && routePath?.length > 1) {
-    direction = getRouteHeadingFromProjection(routePath, projection, destination)
+    direction = isValidCoord(destination) ? getBearingBetweenPoints(carPoint, destination) : 0
   }
 
-  // Offset mayor: auto en tercio inferior, ruta visible adelante
-  const offsetMeters = Number.isFinite(speed) && speed >= 8
-    ? NAVIGATION_CAMERA_AHEAD_METERS_FAST
-    : NAVIGATION_CAMERA_AHEAD_METERS
+  const speedNumber = Number(speed)
+  const offsetMeters =
+    Number.isFinite(speedNumber) && speedNumber >= 10
+      ? NAVIGATION_CAMERA_AHEAD_METERS_FAST
+      : Number.isFinite(speedNumber) && speedNumber >= 3
+        ? Math.max(88, NAVIGATION_CAMERA_AHEAD_METERS)
+        : 72
 
   return movePointByBearing(carPoint, direction, offsetMeters)
 }
@@ -1000,15 +1050,12 @@ function applyNavigationCamera(map, center, heading, options = {}) {
   if (!map || !isValidCoord(center)) return
 
   const tilt = Number.isFinite(options.tilt) ? options.tilt : NAVIGATION_DRIVER_TILT
+  const zoom = Number.isFinite(options.zoom) ? options.zoom : getNavigationZoom()
 
   const camera = {
     center: toLatLng(center),
-    zoom: clamp(
-      Number.isFinite(options.zoom) ? options.zoom : getNavigationZoom(),
-      18.5,
-      19.6
-    ),
-    tilt: clamp(tilt, 40, 55),
+    zoom: clamp(zoom, 18.5, 19.0),
+    tilt: clamp(tilt, 45, 60),
     heading: Number.isFinite(Number(heading)) ? Number(heading) : 0,
   }
 
@@ -1204,7 +1251,7 @@ function createDriverOverlay(driver, selected, onSelect, google) {
   element.style.border = 'none'
   element.style.padding = '0'
   element.style.background = 'transparent'
-  element.style.zIndex = selected ? '999' : '900'
+  element.style.zIndex = String(selected ? MAP_LAYER_Z.driverMarkers + 20 : MAP_LAYER_Z.driverMarkers)
   element.innerHTML = `
     <span class="google-driver-marker-content">
       ${driver.avatar ? `<img src="${driver.avatar}" alt="${driver.name}" />` : `<span>${initials}</span>`}
@@ -1263,7 +1310,7 @@ function createClientOverlay(clientAvatar, name, google, onCenter) {
 
   element.className = 'google-client-marker'
   element.style.position = 'absolute'
-  element.style.zIndex = '10'
+  element.style.zIndex = String(MAP_LAYER_Z.driverMarkers)
   element.style.transition = 'left 900ms cubic-bezier(0.22, 1, 0.36, 1), top 900ms cubic-bezier(0.22, 1, 0.36, 1)'
   element.style.willChange = 'left, top'
   element.innerHTML = `
@@ -1313,7 +1360,7 @@ function createClientOverlay(clientAvatar, name, google, onCenter) {
  * Creates a navigation overlay with requestAnimationFrame-based smooth animation.
  * Replaces the old CSS-transition-based overlay for smooth GPS tracking.
  */
-function createNavigationOverlaySmooth(position, google, heading = 0, spriteType = 'back') {
+function createNavigationOverlaySmooth(position, google, heading = 0, spriteType = 'back', containerElement = null) {
   const overlay = new google.maps.OverlayView()
   const element = document.createElement('div')
   const image = document.createElement('img')
@@ -1341,7 +1388,9 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
 
   element.className = 'google-navigation-marker car-navigation-marker'
   element.style.position = 'absolute'
-  element.style.zIndex = '30'
+  element.style.zIndex = String(MAP_LAYER_Z.vehicle)
+  element.style.pointerEvents = 'none'
+  element.style.filter = 'drop-shadow(0 10px 18px rgba(0,0,0,.38))'
   element.style.willChange = 'left, top, transform'
   element.style.transform = 'translate(-50%, -50%)'
 
@@ -1454,7 +1503,20 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     const distance = getDistanceMeters(this.currentPosition, newPos)
     const animDuration = clamp(duration || getAnimationDuration(distance), MIN_ANIMATION_DURATION, MAX_ANIMATION_DURATION)
 
-    // Cancel any previous animation
+    if (distance > 180) {
+      this._cancelAnimation()
+      this.currentPosition = newPos
+      this.targetPosition = newPos
+      if (newHeading != null) {
+        this.currentHeading = newHeading
+        this.targetHeading = newHeading
+        image.style.transform = `rotate(${newHeading}deg)`
+      }
+      this.draw()
+      return
+    }
+
+    // Keep the current interpolated frame as the next animation start.
     this._cancelAnimation()
 
     // Set animation targets
@@ -1501,10 +1563,9 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
 
   overlay.onAdd = function () {
     const panes = this.getPanes()
+    const host = containerElement || panes?.overlayMouseTarget
 
-    if (panes?.overlayMouseTarget) {
-      panes.overlayMouseTarget.appendChild(element)
-    }
+    if (host) host.appendChild(element)
   }
 
   overlay.draw = function () {
@@ -1512,7 +1573,9 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     if (!projection || !isValidCoord(this.currentPosition)) return
 
     const pos = new google.maps.LatLng(this.currentPosition.lat, this.currentPosition.lng)
-    const point = projection.fromLatLngToDivPixel(pos)
+    const point = containerElement && typeof projection.fromLatLngToContainerPixel === 'function'
+      ? projection.fromLatLngToContainerPixel(pos)
+      : projection.fromLatLngToDivPixel(pos)
 
     if (point) {
       element.style.left = `${point.x}px`
@@ -1537,6 +1600,7 @@ function createDriverRouteOverlay(google, containerElement) {
   const casing = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
   const glow = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
   const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
+  const style = ROUTE_STYLE.driver
 
   overlay.currentPath = []
   overlay.__modeKey = 'driver-route'
@@ -1550,7 +1614,7 @@ function createDriverRouteOverlay(google, containerElement) {
   element.style.width = '100%'
   element.style.height = '100%'
   element.style.pointerEvents = 'none'
-  element.style.zIndex = '18'
+  element.style.zIndex = String(MAP_LAYER_Z.routeMain)
   element.style.overflow = 'hidden'
   element.style.willChange = 'transform'
 
@@ -1565,9 +1629,9 @@ function createDriverRouteOverlay(google, containerElement) {
   svg.style.pointerEvents = 'none'
 
   ;[
-    [casing, '#ffffff', '18', '0.92'],
-    [glow, '#4de7ff', '26', '0.34'],
-    [line, '#1269ff', '12', '1'],
+    [casing, style.casing, String(style.casingWeight + 1), '0.85'],
+    [glow, style.glow, String(style.glowWeight + 4), '0.28'],
+    [line, style.main, String(style.mainWeight), String(style.opacity)],
   ].forEach(([node, color, width, opacity]) => {
     node.setAttribute('fill', 'none')
     node.setAttribute('stroke', color)
@@ -1656,7 +1720,8 @@ export default function InteractiveRouteMap({
   onSelectDriver,
   onChooseDriver,
   onRefreshLocation,
-  fitPadding,
+  fitPadding = DEFAULT_PADDING,
+  uiSafeArea = null,
   mapInteractive = true,
   animateCamera = true,
   showRouteSummary = true,
@@ -1676,6 +1741,17 @@ export default function InteractiveRouteMap({
   const [mapTheme, setMapTheme] = useState(() => getAutoMapTheme())
   const [isFollowingDriver, setIsFollowingDriver] = useState(true)
   const stableDriverNavigation = isDriverNavigationVariant(navigationMode, navigationVariant) || (navigationMode && showOriginCar)
+  const effectiveFitPadding = useMemo(() => {
+    const base = typeof fitPadding === 'function' ? fitPadding() : fitPadding || DEFAULT_PADDING
+    const safe = uiSafeArea || {}
+
+    return {
+      top: Math.max(Number(base?.top) || 0, Number(safe?.top) || 0),
+      bottom: Math.max(Number(base?.bottom) || 0, Number(safe?.bottom) || 0),
+      left: Math.max(Number(base?.left) || 0, Number(safe?.left) || 0),
+      right: Math.max(Number(base?.right) || 0, Number(safe?.right) || 0),
+    }
+  }, [fitPadding, uiSafeArea])
   const isProgrammaticCameraMoveRef = useRef(false)
   const gpsSignalStatus = useMemo(() => {
     const accuracy = Number(origin?.accuracy)
@@ -1841,6 +1917,7 @@ export default function InteractiveRouteMap({
   function updateNavigationRouteVisuals(routePath, projection, smartInstruction = null) {
     if (!Array.isArray(routePath) || routePath.length < 2) return
 
+    const style = stableDriverNavigation ? ROUTE_STYLE.driver : ROUTE_STYLE.client
     const currentPolyline = routePolylineRef.current
     const currentFocusGlow = focusRouteGlowRef.current
     const completedPolyline = routeCompletedPolylineRef.current
@@ -1849,6 +1926,18 @@ export default function InteractiveRouteMap({
     const projectionDistance = Number(projection?.distance)
 
     if (!projection) {
+      currentPolyline?.setOptions({
+        strokeColor: style.main,
+        strokeOpacity: style.opacity,
+        strokeWeight: navigationMode ? style.mainWeight : ROUTE_STYLE.client.mainWeight - 2,
+        zIndex: MAP_LAYER_Z.routeMain,
+      })
+      currentFocusGlow?.setOptions({
+        strokeColor: style.glow,
+        strokeOpacity: navigationMode ? 0.24 : 0.16,
+        strokeWeight: navigationMode ? style.glowWeight : ROUTE_STYLE.client.glowWeight - 4,
+        zIndex: MAP_LAYER_Z.routeGlow,
+      })
       currentPolyline?.setPath(routePath)
       currentFocusGlow?.setPath(routePath)
       updateDriverRouteOverlay(routePath)
@@ -1881,27 +1970,28 @@ export default function InteractiveRouteMap({
     const recalculating = smartInstruction?.alertLevel === 'recalculating' || smartInstruction?.recalculating
 
     completedPolyline?.setOptions({
-      strokeColor: stableDriverNavigation ? '#ffffff' : '#7aa7ff',
-      strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.78 : 0.24) : 0,
-      strokeWeight: navigationMode ? (stableDriverNavigation ? 17 : 6) : 0,
-      zIndex: stableDriverNavigation ? 900 : 2,
+      strokeColor: style.completed,
+      strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.32 : 0.22) : 0,
+      strokeWeight: navigationMode ? Math.max(4, style.mainWeight - 2) : 0,
+      zIndex: MAP_LAYER_Z.completedRoute,
     })
     currentFocusGlow?.setOptions({
-      strokeColor: stableDriverNavigation ? '#4de7ff' : '#18e7ff',
-      strokeOpacity: navigationMode ? (recalculating ? 0.2 : stableDriverNavigation ? 0.46 : 0.3) : 0,
-      strokeWeight: navigationMode ? (stableDriverNavigation ? 25 : 17) : 0,
-      zIndex: stableDriverNavigation ? 910 : 3,
+      strokeColor: style.glow,
+      strokeOpacity: navigationMode ? (recalculating ? 0.16 : stableDriverNavigation ? 0.26 : 0.18) : 0,
+      strokeWeight: navigationMode ? style.glowWeight : 0,
+      zIndex: MAP_LAYER_Z.routeGlow,
     })
     currentPolyline?.setOptions({
-      strokeColor: navigationMode ? (stableDriverNavigation ? '#1269ff' : '#2f45ff') : '#1f7aff',
-      strokeOpacity: recalculating ? 0.62 : 1,
-      strokeWeight: navigationMode ? (stableDriverNavigation ? 12 : 8) : 5,
-      zIndex: stableDriverNavigation ? 920 : 4,
+      strokeColor: style.main,
+      strokeOpacity: recalculating ? 0.64 : style.opacity,
+      strokeWeight: navigationMode ? style.mainWeight : Math.max(5, style.mainWeight - 3),
+      zIndex: MAP_LAYER_Z.routeMain,
     })
     nextStepPolyline?.setOptions({
-      strokeOpacity: navigationMode && !recalculating ? 0.95 : 0,
-      strokeWeight: navigationMode ? (stableDriverNavigation ? 13 : 10) : 0,
-      zIndex: stableDriverNavigation ? 930 : 5,
+      strokeColor: style.next,
+      strokeOpacity: navigationMode && !recalculating ? (stableDriverNavigation ? 0.9 : 0.72) : 0,
+      strokeWeight: navigationMode ? Math.max(5, style.mainWeight - 1) : 0,
+      zIndex: MAP_LAYER_Z.nextStep,
     })
 
     completedPolyline?.setPath(stableDriverNavigation ? mainVisiblePath : completedPath)
@@ -2065,8 +2155,10 @@ const visibleDrivers = useMemo(() => {
             if (google.maps.event?.trigger) {
               google.maps.event.trigger(mapRef.current, 'resize')
             }
-            const center = isValidCoord(origin) ? toLatLng(origin) : DEFAULT_CENTER
-            mapRef.current.setCenter(center)
+            if (!navigationMode) {
+              const center = isValidCoord(origin) ? toLatLng(origin) : DEFAULT_CENTER
+              mapRef.current.setCenter(center)
+            }
             if (driverRouteOverlayRef.current?.draw) {
               driverRouteOverlayRef.current.draw()
             }
@@ -2106,48 +2198,50 @@ const visibleDrivers = useMemo(() => {
           }
         })
 
+        const initialRouteStyle = stableDriverNavigation ? ROUTE_STYLE.driver : ROUTE_STYLE.client
+
         focusRouteGlowRef.current = new google.maps.Polyline({
           map,
           path: [],
-          strokeColor: navigationMode ? '#4de7ff' : '#14f1e5',
-          strokeOpacity: navigationMode ? 0.46 : 0,
-          strokeWeight: navigationMode ? 25 : 0,
+          strokeColor: initialRouteStyle.glow,
+          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.18) : 0,
+          strokeWeight: navigationMode ? initialRouteStyle.glowWeight : 0,
           clickable: false,
           geodesic: true,
-          zIndex: navigationMode ? 910 : 3,
+          zIndex: MAP_LAYER_Z.routeGlow,
         })
 
         routePolylineRef.current = new google.maps.Polyline({
           map,
           path: [],
-          strokeColor: navigationMode ? '#1269ff' : '#1f7aff',
-          strokeOpacity: 1,
-          strokeWeight: navigationMode ? 12 : 5,
+          strokeColor: initialRouteStyle.main,
+          strokeOpacity: initialRouteStyle.opacity,
+          strokeWeight: navigationMode ? initialRouteStyle.mainWeight : Math.max(5, ROUTE_STYLE.client.mainWeight - 3),
           clickable: false,
           geodesic: true,
-          zIndex: navigationMode ? 920 : 4,
+          zIndex: MAP_LAYER_Z.routeMain,
         })
 
         routeCompletedPolylineRef.current = new google.maps.Polyline({
           map,
           path: [],
-          strokeColor: navigationMode ? '#ffffff' : '#7aa7ff',
-          strokeOpacity: navigationMode ? 0.78 : 0,
-          strokeWeight: navigationMode ? 17 : 0,
+          strokeColor: initialRouteStyle.completed,
+          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.32 : 0.22) : 0,
+          strokeWeight: navigationMode ? Math.max(4, initialRouteStyle.mainWeight - 2) : 0,
           clickable: false,
           geodesic: true,
-          zIndex: navigationMode ? 900 : 2,
+          zIndex: MAP_LAYER_Z.completedRoute,
         })
 
         routeNextStepPolylineRef.current = new google.maps.Polyline({
           map,
           path: [],
-          strokeColor: '#00d9ff',
-          strokeOpacity: navigationMode ? 0.92 : 0,
-          strokeWeight: navigationMode ? 13 : 0,
+          strokeColor: initialRouteStyle.next,
+          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.9 : 0.72) : 0,
+          strokeWeight: navigationMode ? Math.max(5, initialRouteStyle.mainWeight - 1) : 0,
           clickable: false,
           geodesic: true,
-          zIndex: navigationMode ? 930 : 5,
+          zIndex: MAP_LAYER_Z.nextStep,
         })
 
         trafficLayerRef.current = new google.maps.TrafficLayer()
@@ -2410,7 +2504,7 @@ const visibleDrivers = useMemo(() => {
             )
 
             if (isValidCoord(cameraPoint)) {
-              animateCameraSmooth(mapRef.current, cameraPoint, heading, 500)
+              animateCameraSmooth(mapRef.current, cameraPoint, heading, 760)
             }
           }
         }
@@ -2722,8 +2816,8 @@ const visibleDrivers = useMemo(() => {
 
       // Smooth heading with angular interpolation
       navigationHeadingRef.current = getSmoothNavigationHeading(navigationHeadingRef.current, nextHeading, {
-        minChange: stableDriverNavigation ? 7 : NAVIGATION_MIN_HEADING_CHANGE,
-        smoothing: stableDriverNavigation ? 0.1 : NAVIGATION_HEADING_SMOOTHING,
+        minChange: stableDriverNavigation ? 5 : NAVIGATION_MIN_HEADING_CHANGE,
+        smoothing: NAVIGATION_HEADING_SMOOTHING,
       })
       lastKnownHeadingRef.current = navigationHeadingRef.current
 
@@ -2788,11 +2882,15 @@ const visibleDrivers = useMemo(() => {
 
       if (showCarAsOrigin) {
         // Use smooth overlay for car
+        const vehicleOverlayHost = stableDriverNavigation
+          ? mapContainerRef.current?.closest('.mobility-map') || mapContainerRef.current?.parentElement
+          : null
         originOverlayRef.current = createNavigationOverlaySmooth(
           matchedOrigin,
           googleApi,
           vehicleVisual.rotation,
-          vehicleVisual.spriteType
+          vehicleVisual.spriteType,
+          vehicleOverlayHost
         )
         originOverlayRef.current._firstPosition = true
       } else {
@@ -2851,7 +2949,7 @@ const visibleDrivers = useMemo(() => {
             !cameraLastCenterRef.current
           ) {
             // Use smooth camera animation instead of jump
-            animateCameraSmooth(map, cameraPoint, navigationHeadingRef.current, 600)
+            animateCameraSmooth(map, cameraPoint, navigationHeadingRef.current, 760)
             lastVisualCameraAtRef.current = now
           }
         }
@@ -2935,7 +3033,7 @@ const visibleDrivers = useMemo(() => {
           fontSize: '10px',
           fontWeight: '700',
         },
-        zIndex: 9,
+        zIndex: MAP_LAYER_Z.destination,
       })
     }
 
@@ -3099,6 +3197,7 @@ const visibleDrivers = useMemo(() => {
 
       routeCompleted = true
       const fallbackDistance = getDistanceMeters(normalizedOrigin, normalizedDestination)
+      const style = stableDriverNavigation ? ROUTE_STYLE.driver : ROUTE_STYLE.client
 
       activeRoutePathRef.current = fallbackPath
       routeStepsRef.current = []
@@ -3106,19 +3205,19 @@ const visibleDrivers = useMemo(() => {
       lastMatchedPointRef.current = normalizedOrigin
 
       routePolyline.setOptions({
-        strokeColor: '#1269ff',
-        strokeOpacity: 1,
-        strokeWeight: 12,
-        zIndex: 920,
+        strokeColor: style.main,
+        strokeOpacity: style.opacity,
+        strokeWeight: style.mainWeight,
+        zIndex: MAP_LAYER_Z.routeMain,
       })
       routePolyline.setPath(fallbackPath)
 
       if (focusRouteGlow) {
         focusRouteGlow.setOptions({
-          strokeColor: '#4de7ff',
-          strokeOpacity: 0.5,
-          strokeWeight: 25,
-          zIndex: 910,
+          strokeColor: style.glow,
+          strokeOpacity: 0.24,
+          strokeWeight: style.glowWeight,
+          zIndex: MAP_LAYER_Z.routeGlow,
         })
         focusRouteGlow.setPath(fallbackPath)
       }
@@ -3192,20 +3291,7 @@ const visibleDrivers = useMemo(() => {
       const currentFocusGlow = focusRouteGlowRef.current
       const currentCompletedPolyline = routeCompletedPolylineRef.current
       const currentNextStepPolyline = routeNextStepPolylineRef.current
-
-      console.log('[DEBUG loadRoute] start', {
-        hasCurrentMap: !!currentMap,
-        hasCurrentPolyline: !!currentPolyline,
-        hasGoogleApi: !!googleApi,
-        GOOGLE_ROUTES_API_ENABLED,
-        routeOrigin,
-        normalizedDestination,
-      })
-
-      if (!currentMap || !currentPolyline || !googleApi) {
-        console.log('[DEBUG loadRoute] cortado en guard temprano')
-        return
-      }
+      if (!currentMap || !currentPolyline || !googleApi) return
       let routeResult = null
       if (GOOGLE_ROUTES_API_ENABLED) {
         routeResult = await computeRouteWithRoutesApi({
@@ -3213,11 +3299,9 @@ const visibleDrivers = useMemo(() => {
           destination: normalizedDestination,
           waypoints: normalizedSelectedDriver ? [normalizedSelectedDriver] : [],
         })
-        console.log('[DEBUG loadRoute] resultado Routes API', routeResult)
       }
 
       if (cancelled || requestSerial !== routeRequestSerialRef.current) {
-        console.log('[DEBUG loadRoute] cancelado (cancelled o serial distinto)', { cancelled, requestSerial, current: routeRequestSerialRef.current })
         return
       }
 
@@ -3225,12 +3309,13 @@ const visibleDrivers = useMemo(() => {
         routeCompleted = true
         activeRoutePathRef.current = routePath
         routeStepsRef.current = steps.map(normalizeRouteStep).filter(Boolean)
+        const style = stableDriverNavigation ? ROUTE_STYLE.driver : ROUTE_STYLE.client
         if (stableDriverNavigation) {
           currentPolyline.setOptions({
-            strokeColor: '#1269ff',
-            strokeOpacity: 1,
-            strokeWeight: 12,
-            zIndex: 920,
+            strokeColor: style.main,
+            strokeOpacity: style.opacity,
+            strokeWeight: style.mainWeight,
+            zIndex: MAP_LAYER_Z.routeMain,
           })
         }
         currentPolyline.setPath(routePath)
@@ -3238,10 +3323,10 @@ const visibleDrivers = useMemo(() => {
         if (currentCompletedPolyline) {
           if (stableDriverNavigation) {
             currentCompletedPolyline.setOptions({
-              strokeColor: '#ffffff',
-              strokeOpacity: 0.78,
-              strokeWeight: 17,
-              zIndex: 900,
+              strokeColor: style.completed,
+              strokeOpacity: 0.32,
+              strokeWeight: Math.max(4, style.mainWeight - 2),
+              zIndex: MAP_LAYER_Z.completedRoute,
             })
             currentCompletedPolyline.setPath(routePath)
           } else {
@@ -3251,10 +3336,10 @@ const visibleDrivers = useMemo(() => {
         if (currentNextStepPolyline) currentNextStepPolyline.setPath([])
         if (currentFocusGlow) {
           currentFocusGlow.setOptions({
-            strokeColor: stableDriverNavigation ? '#4de7ff' : '#14f1e5',
-            strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.46 : 0.28) : 0,
-            strokeWeight: navigationMode ? (stableDriverNavigation ? 25 : 16) : 0,
-            zIndex: stableDriverNavigation ? 910 : 3,
+            strokeColor: style.glow,
+            strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.18) : 0,
+            strokeWeight: navigationMode ? style.glowWeight : 0,
+            zIndex: MAP_LAYER_Z.routeGlow,
           })
           currentFocusGlow.setPath(routePath)
         }
@@ -3294,8 +3379,8 @@ const visibleDrivers = useMemo(() => {
           }
         )
         const smoothHeading = getSmoothNavigationHeading(navigationHeadingRef.current, heading, {
-          minChange: stableDriverNavigation ? 7 : NAVIGATION_MIN_HEADING_CHANGE,
-          smoothing: stableDriverNavigation ? 0.1 : NAVIGATION_HEADING_SMOOTHING,
+          minChange: stableDriverNavigation ? 5 : NAVIGATION_MIN_HEADING_CHANGE,
+          smoothing: NAVIGATION_HEADING_SMOOTHING,
         })
 
         navigationHeadingRef.current = smoothHeading
@@ -3360,8 +3445,7 @@ const visibleDrivers = useMemo(() => {
           const bounds = getBounds(waypoints, googleApi)
 
           if (bounds) {
-            const padding = typeof fitPadding === 'function' ? fitPadding() : fitPadding || DEFAULT_PADDING
-            currentMap.fitBounds(bounds, padding)
+            currentMap.fitBounds(bounds, effectiveFitPadding)
             hasAutoFittedRouteRef.current = true
           }
         }
@@ -3441,7 +3525,6 @@ const visibleDrivers = useMemo(() => {
       }
 
       directionsService.route(routeRequest, (result, status) => {
-        console.log('[DEBUG directionsService callback]', { status, hasResult: !!result, routesCount: result?.routes?.length })
         
         if (cancelled || requestSerial !== routeRequestSerialRef.current) return
 
@@ -3507,14 +3590,10 @@ const visibleDrivers = useMemo(() => {
         routeSignatureRef.current = ''
       }
     }
-
-    return () => {
-      cancelled = true
-    }
   }, [
     destination?.lat,
     destination?.lng,
-    fitPadding,
+    effectiveFitPadding,
     googleApi,
     mapReady,
     navigationMode,

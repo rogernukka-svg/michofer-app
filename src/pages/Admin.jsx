@@ -130,6 +130,8 @@ function getDocumentStats(documents = {}) {
 
 const DEFAULT_SIM_A = { lat: -25.5167, lng: -54.6167 }
 const DEFAULT_SIM_B = { lat: -25.5098, lng: -54.6128 }
+const QUICK_DEMO_A = { lat: -25.5161, lng: -54.6164 }
+const QUICK_DEMO_B = { lat: -25.5039, lng: -54.6111 }
 const SIM_SPEEDS = {
   slow: { label: 'Lento', interval: 1400, speed: 4 },
   normal: { label: 'Normal', interval: 850, speed: 8 },
@@ -181,6 +183,11 @@ function formatSimPoint(point) {
   return `${Number(point.lat).toFixed(6)}, ${Number(point.lng).toFixed(6)}`
 }
 
+function supabaseErrorText(error) {
+  if (!error) return ''
+  return [error.message, error.details, error.hint].filter(Boolean).join(' · ')
+}
+
 function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   const [pointA, setPointA] = useState(DEFAULT_SIM_A)
   const [pointB, setPointB] = useState(DEFAULT_SIM_B)
@@ -194,17 +201,27 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   const [speedMode, setSpeedMode] = useState('normal')
   const [simulating, setSimulating] = useState(false)
   const [simIndex, setSimIndex] = useState(0)
+  const [simPhase, setSimPhase] = useState('pickup')
+  const [simDriverPoint, setSimDriverPoint] = useState(DEFAULT_SIM_A)
+  const [lastSimUpdateAt, setLastSimUpdateAt] = useState('')
   const timerRef = useRef(null)
   const routeRef = useRef([])
   const tripRef = useRef(null)
+  const simDriverPointRef = useRef(DEFAULT_SIM_A)
+  const simIndexRef = useRef(0)
 
   const selectedDriver = useMemo(
     () => drivers.find((driver) => driver.user_id === selectedDriverId) || null,
     [drivers, selectedDriverId]
   )
 
-  const mapOrigin = isValidSimPoint(pointA) ? pointA : DEFAULT_SIM_A
-  const mapDestination = isValidSimPoint(pointB) ? pointB : DEFAULT_SIM_B
+  const driverStartPoint = isValidSimPoint(selectedDriver)
+    ? { lat: Number(selectedDriver.lat), lng: Number(selectedDriver.lng) }
+    : pointA
+  const mapOrigin = isValidSimPoint(simDriverPoint) ? simDriverPoint : pointA
+  const mapDestination = simPhase === 'pickup'
+    ? (isValidSimPoint(pointA) ? pointA : DEFAULT_SIM_A)
+    : (isValidSimPoint(pointB) ? pointB : DEFAULT_SIM_B)
   const routeKm = simDistanceKm(pointA, pointB)
   const canCreateTrip = enabled && selectedDriverId && (selectedClientId || adminUser?.id) && isValidSimPoint(pointA) && isValidSimPoint(pointB)
 
@@ -224,13 +241,28 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   }, [routePath])
 
   useEffect(() => {
+    simDriverPointRef.current = simDriverPoint
+  }, [simDriverPoint])
+
+  useEffect(() => {
+    simIndexRef.current = simIndex
+  }, [simIndex])
+
+  useEffect(() => {
+    if (!activeTrip?.id) {
+      setSimDriverPoint(pointA)
+      simDriverPointRef.current = pointA
+    }
+  }, [pointA, activeTrip?.id])
+
+  useEffect(() => {
     if (!enabled || !adminUser?.id) return
 
     let cancelled = false
     async function loadClients() {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, role')
+        .select('id, full_name, email, role, avatar_url, updated_at')
         .order('updated_at', { ascending: false })
         .limit(60)
 
@@ -275,24 +307,38 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     setter((current) => ({ ...current, [field]: Number(value) }))
   }
 
-  async function buildRoute() {
-    if (!isValidSimPoint(pointA) || !isValidSimPoint(pointB)) return []
+  function getRouteEndpoints(phase = simPhase) {
+    if (phase === 'trip' || tripRef.current?.status === 'in_progress') {
+      return { origin: pointA, destination: pointB }
+    }
+
+    return {
+      origin: isValidSimPoint(simDriverPointRef.current) ? simDriverPointRef.current : driverStartPoint,
+      destination: pointA,
+    }
+  }
+
+  async function buildRoute(phase = simPhase) {
+    const endpoints = getRouteEndpoints(phase)
+    if (!isValidSimPoint(endpoints.origin) || !isValidSimPoint(endpoints.destination)) return []
 
     const routeResult = await computeRouteWithRoutesApi({
-      origin: pointA,
-      destination: pointB,
+      origin: endpoints.origin,
+      destination: endpoints.destination,
       waypoints: [],
     })
 
     if (Array.isArray(routeResult?.path) && routeResult.path.length >= 2) {
       setRoutePath(routeResult.path)
-      setRouteSource('Google Routes API')
+      routeRef.current = routeResult.path
+      setRouteSource(`${phase === 'trip' ? 'Viaje' : 'Pickup'} · Google Routes API`)
       return routeResult.path
     }
 
-    const fallback = interpolateSimRoute(pointA, pointB)
+    const fallback = interpolateSimRoute(endpoints.origin, endpoints.destination)
     setRoutePath(fallback)
-    setRouteSource('Fallback interpolado')
+    routeRef.current = fallback
+    setRouteSource(`${phase === 'trip' ? 'Viaje' : 'Pickup'} · fallback interpolado`)
     return fallback
   }
 
@@ -303,7 +349,8 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     }
 
     stopSimulation()
-    const path = await buildRoute()
+    setSimPhase('pickup')
+    const path = await buildRoute('pickup')
     const { data, error } = await adminCreateTestTrip({
       adminId: adminUser.id,
       clientId: selectedClientId || adminUser.id,
@@ -319,13 +366,25 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
 
     if (error) {
       console.error('ADMIN TEST TRIP CREATE ERROR:', error)
-      onMessage?.('No pude crear el viaje test. Ejecutá el SQL admin del simulador si RLS bloquea.')
+      onMessage?.(`No pude crear el viaje test: ${supabaseErrorText(error) || 'RLS/RPC bloqueó la creación.'}`)
       return
+    }
+
+    const initialPoint = {
+      lat: pointA.lat,
+      lng: pointA.lng,
+      heading: simBearing(pointA, path[1] || pointB),
+      speed: 0,
+      accuracy: 8,
     }
 
     setRoutePath(path)
     setActiveTrip(data)
     setSimIndex(0)
+    setSimDriverPoint(initialPoint)
+    simDriverPointRef.current = initialPoint
+    tripRef.current = data
+    await pushSimPoint(0, 'pending')
     onMessage?.('Viaje test creado. Abrí /client y /driver para ver el flujo real.')
   }
 
@@ -337,7 +396,9 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
       onMessage?.('No pude actualizar el estado del viaje test.')
       return
     }
-    setActiveTrip(data || { ...activeTrip, status })
+    const nextTrip = data || { ...activeTrip, status }
+    setActiveTrip(nextTrip)
+    tripRef.current = nextTrip
   }
 
   async function pushSimPoint(index, status = null) {
@@ -349,6 +410,16 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
 
     const heading = simBearing(point, nextPoint)
     const speed = SIM_SPEEDS[speedMode]?.speed || SIM_SPEEDS.normal.speed
+    const visualPoint = {
+      lat: point.lat,
+      lng: point.lng,
+      heading,
+      speed,
+      accuracy: 8,
+    }
+    setSimDriverPoint(visualPoint)
+    simDriverPointRef.current = visualPoint
+    setLastSimUpdateAt(new Date().toLocaleTimeString())
     const { data, error } = await adminUpdateTestTripLocation({
       tripId: trip.id,
       driverId: trip.driver_id || selectedDriverId,
@@ -362,28 +433,41 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
 
     if (error) {
       console.error('ADMIN TEST TRIP LOCATION ERROR:', error)
-      onMessage?.('No pude mover el viaje test. Revisá RPC/RLS admin.')
+      onMessage?.(`RLS/RPC bloqueó movimiento: ${supabaseErrorText(error) || 'revisá admin_update_test_trip_location.'}`)
       stopSimulation()
       return
     }
 
-    if (data) setActiveTrip(data)
+    if (data) {
+      setActiveTrip(data)
+      tripRef.current = data
+    }
     setSimIndex(index)
   }
 
   async function startSimulation() {
     if (!activeTrip?.id) {
-      onMessage?.('Primero creá un viaje test.')
+      onMessage?.('Primero crea un viaje test.')
       return
     }
 
-    const path = routePath.length >= 2 ? routePath : await buildRoute()
-    if (path.length < 2) {
-      onMessage?.('No hay ruta válida para simular.')
+    let path = routeRef.current
+    if (!path || path.length < 2) {
+      path = await buildRoute(simPhase)
+      routeRef.current = path
+    }
+
+    if (!path || path.length < 2) {
+      onMessage?.('No hay ruta valida para simular.')
       return
     }
 
-    if (activeTrip.status === 'pending') {
+    if (simIndexRef.current >= path.length - 1) {
+      simIndexRef.current = 0
+      setSimIndex(0)
+    }
+
+    if (tripRef.current?.status === 'pending') {
       await setTripStatus('accepted')
     }
 
@@ -392,27 +476,85 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     const interval = SIM_SPEEDS[speedMode]?.interval || SIM_SPEEDS.normal.interval
 
     timerRef.current = window.setInterval(async () => {
-      const nextIndex = Math.min((simIndexRef.current || 0) + 1, routeRef.current.length - 1)
-      const nextStatus = tripRef.current?.status === 'in_progress' ? 'in_progress' : 'arriving'
-      await pushSimPoint(nextIndex, nextStatus)
+      const currentPath = routeRef.current || []
+      const currentIndex = simIndexRef.current || 0
+      const nextIndex = Math.min(currentIndex + 1, currentPath.length - 1)
+      const currentStatus = tripRef.current?.status === 'in_progress' ? 'in_progress' : 'arriving'
+      await pushSimPoint(nextIndex, currentStatus)
 
-      if (nextIndex >= routeRef.current.length - 1) {
+      if (nextIndex >= currentPath.length - 1) {
         stopSimulation()
         if (tripRef.current?.status === 'in_progress') {
           await setTripStatus('completed')
+        } else {
+          onMessage?.('Simulacion llego al punto. Toca Iniciar viaje para simular A -> B.')
         }
       }
     }, interval)
   }
 
-  const simIndexRef = useRef(0)
-  useEffect(() => {
-    simIndexRef.current = simIndex
-  }, [simIndex])
+  async function preparePickupSimulation() {
+    stopSimulation()
+    setSimPhase('pickup')
+    setSimIndex(0)
+    simIndexRef.current = 0
+    const path = await buildRoute('pickup')
+    if (path.length >= 2) {
+      await pushSimPoint(0, tripRef.current?.status || 'accepted')
+    }
+    onMessage?.('Pickup listo: simulá ida al cliente.')
+    await startSimulation()
+  }
+
+  async function prepareTripSimulation() {
+    if (!activeTrip?.id) {
+      onMessage?.('Primero creá un viaje test.')
+      return
+    }
+
+    stopSimulation()
+    setSimPhase('trip')
+    setSimIndex(0)
+    simIndexRef.current = 0
+    await setTripStatus('in_progress')
+    const startPoint = {
+      lat: pointA.lat,
+      lng: pointA.lng,
+      heading: simBearing(pointA, pointB),
+      speed: 0,
+      accuracy: 8,
+    }
+    setSimDriverPoint(startPoint)
+    simDriverPointRef.current = startPoint
+    const path = await buildRoute('trip')
+    if (path.length >= 2) {
+      await pushSimPoint(0, 'in_progress')
+    }
+    onMessage?.('Viaje iniciado: simulá recorrido al destino.')
+  }
+
+  async function quickDemoCde() {
+    stopSimulation()
+    setPointA(QUICK_DEMO_A)
+    setPointB(QUICK_DEMO_B)
+    setSimDriverPoint(QUICK_DEMO_A)
+    simDriverPointRef.current = QUICK_DEMO_A
+    setSimPhase('pickup')
+    setSimIndex(0)
+    simIndexRef.current = 0
+    if (!selectedDriverId && drivers[0]?.user_id) setSelectedDriverId(drivers[0].user_id)
+    if (!selectedClientId && (clients[0]?.id || adminUser?.id)) setSelectedClientId(clients[0]?.id || adminUser.id)
+    const fallback = interpolateSimRoute(QUICK_DEMO_A, QUICK_DEMO_B)
+    setRoutePath(fallback)
+    routeRef.current = fallback
+    setRouteSource('Demo rápido CDE')
+    onMessage?.('Demo rápido CDE listo. Creá el viaje test y empezá a simular.')
+  }
 
   async function resetSimulation() {
     stopSimulation()
     setSimIndex(0)
+    simIndexRef.current = 0
     if (activeTrip?.id) {
       await pushSimPoint(0, activeTrip.status || 'accepted')
     }
@@ -435,13 +577,35 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
         <span>{activeTrip?.status || 'sin viaje'} · {progress}%</span>
       </div>
 
+      <div className="admin-sim-steps">
+        <span>Paso 1: Elegí chofer y cliente</span>
+        <span>Paso 2: Marcá A y B</span>
+        <span>Paso 3: Crear viaje test</span>
+        <span>Paso 4: Abrí /client y /driver</span>
+        <span>Paso 5: Iniciar recorrido</span>
+      </div>
+
       <div className="admin-sim-grid">
         <div className="admin-sim-map">
           <InteractiveRouteMap
             origin={mapOrigin}
             destination={mapDestination}
             destinationText="Viaje test admin"
-            drivers={selectedDriver ? [{ ...selectedDriver, lat: Number(selectedDriver.lat), lng: Number(selectedDriver.lng) }] : []}
+            drivers={
+              selectedDriver && isValidSimPoint(simDriverPoint)
+                ? [{
+                    ...selectedDriver,
+                    lat: simDriverPoint.lat,
+                    lng: simDriverPoint.lng,
+                    heading: simDriverPoint.heading,
+                    speed: simDriverPoint.speed,
+                    accuracy: simDriverPoint.accuracy,
+                    available: true,
+                    is_available: true,
+                    online: true,
+                  }]
+                : []
+            }
             selectedDriver={null}
             onSelectDriver={() => {}}
             onChooseDriver={() => {}}
@@ -449,6 +613,9 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
             onMapClick={handleMapClick}
             showRouteSummary={false}
             animateCamera={false}
+            showOriginCar
+            navigationMode
+            navigationVariant="driver"
           />
         </div>
 
@@ -509,6 +676,14 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
             <span>B: {formatSimPoint(pointB)}</span>
             <span>Ruta: {routeSource || 'sin calcular'} · {routeKm.toFixed(2)} km</span>
             <span>Trip: {activeTrip?.id || 'sin viaje'}</span>
+            <span>Driver: {selectedDriverId || 'sin chofer'}</span>
+            <span>Client: {selectedClientId || adminUser?.id || 'sin cliente'}</span>
+            <span>Fase: {simPhase === 'trip' ? 'viaje al destino' : 'ida al cliente'}</span>
+            <span>Progreso: {progress}%</span>
+            <span>Auto: {formatSimPoint(simDriverPoint)}</span>
+            <span>Heading: {Number(simDriverPoint?.heading || 0).toFixed(0)}°</span>
+            <span>Speed: {Number(simDriverPoint?.speed || 0).toFixed(1)} m/s</span>
+            <span>Último update: {lastSimUpdateAt || 'sin movimiento'}</span>
           </div>
 
           <div className="admin-sim-speed">
@@ -520,8 +695,14 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
           </div>
 
           <div className="admin-sim-actions">
+            <button type="button" onClick={quickDemoCde}>
+              Demo rápido CDE
+            </button>
             <button type="button" className="approve" onClick={createTrip} disabled={!canCreateTrip}>
               Crear viaje test
+            </button>
+            <button type="button" onClick={preparePickupSimulation} disabled={!activeTrip?.id || simulating}>
+              Simular ida al cliente
             </button>
             <button type="button" onClick={() => setTripStatus('accepted')} disabled={!activeTrip?.id}>
               Aceptar viaje
@@ -529,8 +710,11 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
             <button type="button" onClick={() => setTripStatus('arriving')} disabled={!activeTrip?.id}>
               Llegue al punto
             </button>
-            <button type="button" onClick={() => setTripStatus('in_progress')} disabled={!activeTrip?.id}>
+            <button type="button" onClick={prepareTripSimulation} disabled={!activeTrip?.id || simulating}>
               Iniciar viaje
+            </button>
+            <button type="button" className="approve" onClick={startSimulation} disabled={!activeTrip?.id || simulating || simPhase !== 'trip'}>
+              Simular viaje al destino
             </button>
             <button type="button" className="approve" onClick={startSimulation} disabled={!activeTrip?.id || simulating}>
               <Play size={15} /> Iniciar recorrido
@@ -1446,6 +1630,26 @@ const adminStyles = `
     grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
     gap: 14px;
     margin-top: 14px;
+  }
+
+  .admin-sim-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .admin-sim-steps span {
+    min-height: 28px;
+    border-radius: 999px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    color: #c9fff7;
+    background: rgba(0, 245, 212, 0.1);
+    border: 1px solid rgba(0, 245, 212, 0.16);
+    font-size: 11px;
+    font-weight: 900;
   }
 
   .admin-sim-map {

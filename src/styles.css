@@ -726,9 +726,9 @@ button {
 
 .driver-route-visual-overlay {
   pointer-events: none !important;
-  z-index: 18 !important;
+  z-index: 130 !important;
   overflow: visible !important;
-  filter: drop-shadow(0 8px 12px rgba(4, 28, 44, 0.2)) !important;
+  filter: drop-shadow(0 8px 16px rgba(4, 28, 44, 0.18)) !important;
 }
 
 .driver-route-visual-overlay svg,
@@ -16435,37 +16435,37 @@ body.route-driver .driver-navigation-instruction {
   top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
   left: 14px !important;
   right: 14px !important;
-  z-index: 96 !important;
-  min-height: 88px !important;
-  padding: 12px !important;
-  border-radius: 28px !important;
+  z-index: 180 !important;
+  min-height: 78px !important;
+  padding: 10px !important;
+  border-radius: 24px !important;
   display: grid !important;
-  grid-template-columns: 48px minmax(0, 1fr) 44px !important;
+  grid-template-columns: 46px minmax(0, 1fr) 42px !important;
   align-items: center !important;
   gap: 11px !important;
   color: #f8fbff !important;
   background:
-    radial-gradient(circle at 16% 0%, rgba(35, 242, 155, 0.14), transparent 34%),
-    linear-gradient(135deg, rgba(7, 17, 28, 0.94), rgba(12, 31, 38, 0.88)) !important;
-  border: 1px solid rgba(35, 242, 155, 0.16) !important;
+    radial-gradient(circle at 16% 0%, rgba(34, 211, 238, 0.1), transparent 34%),
+    linear-gradient(135deg, rgba(7, 17, 28, 0.9), rgba(12, 31, 38, 0.82)) !important;
+  border: 1px solid rgba(34, 211, 238, 0.16) !important;
   box-shadow:
-    0 26px 74px rgba(0, 0, 0, 0.42),
-    0 0 34px rgba(0, 213, 255, 0.08),
+    0 18px 54px rgba(0, 0, 0, 0.34),
+    0 0 26px rgba(34, 211, 238, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(24px) saturate(1.14) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.14) !important;
+  backdrop-filter: blur(20px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.08) !important;
 }
 
 body.route-driver .driver-navigation-turn-icon {
-  width: 48px !important;
-  height: 48px !important;
-  border-radius: 18px !important;
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 17px !important;
   display: grid !important;
   place-items: center !important;
   color: #031013 !important;
   background: linear-gradient(135deg, #23f29b, #00d5ff) !important;
   box-shadow:
-    0 0 24px rgba(0, 213, 255, 0.18),
+    0 0 18px rgba(0, 213, 255, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
 }
 
@@ -16487,10 +16487,10 @@ body.route-driver .driver-navigation-copy span {
 body.route-driver .driver-navigation-copy strong {
   display: block !important;
   color: #f8fbff !important;
-  font-size: clamp(20px, 4.8vw, 30px) !important;
-  line-height: 0.98 !important;
+  font-size: clamp(19px, 4.4vw, 27px) !important;
+  line-height: 1 !important;
   font-weight: 950 !important;
-  letter-spacing: -0.055em !important;
+  letter-spacing: 0 !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -16576,19 +16576,19 @@ body.route-driver .driver-navigation-bottom {
   left: 14px !important;
   right: 14px !important;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
-  z-index: 96 !important;
+  z-index: 180 !important;
   padding: 12px !important;
-  border-radius: 30px !important;
+  border-radius: 26px !important;
   color: #f8fbff !important;
   background:
-    linear-gradient(135deg, rgba(4, 10, 14, 0.95), rgba(12, 18, 26, 0.88)) !important;
-  border: 1px solid rgba(35, 242, 155, 0.14) !important;
+    linear-gradient(135deg, rgba(4, 10, 14, 0.91), rgba(12, 18, 26, 0.84)) !important;
+  border: 1px solid rgba(34, 211, 238, 0.15) !important;
   box-shadow:
-    0 28px 84px rgba(0, 0, 0, 0.48),
-    0 0 34px rgba(0, 213, 255, 0.06),
+    0 18px 58px rgba(0, 0, 0, 0.4),
+    0 0 28px rgba(0, 213, 255, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(24px) saturate(1.18) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.18) !important;
+  backdrop-filter: blur(22px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.12) !important;
 }
 
 body.route-driver .driver-navigation-trip {
@@ -16613,7 +16613,7 @@ body.route-driver .driver-navigation-trip strong {
   font-size: 18px !important;
   line-height: 1.05 !important;
   font-weight: 950 !important;
-  letter-spacing: -0.04em !important;
+  letter-spacing: 0 !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -16632,15 +16632,15 @@ body.route-driver .driver-navigation-trip small {
 }
 
 body.route-driver .driver-navigation-actions {
-  margin-top: 12px !important;
+  margin-top: 10px !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 52px 52px !important;
+  grid-template-columns: minmax(0, 1fr) 50px 50px !important;
   gap: 8px !important;
   align-items: center !important;
 }
 
 body.route-driver .driver-navigation-primary {
-  min-height: 52px !important;
+  min-height: 48px !important;
   border: 0 !important;
   border-radius: 999px !important;
   display: inline-flex !important;
@@ -16650,8 +16650,8 @@ body.route-driver .driver-navigation-primary {
   color: #031013 !important;
   background: linear-gradient(135deg, #23f29b, #00d5ff) !important;
   box-shadow:
-    0 16px 38px rgba(0, 213, 255, 0.2),
-    0 10px 28px rgba(35, 242, 155, 0.16) !important;
+    0 12px 30px rgba(0, 213, 255, 0.16),
+    0 8px 22px rgba(35, 242, 155, 0.12) !important;
   font-size: 15px !important;
   line-height: 1 !important;
   font-weight: 950 !important;
@@ -16659,10 +16659,10 @@ body.route-driver .driver-navigation-primary {
 
 body.route-driver .driver-navigation-chat,
 body.route-driver .driver-navigation-cancel {
-  width: 52px !important;
-  height: 52px !important;
-  min-width: 52px !important;
-  border-radius: 18px !important;
+  width: 50px !important;
+  height: 50px !important;
+  min-width: 50px !important;
+  border-radius: 17px !important;
   display: grid !important;
   place-items: center !important;
   text-decoration: none !important;
@@ -16679,6 +16679,25 @@ body.route-driver .driver-navigation-cancel {
   color: #ffdce3 !important;
   background: rgba(255, 77, 99, 0.13) !important;
   border: 1px solid rgba(255, 77, 99, 0.22) !important;
+}
+
+body.route-driver .driver-nav-hud,
+body.route-driver .driver-trip-panel,
+body.route-client .client-trip-panel {
+  border-color: rgba(34, 211, 238, 0.18) !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(17, 115, 255, 0.08), transparent 36%),
+    linear-gradient(180deg, rgba(8, 17, 26, 0.94), rgba(7, 16, 24, 0.98)) !important;
+}
+
+body.route-driver .route-progress i,
+body.route-client .michofer-live-progress span {
+  background: linear-gradient(90deg, #1173ff, #22d3ee 52%, #00f5d4) !important;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.3) !important;
+}
+
+body.route-driver .driver-navigation-primary {
+  background: linear-gradient(135deg, #00f5d4, #22d3ee 48%, #1173ff) !important;
 }
 
 /* Loading de ruta */
@@ -18450,6 +18469,7 @@ body.route-client .driver-picker-pro-card .driver-side button {
 .car-navigation-marker {
   width: 68px !important;
   height: 68px !important;
+  z-index: 9999 !important;
   transform: translate(-50%, -50%) scale(1) !important;
   will-change: left, top, transform;
   pointer-events: none !important;
@@ -18473,7 +18493,7 @@ body.route-client .driver-picker-pro-card .driver-side button {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   image-rendering: auto;
-  filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.32));
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.38));
   transition: none !important; /* animation handled by JS */
 }
 
@@ -18492,6 +18512,8 @@ body.route-client .driver-picker-pro-card .driver-side button {
 body.route-driver .google-navigation-marker.car-navigation-marker {
   width: 68px !important;
   height: 68px !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
   transform: translate(-50%, -50%) scale(1) !important;
 }
 
@@ -20077,8 +20099,8 @@ body.route-client .choose-driver-btn {
 
 body.route-client .client-live-sheet {
   background:
-    linear-gradient(180deg, rgba(8, 35, 41, 0.98), rgba(3, 13, 18, 0.995)) !important;
-  border-color: rgba(36, 240, 208, 0.22) !important;
+    linear-gradient(180deg, rgba(8, 17, 26, 0.96), rgba(7, 16, 24, 0.99)) !important;
+  border-color: rgba(34, 211, 238, 0.18) !important;
 }
 
 body.route-client .michofer-live-driver-card,
@@ -21026,5 +21048,176 @@ body.route-driver .driver-navigation-chat {
   .trip-chat-call-btn {
     width: 36px;
     height: 36px;
+  }
+}
+
+/* =========================
+   Driver Navigation Safe Layout
+========================= */
+
+body.route-driver .driver-cockpit.driver-nav-layout {
+  position: relative !important;
+  overflow: hidden !important;
+  background: #071018 !important;
+}
+
+body.route-driver .driver-nav-layout .mobility-map,
+body.route-driver .driver-nav-layout .interactive-map,
+body.route-driver .driver-nav-layout .google-real-map {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+}
+
+body.route-driver .driver-nav-layout .navigation-toolbar {
+  z-index: 54 !important;
+  top: calc(var(--driver-nav-top-safe, 136px) + 8px) !important;
+  right: 14px !important;
+}
+
+body.route-driver .driver-nav-layout .map-locate-btn {
+  z-index: 54 !important;
+  top: calc(var(--driver-nav-top-safe, 136px) + 58px) !important;
+  right: 14px !important;
+}
+
+body.route-driver .driver-nav-hud {
+  position: absolute !important;
+  top: max(12px, env(safe-area-inset-top)) !important;
+  left: 14px !important;
+  right: 14px !important;
+  z-index: 60 !important;
+  min-height: 108px !important;
+  max-height: 128px !important;
+  padding: 14px !important;
+  border-radius: 26px !important;
+  grid-template-columns: 46px minmax(0, 1fr) 42px !important;
+  align-items: center !important;
+  background:
+    linear-gradient(135deg, rgba(17, 115, 255, 0.96), rgba(10, 78, 190, 0.96)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.32) !important;
+  overflow: hidden !important;
+}
+
+body.route-driver .driver-nav-hud * {
+  min-width: 0 !important;
+}
+
+body.route-driver .driver-navigation-main,
+body.route-driver .driver-navigation-title,
+body.route-driver .driver-navigation-subtitle {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .driver-navigation-title {
+  font-size: clamp(20px, 4.2vw, 26px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-driver .driver-navigation-subtitle {
+  font-size: 12px !important;
+  line-height: 1.05 !important;
+}
+
+body.route-driver .driver-traffic-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  max-width: 190px !important;
+  height: 24px !important;
+  margin-top: 7px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+  background: rgba(0, 245, 212, 0.16) !important;
+  color: #dffdf8 !important;
+  border: 1px solid rgba(0, 245, 212, 0.24) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .driver-route-loading,
+body.route-driver .driver-rush-notice {
+  z-index: 70 !important;
+}
+
+body.route-driver .driver-trip-panel,
+body.route-driver .driver-live-panel,
+body.route-driver .driver-bottom-sheet {
+  position: absolute !important;
+  left: 14px !important;
+  right: 14px !important;
+  bottom: max(14px, env(safe-area-inset-bottom)) !important;
+  z-index: 55 !important;
+  min-height: 132px !important;
+  max-height: 172px !important;
+  border-radius: 26px !important;
+  background: rgba(5, 16, 25, 0.94) !important;
+  border: 1px solid rgba(34, 211, 238, 0.18) !important;
+  box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.26) !important;
+  overflow: hidden !important;
+}
+
+body.route-driver .driver-navigation-primary,
+body.route-driver .driver-primary-action,
+body.route-driver .driver-finish-button {
+  min-height: 54px !important;
+  border-radius: 18px !important;
+}
+
+body.route-driver .google-navigation-marker,
+body.route-driver .car-navigation-marker {
+  z-index: 9999 !important;
+  pointer-events: none !important;
+}
+
+body.route-client .client-trip-panel {
+  background: rgba(5, 16, 25, 0.94) !important;
+  border-color: rgba(34, 211, 238, 0.18) !important;
+}
+
+@media (max-height: 740px) {
+  body.route-driver .driver-nav-hud {
+    min-height: 92px !important;
+    max-height: 108px !important;
+    padding: 11px 12px !important;
+    border-radius: 22px !important;
+  }
+
+  body.route-driver .driver-navigation-title {
+    font-size: 20px !important;
+    line-height: 1.05 !important;
+  }
+
+  body.route-driver .driver-navigation-subtitle {
+    font-size: 11px !important;
+  }
+
+  body.route-driver .driver-trip-panel,
+  body.route-driver .driver-live-panel,
+  body.route-driver .driver-bottom-sheet {
+    min-height: 118px !important;
+    max-height: 150px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  body.route-driver .driver-nav-hud {
+    left: 10px !important;
+    right: 10px !important;
+  }
+
+  body.route-driver .driver-navigation-title {
+    font-size: 19px !important;
+  }
+
+  body.route-driver .driver-traffic-pill {
+    max-width: 160px !important;
   }
 }

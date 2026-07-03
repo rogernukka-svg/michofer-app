@@ -1817,7 +1817,7 @@ setMessage('')
 
             {activeTrip && activeTripDriver && (
           <section
-            className={`michofer-live-sheet client-live-sheet ${liveSheetExpanded ? 'is-expanded' : 'is-minimized'} status-${activeTrip.status || 'pending'}`}
+            className={`michofer-live-sheet client-live-sheet client-trip-panel ${liveSheetExpanded ? 'is-expanded' : 'is-minimized'} status-${activeTrip.status || 'pending'}`}
             aria-label="Estado del viaje"
           >
             <button

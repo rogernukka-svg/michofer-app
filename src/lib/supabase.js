@@ -288,7 +288,7 @@ export async function adminUpdateTestTripLocation({ tripId, driverId, lat, lng, 
   if (tripResult.error) return tripResult
 
   if (driverId) {
-    await supabase
+    const driverResult = await supabase
       .from('driver_profiles')
       .update({
         lat: Number(lat),
@@ -299,6 +299,8 @@ export async function adminUpdateTestTripLocation({ tripId, driverId, lat, lng, 
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', driverId)
+
+    if (driverResult.error) return driverResult
   }
 
   return tripResult

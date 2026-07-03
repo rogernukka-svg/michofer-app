@@ -57,6 +57,9 @@ const POOR_DRIVER_GPS_ACCURACY = 70
 const IMPOSSIBLE_DRIVER_SPEED_MPS = 45
 const DRIVER_STATIONARY_SPEED_MPS = 0.35
 
+const DRIVER_NAV_FIT_PADDING = { top: 190, bottom: 230, left: 34, right: 34 }
+const DRIVER_NAV_UI_SAFE_AREA = { top: 150, bottom: 190, left: 24, right: 24 }
+
 const SAFETY_ZONES_CDE = [
   {
     name: 'San Rafael',
@@ -88,6 +91,13 @@ function isValidParaguayCoord(point) {
     lng >= -63 &&
     lng <= -53
   )
+}
+
+function compactInstruction(value) {
+  return String(value || '')
+    .replace(/Pasa por.*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function finiteOrNull(value) {
@@ -548,6 +558,8 @@ export default function Driver() {
         : routeInstructionDetail
           ? `Luego ${routeInstructionDetail} · ${guidanceEta}`
           : `${destinationRadarText} · ${guidanceEta}`)
+  const navTitle = compactInstruction(closeArrival?.title || routeInstructionText) || 'Seguimos por la ruta'
+  const navSubtitle = compactInstruction(guidanceSecondaryTextPremium) || guidanceEta
   const hasClientRushNotice = Boolean(
     clientRushNotice ||
     activeTrip?.client_rush_at ||
@@ -1210,7 +1222,13 @@ if (!isValidParaguayCoord(location)) {
     if (activeTrip && navigationTarget && driverPoint) {
     return (
       <main className="app-shell">
-        <section className="phone driver-phone driver-cockpit">
+        <section
+          className="phone driver-phone driver-cockpit driver-nav-layout"
+          style={{
+            '--driver-nav-top-safe': '136px',
+            '--driver-nav-bottom-safe': '178px',
+          }}
+        >
           {/* Map full screen */}
           <InteractiveRouteMap
             origin={driverPoint}
@@ -1222,7 +1240,8 @@ if (!isValidParaguayCoord(location)) {
             onSelectDriver={() => {}}
             onChooseDriver={() => {}}
             onRefreshLocation={() => syncDriverLocation(activeTrip)}
-                        fitPadding={{ top: 150, bottom: 150, left: 28, right: 28 }}
+            fitPadding={DRIVER_NAV_FIT_PADDING}
+            uiSafeArea={DRIVER_NAV_UI_SAFE_AREA}
             mapInteractive
             animateCamera
             showRouteSummary={false}
@@ -1255,24 +1274,24 @@ if (!isValidParaguayCoord(location)) {
           )}
 
           {/* Navigation instruction card */}
-          <header className={`driver-navigation-instruction alert-${guidanceAlertLevel}`}>
+          <header className={`driver-navigation-instruction driver-nav-hud alert-${guidanceAlertLevel}`}>
             <div className="driver-navigation-turn-icon">
               <GuidanceTurnIcon size={30} />
             </div>
 
-                        <div className="driver-navigation-copy">
+            <div className="driver-navigation-copy driver-navigation-main">
               <span>{guidanceStepDistance}</span>
-              <strong>
-                {closeArrival?.title || routeInstructionText}
+              <strong className="driver-navigation-title">
+                {navTitle}
               </strong>
-              <small>
-                {guidanceSecondaryTextPremium}
+              <small className="driver-navigation-subtitle">
+                {navSubtitle}
               </small>
-              <div className="driver-navigation-progress" aria-hidden="true">
+              <div className="driver-navigation-progress route-progress" aria-hidden="true">
                 <i style={{ width: `${Math.round(guidanceProgress * 100)}%` }} />
               </div>
               {(guidanceTrafficText || guidanceIsFallbackRoute) && (
-                <em className={`driver-navigation-badge traffic-${routeGuidance?.trafficStatus || (guidanceIsFallbackRoute ? 'fallback' : 'normal')}`}>
+                <em className={`driver-navigation-badge driver-traffic-pill traffic-${routeGuidance?.trafficStatus || (guidanceIsFallbackRoute ? 'fallback' : 'normal')}`}>
                   {guidanceIsFallbackRoute ? 'Ruta provisoria' : guidanceTrafficText}
                 </em>
               )}
@@ -1284,7 +1303,7 @@ if (!isValidParaguayCoord(location)) {
           </header>
 
                     {/* Compact navigation action bar */}
-          <section className="driver-navigation-bottom">
+          <section className="driver-navigation-bottom driver-trip-panel">
             <div className="driver-navigation-trip">
               <span>{statusLabel(activeTrip.status)}</span>
               <strong>{activeTrip.destination_text || 'Destino'}</strong>
