@@ -1,3 +1,4 @@
+//Driver.jsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
@@ -1347,7 +1348,17 @@ if (!isValidParaguayCoord(location)) {
                 <XCircle size={20} />
               </button>
             </div>
-                      {showCancelConfirm && (
+          </section>
+
+          {/*
+            IMPORTANTE: el modal de "cancelar viaje" ahora vive AFUERA de
+            driver-navigation-bottom (esa barra es chica y position:absolute,
+            así que un modal adentro solo podía cubrir ese cuadrito, no toda
+            la pantalla). Al ponerlo acá, como hijo directo de .phone
+            (que tiene position:relative), el backdrop con inset:0 cubre
+            correctamente toda la pantalla.
+          */}
+          {showCancelConfirm && (
             <div
               className="michofer-modal-backdrop"
               onClick={() => setShowCancelConfirm(false)}
@@ -1403,7 +1414,7 @@ if (!isValidParaguayCoord(location)) {
               </section>
             </div>
           )}
-          </section>
+
           <TripChatModal
             tripId={activeTrip.id}
             open={chatOpen}

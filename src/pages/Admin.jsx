@@ -1,3 +1,4 @@
+//Admin.jsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
@@ -204,11 +205,14 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   const [simPhase, setSimPhase] = useState('pickup')
   const [simDriverPoint, setSimDriverPoint] = useState(DEFAULT_SIM_A)
   const [lastSimUpdateAt, setLastSimUpdateAt] = useState('')
+  const [simulatorOpen, setSimulatorOpen] = useState(false)
+  const [mapPickerOpen, setMapPickerOpen] = useState(false)
   const timerRef = useRef(null)
   const routeRef = useRef([])
   const tripRef = useRef(null)
   const simDriverPointRef = useRef(DEFAULT_SIM_A)
   const simIndexRef = useRef(0)
+  const markModeRef = useRef('a')
 
   const selectedDriver = useMemo(
     () => drivers.find((driver) => driver.user_id === selectedDriverId) || null,
@@ -247,6 +251,10 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   useEffect(() => {
     simIndexRef.current = simIndex
   }, [simIndex])
+
+  useEffect(() => {
+    markModeRef.current = markMode
+  }, [markMode])
 
   useEffect(() => {
     if (!activeTrip?.id) {
@@ -295,7 +303,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   }
 
   function handleMapClick(point) {
-    if (markMode === 'b') {
+    if (markModeRef.current === 'b') {
       setPointB(point)
     } else {
       setPointA(point)
@@ -320,13 +328,22 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
 
   async function buildRoute(phase = simPhase) {
     const endpoints = getRouteEndpoints(phase)
-    if (!isValidSimPoint(endpoints.origin) || !isValidSimPoint(endpoints.destination)) return []
+    if (!isValidSimPoint(endpoints.origin) || !isValidSimPoint(endpoints.destination)) {
+      onMessage?.('No pude calcular la ruta: origen o destino inválido.')
+      return []
+    }
 
-    const routeResult = await computeRouteWithRoutesApi({
-      origin: endpoints.origin,
-      destination: endpoints.destination,
-      waypoints: [],
-    })
+    let routeResult = null
+    try {
+      routeResult = await computeRouteWithRoutesApi({
+        origin: endpoints.origin,
+        destination: endpoints.destination,
+        waypoints: [],
+      })
+    } catch (routeError) {
+      console.error('ADMIN TEST TRIP ROUTE ERROR:', routeError)
+      onMessage?.(`Google Routes API falló, uso ruta en línea recta: ${routeError?.message || 'revisá la clave de Google Maps.'}`)
+    }
 
     if (Array.isArray(routeResult?.path) && routeResult.path.length >= 2) {
       setRoutePath(routeResult.path)
@@ -350,55 +367,77 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
 
     stopSimulation()
     setSimPhase('pickup')
-    const path = await buildRoute('pickup')
-    const { data, error } = await adminCreateTestTrip({
-      adminId: adminUser.id,
-      clientId: selectedClientId || adminUser.id,
-      driverId: selectedDriverId,
-      pickupLat: pointA.lat,
-      pickupLng: pointA.lng,
-      destinationLat: pointB.lat,
-      destinationLng: pointB.lng,
-      destinationText: 'Viaje test admin',
-      routeKm: routeKm || simDistanceKm(pointA, pointB),
-      price: Math.max(12000, Math.round((routeKm || 1) * 4500)),
-    })
 
-    if (error) {
-      console.error('ADMIN TEST TRIP CREATE ERROR:', error)
-      onMessage?.(`No pude crear el viaje test: ${supabaseErrorText(error) || 'RLS/RPC bloqueó la creación.'}`)
-      return
+    try {
+      const path = await buildRoute('pickup')
+      const { data, error } = await adminCreateTestTrip({
+        adminId: adminUser.id,
+        clientId: selectedClientId || adminUser.id,
+        driverId: selectedDriverId,
+        pickupLat: pointA.lat,
+        pickupLng: pointA.lng,
+        destinationLat: pointB.lat,
+        destinationLng: pointB.lng,
+        destinationText: 'Viaje test admin',
+        routeKm: routeKm || simDistanceKm(pointA, pointB),
+        price: Math.max(12000, Math.round((routeKm || 1) * 4500)),
+      })
+
+      if (error) {
+        console.error('ADMIN TEST TRIP CREATE ERROR:', error)
+        onMessage?.(`No pude crear el viaje test: ${supabaseErrorText(error) || 'RLS/RPC bloqueó la creación.'}`)
+        return
+      }
+
+      // adminCreateTestTrip a veces devuelve un array (insert) en vez de un objeto único.
+      const tripRow = Array.isArray(data) ? data[0] : data
+
+      if (!tripRow?.id) {
+        console.error('ADMIN TEST TRIP CREATE ERROR: respuesta sin id de viaje.', data)
+        onMessage?.('El viaje test se creó pero la respuesta no trae un id válido. Revisá adminCreateTestTrip en lib/supabase.js.')
+        return
+      }
+
+      const initialPoint = {
+        lat: pointA.lat,
+        lng: pointA.lng,
+        heading: simBearing(pointA, path[1] || pointB),
+        speed: 0,
+        accuracy: 8,
+      }
+
+      setRoutePath(path)
+      setActiveTrip(tripRow)
+      setSimIndex(0)
+      simIndexRef.current = 0
+      setSimDriverPoint(initialPoint)
+      simDriverPointRef.current = initialPoint
+      tripRef.current = tripRow
+      await pushSimPoint(0, 'pending')
+      onMessage?.('Viaje test creado. Abrí /client y /driver para ver el flujo real.')
+    } catch (createError) {
+      console.error('ADMIN TEST TRIP CREATE UNEXPECTED ERROR:', createError)
+      onMessage?.(`No pude crear el viaje test: ${createError?.message || 'revisá la consola.'}`)
     }
-
-    const initialPoint = {
-      lat: pointA.lat,
-      lng: pointA.lng,
-      heading: simBearing(pointA, path[1] || pointB),
-      speed: 0,
-      accuracy: 8,
-    }
-
-    setRoutePath(path)
-    setActiveTrip(data)
-    setSimIndex(0)
-    setSimDriverPoint(initialPoint)
-    simDriverPointRef.current = initialPoint
-    tripRef.current = data
-    await pushSimPoint(0, 'pending')
-    onMessage?.('Viaje test creado. Abrí /client y /driver para ver el flujo real.')
   }
 
   async function setTripStatus(status) {
     if (!activeTrip?.id) return
-    const { data, error } = await adminUpdateTestTripStatus({ tripId: activeTrip.id, status })
-    if (error) {
-      console.error('ADMIN TEST TRIP STATUS ERROR:', error)
-      onMessage?.('No pude actualizar el estado del viaje test.')
-      return
+    try {
+      const { data, error } = await adminUpdateTestTripStatus({ tripId: activeTrip.id, status })
+      if (error) {
+        console.error('ADMIN TEST TRIP STATUS ERROR:', error)
+        onMessage?.(`No pude actualizar el estado del viaje test: ${supabaseErrorText(error) || error?.message || ''}`)
+        return
+      }
+      const tripRow = Array.isArray(data) ? data[0] : data
+      const nextTrip = tripRow?.id ? tripRow : { ...activeTrip, status }
+      setActiveTrip(nextTrip)
+      tripRef.current = nextTrip
+    } catch (statusError) {
+      console.error('ADMIN TEST TRIP STATUS UNEXPECTED ERROR:', statusError)
+      onMessage?.(`No pude actualizar el estado del viaje test: ${statusError?.message || 'revisá la consola.'}`)
     }
-    const nextTrip = data || { ...activeTrip, status }
-    setActiveTrip(nextTrip)
-    tripRef.current = nextTrip
   }
 
   async function pushSimPoint(index, status = null) {
@@ -406,7 +445,20 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     const point = path[Math.min(index, path.length - 1)]
     const nextPoint = path[Math.min(index + 1, path.length - 1)] || point
     const trip = tripRef.current
-    if (!trip?.id || !isValidSimPoint(point)) return
+
+    if (!trip?.id) {
+      console.error('ADMIN TEST TRIP LOCATION ERROR: viaje sin id, no se puede mover.', trip)
+      onMessage?.('No hay un viaje test válido (sin id). Creá el viaje test de nuevo.')
+      stopSimulation()
+      return false
+    }
+
+    if (!isValidSimPoint(point)) {
+      console.error('ADMIN TEST TRIP LOCATION ERROR: punto de ruta inválido.', point)
+      onMessage?.('La ruta calculada tiene un punto inválido. Volvé a marcar A y B en el mapa.')
+      stopSimulation()
+      return false
+    }
 
     const heading = simBearing(point, nextPoint)
     const speed = SIM_SPEEDS[speedMode]?.speed || SIM_SPEEDS.normal.speed
@@ -420,29 +472,41 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     setSimDriverPoint(visualPoint)
     simDriverPointRef.current = visualPoint
     setLastSimUpdateAt(new Date().toLocaleTimeString())
-    const { data, error } = await adminUpdateTestTripLocation({
-      tripId: trip.id,
-      driverId: trip.driver_id || selectedDriverId,
-      lat: point.lat,
-      lng: point.lng,
-      heading,
-      speed,
-      accuracy: 8,
-      status,
-    })
+
+    let data = null
+    let error = null
+    try {
+      const result = await adminUpdateTestTripLocation({
+        tripId: trip.id,
+        driverId: trip.driver_id || selectedDriverId,
+        lat: point.lat,
+        lng: point.lng,
+        heading,
+        speed,
+        accuracy: 8,
+        status,
+      })
+      data = result?.data
+      error = result?.error
+    } catch (thrownError) {
+      error = thrownError
+    }
 
     if (error) {
       console.error('ADMIN TEST TRIP LOCATION ERROR:', error)
-      onMessage?.(`RLS/RPC bloqueó movimiento: ${supabaseErrorText(error) || 'revisá admin_update_test_trip_location.'}`)
+      onMessage?.(`RLS/RPC bloqueó movimiento: ${supabaseErrorText(error) || error?.message || 'revisá admin_update_test_trip_location.'}`)
       stopSimulation()
-      return
+      return false
     }
 
-    if (data) {
-      setActiveTrip(data)
-      tripRef.current = data
+    const tripRow = Array.isArray(data) ? data[0] : data
+    if (tripRow?.id) {
+      setActiveTrip(tripRow)
+      tripRef.current = tripRow
     }
     setSimIndex(index)
+    simIndexRef.current = index
+    return true
   }
 
   async function startSimulation() {
@@ -452,9 +516,15 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     }
 
     let path = routeRef.current
-    if (!path || path.length < 2) {
-      path = await buildRoute(simPhase)
-      routeRef.current = path
+    try {
+      if (!path || path.length < 2) {
+        path = await buildRoute(simPhase)
+        routeRef.current = path
+      }
+    } catch (routeError) {
+      console.error('ADMIN TEST TRIP START ROUTE ERROR:', routeError)
+      onMessage?.(`No pude calcular la ruta: ${routeError?.message || 'revisá la consola.'}`)
+      return
     }
 
     if (!path || path.length < 2) {
@@ -476,34 +546,59 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     const interval = SIM_SPEEDS[speedMode]?.interval || SIM_SPEEDS.normal.interval
 
     timerRef.current = window.setInterval(async () => {
-      const currentPath = routeRef.current || []
-      const currentIndex = simIndexRef.current || 0
-      const nextIndex = Math.min(currentIndex + 1, currentPath.length - 1)
-      const currentStatus = tripRef.current?.status === 'in_progress' ? 'in_progress' : 'arriving'
-      await pushSimPoint(nextIndex, currentStatus)
+      try {
+        const currentPath = routeRef.current || []
+        const currentIndex = simIndexRef.current || 0
+        const nextIndex = Math.min(currentIndex + 1, currentPath.length - 1)
+        const currentStatus = tripRef.current?.status === 'in_progress' ? 'in_progress' : 'arriving'
+        const ok = await pushSimPoint(nextIndex, currentStatus)
 
-      if (nextIndex >= currentPath.length - 1) {
-        stopSimulation()
-        if (tripRef.current?.status === 'in_progress') {
-          await setTripStatus('completed')
-        } else {
-          onMessage?.('Simulacion llego al punto. Toca Iniciar viaje para simular A -> B.')
+        if (!ok) {
+          // pushSimPoint ya mostró el mensaje de error y detuvo el timer.
+          return
         }
+
+        if (nextIndex >= currentPath.length - 1) {
+          stopSimulation()
+          if (tripRef.current?.status === 'in_progress') {
+            await setTripStatus('completed')
+          } else {
+            onMessage?.('Simulacion llego al punto. Toca Iniciar viaje para simular A -> B.')
+          }
+        }
+      } catch (tickError) {
+        console.error('ADMIN TEST TRIP SIMULATION TICK ERROR:', tickError)
+        onMessage?.(`La simulación se detuvo por un error: ${tickError?.message || 'revisá la consola.'}`)
+        stopSimulation()
       }
     }, interval)
   }
 
   async function preparePickupSimulation() {
+    if (!activeTrip?.id) {
+      onMessage?.('Primero creá un viaje test.')
+      return
+    }
+
     stopSimulation()
     setSimPhase('pickup')
     setSimIndex(0)
     simIndexRef.current = 0
-    const path = await buildRoute('pickup')
-    if (path.length >= 2) {
-      await pushSimPoint(0, tripRef.current?.status || 'accepted')
+
+    try {
+      const path = await buildRoute('pickup')
+      if (path.length < 2) {
+        onMessage?.('No pude calcular una ruta de pickup válida.')
+        return
+      }
+      const ok = await pushSimPoint(0, tripRef.current?.status || 'accepted')
+      if (!ok) return
+      onMessage?.('Pickup listo: simulá ida al cliente.')
+      await startSimulation()
+    } catch (prepareError) {
+      console.error('ADMIN PICKUP SIMULATION ERROR:', prepareError)
+      onMessage?.(`No pude preparar el pickup: ${prepareError?.message || 'revisá la consola.'}`)
     }
-    onMessage?.('Pickup listo: simulá ida al cliente.')
-    await startSimulation()
   }
 
   async function prepareTripSimulation() {
@@ -516,21 +611,30 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     setSimPhase('trip')
     setSimIndex(0)
     simIndexRef.current = 0
-    await setTripStatus('in_progress')
-    const startPoint = {
-      lat: pointA.lat,
-      lng: pointA.lng,
-      heading: simBearing(pointA, pointB),
-      speed: 0,
-      accuracy: 8,
+
+    try {
+      await setTripStatus('in_progress')
+      const startPoint = {
+        lat: pointA.lat,
+        lng: pointA.lng,
+        heading: simBearing(pointA, pointB),
+        speed: 0,
+        accuracy: 8,
+      }
+      setSimDriverPoint(startPoint)
+      simDriverPointRef.current = startPoint
+      const path = await buildRoute('trip')
+      if (path.length < 2) {
+        onMessage?.('No pude calcular una ruta de viaje válida.')
+        return
+      }
+      const ok = await pushSimPoint(0, 'in_progress')
+      if (!ok) return
+      onMessage?.('Viaje iniciado: simulá recorrido al destino.')
+    } catch (prepareError) {
+      console.error('ADMIN TRIP SIMULATION ERROR:', prepareError)
+      onMessage?.(`No pude iniciar el viaje: ${prepareError?.message || 'revisá la consola.'}`)
     }
-    setSimDriverPoint(startPoint)
-    simDriverPointRef.current = startPoint
-    const path = await buildRoute('trip')
-    if (path.length >= 2) {
-      await pushSimPoint(0, 'in_progress')
-    }
-    onMessage?.('Viaje iniciado: simulá recorrido al destino.')
   }
 
   async function quickDemoCde() {
@@ -560,181 +664,225 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     }
   }
 
-  const progress = routePath.length > 1 ? Math.round((simIndex / (routePath.length - 1)) * 100) : 0
+    const progress = routePath.length > 1 ? Math.round((simIndex / (routePath.length - 1)) * 100) : 0
 
   if (!enabled) {
     return (
-      <section className="admin-simulator admin-empty">
+      <section className="admin-simulator-trigger admin-empty">
         No autorizado para usar el simulador.
       </section>
     )
   }
 
   return (
-    <section className="admin-simulator">
-      <div className="admin-list-title">
-        <strong>Simulador de viajes</strong>
-        <span>{activeTrip?.status || 'sin viaje'} · {progress}%</span>
-      </div>
-
-      <div className="admin-sim-steps">
-        <span>Paso 1: Elegí chofer y cliente</span>
-        <span>Paso 2: Marcá A y B</span>
-        <span>Paso 3: Crear viaje test</span>
-        <span>Paso 4: Abrí /client y /driver</span>
-        <span>Paso 5: Iniciar recorrido</span>
-      </div>
-
-      <div className="admin-sim-grid">
-        <div className="admin-sim-map">
-          <InteractiveRouteMap
-            origin={mapOrigin}
-            destination={mapDestination}
-            destinationText="Viaje test admin"
-            drivers={
-              selectedDriver && isValidSimPoint(simDriverPoint)
-                ? [{
-                    ...selectedDriver,
-                    lat: simDriverPoint.lat,
-                    lng: simDriverPoint.lng,
-                    heading: simDriverPoint.heading,
-                    speed: simDriverPoint.speed,
-                    accuracy: simDriverPoint.accuracy,
-                    available: true,
-                    is_available: true,
-                    online: true,
-                  }]
-                : []
-            }
-            selectedDriver={null}
-            onSelectDriver={() => {}}
-            onChooseDriver={() => {}}
-            onRefreshLocation={() => {}}
-            onMapClick={handleMapClick}
-            showRouteSummary={false}
-            animateCamera={false}
-            showOriginCar
-            navigationMode
-            navigationVariant="driver"
-          />
+    <>
+      <section className="admin-simulator-trigger">
+        <div className="admin-sim-trigger-info">
+          <strong>Simulador de viajes</strong>
+          <span>{activeTrip?.status || 'sin viaje'} · {progress}%</span>
         </div>
+        <button type="button" className="admin-sim-trigger-btn" onClick={() => setSimulatorOpen(true)}>
+          <Play size={16} /> Abrir simulador
+        </button>
+      </section>
 
-        <div className="admin-sim-panel">
-          <div className="admin-sim-markers">
-            <button type="button" className={markMode === 'a' ? 'active' : ''} onClick={() => setMarkMode('a')}>
-              <MapPin size={16} /> Marcar punto A
-            </button>
-            <button type="button" className={markMode === 'b' ? 'active' : ''} onClick={() => setMarkMode('b')}>
-              <MapPin size={16} /> Marcar punto B
-            </button>
-          </div>
-
-          <label>
-            Chofer
-            <select value={selectedDriverId} onChange={(event) => setSelectedDriverId(event.target.value)}>
-              <option value="">Seleccionar chofer</option>
-              {drivers.map((driver) => (
-                <option key={driver.user_id} value={driver.user_id}>
-                  {driver.full_name || driver.email || driver.user_id}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Cliente test
-            <select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.full_name || client.email || client.id}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="admin-sim-points">
-            <label>
-              A lat
-              <input type="number" step="0.000001" value={pointA.lat} onChange={(event) => updatePoint('a', 'lat', event.target.value)} />
-            </label>
-            <label>
-              A lng
-              <input type="number" step="0.000001" value={pointA.lng} onChange={(event) => updatePoint('a', 'lng', event.target.value)} />
-            </label>
-            <label>
-              B lat
-              <input type="number" step="0.000001" value={pointB.lat} onChange={(event) => updatePoint('b', 'lat', event.target.value)} />
-            </label>
-            <label>
-              B lng
-              <input type="number" step="0.000001" value={pointB.lng} onChange={(event) => updatePoint('b', 'lng', event.target.value)} />
-            </label>
-          </div>
-
-          <div className="admin-sim-status">
-            <span>A: {formatSimPoint(pointA)}</span>
-            <span>B: {formatSimPoint(pointB)}</span>
-            <span>Ruta: {routeSource || 'sin calcular'} · {routeKm.toFixed(2)} km</span>
-            <span>Trip: {activeTrip?.id || 'sin viaje'}</span>
-            <span>Driver: {selectedDriverId || 'sin chofer'}</span>
-            <span>Client: {selectedClientId || adminUser?.id || 'sin cliente'}</span>
-            <span>Fase: {simPhase === 'trip' ? 'viaje al destino' : 'ida al cliente'}</span>
-            <span>Progreso: {progress}%</span>
-            <span>Auto: {formatSimPoint(simDriverPoint)}</span>
-            <span>Heading: {Number(simDriverPoint?.heading || 0).toFixed(0)}°</span>
-            <span>Speed: {Number(simDriverPoint?.speed || 0).toFixed(1)} m/s</span>
-            <span>Último update: {lastSimUpdateAt || 'sin movimiento'}</span>
-          </div>
-
-          <div className="admin-sim-speed">
-            {Object.entries(SIM_SPEEDS).map(([key, item]) => (
-              <button key={key} type="button" className={speedMode === key ? 'active' : ''} onClick={() => setSpeedMode(key)}>
-                {item.label}
+      {simulatorOpen && (
+        <div className="admin-preview-backdrop" onClick={() => setSimulatorOpen(false)}>
+          <section className="admin-simulator-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="admin-sim-modal-header">
+              <div>
+                <p>SIMULADOR</p>
+                <h2>Viaje test</h2>
+                <span>{activeTrip?.status || 'sin viaje'} · {progress}%</span>
+              </div>
+              <button type="button" className="admin-preview-close" onClick={() => setSimulatorOpen(false)} aria-label="Cerrar simulador">
+                <X size={20} />
               </button>
-            ))}
-          </div>
+            </header>
 
-          <div className="admin-sim-actions">
-            <button type="button" onClick={quickDemoCde}>
-              Demo rápido CDE
-            </button>
-            <button type="button" className="approve" onClick={createTrip} disabled={!canCreateTrip}>
-              Crear viaje test
-            </button>
-            <button type="button" onClick={preparePickupSimulation} disabled={!activeTrip?.id || simulating}>
-              Simular ida al cliente
-            </button>
-            <button type="button" onClick={() => setTripStatus('accepted')} disabled={!activeTrip?.id}>
-              Aceptar viaje
-            </button>
-            <button type="button" onClick={() => setTripStatus('arriving')} disabled={!activeTrip?.id}>
-              Llegue al punto
-            </button>
-            <button type="button" onClick={prepareTripSimulation} disabled={!activeTrip?.id || simulating}>
-              Iniciar viaje
-            </button>
-            <button type="button" className="approve" onClick={startSimulation} disabled={!activeTrip?.id || simulating || simPhase !== 'trip'}>
-              Simular viaje al destino
-            </button>
-            <button type="button" className="approve" onClick={startSimulation} disabled={!activeTrip?.id || simulating}>
-              <Play size={15} /> Iniciar recorrido
-            </button>
-            <button type="button" onClick={stopSimulation} disabled={!simulating}>
-              <Pause size={15} /> Pausar
-            </button>
-            <button type="button" onClick={resetSimulation} disabled={!activeTrip?.id}>
-              Reiniciar
-            </button>
-            <button type="button" onClick={() => setTripStatus('completed')} disabled={!activeTrip?.id}>
-              <Square size={15} /> Finalizar
-            </button>
-            <button type="button" className="reject" onClick={() => setTripStatus('cancelled')} disabled={!activeTrip?.id}>
-              Cancelar
-            </button>
-          </div>
+            <div className="admin-sim-modal-body">
+              <div className="admin-sim-steps">
+                <span>Paso 1: Elegí chofer y cliente</span>
+                <span>Paso 2: Marcá A y B en el mapa</span>
+                <span>Paso 3: Crear viaje test</span>
+                <span>Paso 4: Abrí /client y /driver</span>
+                <span>Paso 5: Iniciar recorrido</span>
+              </div>
+
+              <div className="admin-sim-location-card">
+                <div className="admin-sim-location-row">
+                  <div>
+                    <span>Punto A · recogida</span>
+                    <strong>{formatSimPoint(pointA) || 'Sin marcar'}</strong>
+                  </div>
+                  <div>
+                    <span>Punto B · destino</span>
+                    <strong>{formatSimPoint(pointB) || 'Sin marcar'}</strong>
+                  </div>
+                </div>
+                <div className="admin-sim-location-actions">
+                  <button type="button" className="admin-sim-map-btn" onClick={() => setMapPickerOpen(true)}>
+                    <MapPin size={16} /> Marcar en el mapa
+                  </button>
+                  <button type="button" className="admin-sim-map-btn ghost" onClick={quickDemoCde}>
+                    Demo rápido CDE
+                  </button>
+                </div>
+                <span className="admin-sim-route-hint">Ruta: {routeSource || 'sin calcular'} · {routeKm.toFixed(2)} km</span>
+              </div>
+
+              <label>
+                Chofer
+                <select value={selectedDriverId} onChange={(event) => setSelectedDriverId(event.target.value)}>
+                  <option value="">Seleccionar chofer</option>
+                  {drivers.map((driver) => (
+                    <option key={driver.user_id} value={driver.user_id}>
+                      {driver.full_name || driver.email || driver.user_id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Cliente test
+                <select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.full_name || client.email || client.id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="admin-sim-status">
+                <span>Trip: {activeTrip?.id || 'sin viaje'}</span>
+                <span>Driver: {selectedDriverId || 'sin chofer'}</span>
+                <span>Client: {selectedClientId || adminUser?.id || 'sin cliente'}</span>
+                <span>Fase: {simPhase === 'trip' ? 'viaje al destino' : 'ida al cliente'}</span>
+                <span>Progreso: {progress}%</span>
+                <span>Auto: {formatSimPoint(simDriverPoint)}</span>
+                <span>Heading: {Number(simDriverPoint?.heading || 0).toFixed(0)}°</span>
+                <span>Speed: {Number(simDriverPoint?.speed || 0).toFixed(1)} m/s</span>
+                <span>Último update: {lastSimUpdateAt || 'sin movimiento'}</span>
+              </div>
+
+              <div className="admin-sim-speed">
+                {Object.entries(SIM_SPEEDS).map(([key, item]) => (
+                  <button key={key} type="button" className={speedMode === key ? 'active' : ''} onClick={() => setSpeedMode(key)}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="admin-sim-actions">
+                <button type="button" className="approve" onClick={createTrip} disabled={!canCreateTrip}>
+                  Crear viaje test
+                </button>
+                <button type="button" onClick={preparePickupSimulation} disabled={!activeTrip?.id || simulating}>
+                  Simular ida al cliente
+                </button>
+                <button type="button" onClick={() => setTripStatus('accepted')} disabled={!activeTrip?.id}>
+                  Aceptar viaje
+                </button>
+                <button type="button" onClick={() => setTripStatus('arriving')} disabled={!activeTrip?.id}>
+                  Llegue al punto
+                </button>
+                <button type="button" onClick={prepareTripSimulation} disabled={!activeTrip?.id || simulating}>
+                  Iniciar viaje
+                </button>
+                <button type="button" className="approve" onClick={startSimulation} disabled={!activeTrip?.id || simulating || simPhase !== 'trip'}>
+                  Simular viaje al destino
+                </button>
+                <button type="button" className="approve" onClick={startSimulation} disabled={!activeTrip?.id || simulating}>
+                  <Play size={15} /> Iniciar recorrido
+                </button>
+                <button type="button" onClick={stopSimulation} disabled={!simulating}>
+                  <Pause size={15} /> Pausar
+                </button>
+                <button type="button" onClick={resetSimulation} disabled={!activeTrip?.id}>
+                  Reiniciar
+                </button>
+                <button type="button" onClick={() => setTripStatus('completed')} disabled={!activeTrip?.id}>
+                  <Square size={15} /> Finalizar
+                </button>
+                <button type="button" className="reject" onClick={() => setTripStatus('cancelled')} disabled={!activeTrip?.id}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
-      </div>
-    </section>
+      )}
+
+      {mapPickerOpen && (
+        <div className="admin-preview-backdrop" onClick={() => setMapPickerOpen(false)}>
+          <section className="admin-map-picker-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="admin-sim-modal-header">
+              <div>
+                <p>MAPA</p>
+                <h2>Marcar puntos</h2>
+                <span>Tocá el mapa para ubicar el punto {markMode === 'a' ? 'A (recogida)' : 'B (destino)'}</span>
+              </div>
+              <button type="button" className="admin-preview-close" onClick={() => setMapPickerOpen(false)} aria-label="Cerrar mapa">
+                <X size={20} />
+              </button>
+            </header>
+
+            <div className="admin-map-picker-toggle">
+              <button type="button" className={markMode === 'a' ? 'active' : ''} onClick={() => setMarkMode('a')}>
+                <MapPin size={16} /> Punto A
+              </button>
+              <button type="button" className={markMode === 'b' ? 'active' : ''} onClick={() => setMarkMode('b')}>
+                <MapPin size={16} /> Punto B
+              </button>
+            </div>
+
+            <div className="admin-map-picker-map">
+              <InteractiveRouteMap
+                origin={mapOrigin}
+                destination={mapDestination}
+                destinationText="Viaje test admin"
+                drivers={
+                  selectedDriver && isValidSimPoint(simDriverPoint)
+                    ? [{
+                        ...selectedDriver,
+                        lat: simDriverPoint.lat,
+                        lng: simDriverPoint.lng,
+                        heading: simDriverPoint.heading,
+                        speed: simDriverPoint.speed,
+                        accuracy: simDriverPoint.accuracy,
+                        available: true,
+                        is_available: true,
+                        online: true,
+                      }]
+                    : []
+                }
+                selectedDriver={null}
+                onSelectDriver={() => {}}
+                onChooseDriver={() => {}}
+                onRefreshLocation={() => {}}
+                onMapClick={handleMapClick}
+                showRouteSummary={false}
+                animateCamera={false}
+                showOriginCar
+                navigationMode
+                navigationVariant="driver"
+              />
+            </div>
+
+            <div className="admin-map-picker-footer">
+              <div className="admin-map-picker-coords">
+                <span>A: {formatSimPoint(pointA) || 'sin marcar'}</span>
+                <span>B: {formatSimPoint(pointB) || 'sin marcar'}</span>
+              </div>
+              <button type="button" className="approve" onClick={() => setMapPickerOpen(false)}>
+                Confirmar puntos
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -1069,85 +1217,30 @@ export default function Admin() {
           </button>
         </header>
 
-        <section className="admin-stats">
-          <div>
-            <ShieldCheck size={20} />
-            <span>En revisión</span>
-            <strong>{stats.submitted}</strong>
-          </div>
-
-          <div>
-            <UserCheck size={20} />
-            <span>Aprobados</span>
-            <strong>{stats.approved}</strong>
-          </div>
-
-          <div>
-            <FileText size={20} />
-            <span>Docs completas</span>
-            <strong>{stats.docsComplete}</strong>
-          </div>
-
-          <div>
-            <AlertTriangle size={20} />
-            <span>Docs pendientes</span>
-            <strong>{stats.docsPending}</strong>
-          </div>
-        </section>
-
-        <section className="admin-filters" aria-label="Filtros de verificación">
-          <button
-            type="button"
-            className={filterStatus === 'submitted' ? 'active' : ''}
-            onClick={() => setFilterStatus('submitted')}
-          >
-            En revisión
-            <strong>{stats.submitted}</strong>
+        <div className="admin-panel">
+        <section className="admin-filter-bar" aria-label="Filtros de verificación">
+          <button type="button" className={filterStatus === 'submitted' ? 'active' : ''} onClick={() => setFilterStatus('submitted')}>
+            <ShieldCheck size={18} />
+            <div><strong>{stats.submitted}</strong><span>En revisión</span></div>
           </button>
-
-          <button
-            type="button"
-            className={filterStatus === 'approved' ? 'active' : ''}
-            onClick={() => setFilterStatus('approved')}
-          >
-            Aprobados
-            <strong>{stats.approved}</strong>
+          <button type="button" className={filterStatus === 'approved' ? 'active' : ''} onClick={() => setFilterStatus('approved')}>
+            <UserCheck size={18} />
+            <div><strong>{stats.approved}</strong><span>Aprobados</span></div>
           </button>
-
-          <button
-            type="button"
-            className={filterStatus === 'rejected' ? 'active' : ''}
-            onClick={() => setFilterStatus('rejected')}
-          >
-            Rechazados
-            <strong>{stats.rejected}</strong>
+          <button type="button" className={filterStatus === 'rejected' ? 'active' : ''} onClick={() => setFilterStatus('rejected')}>
+            <XCircle size={18} />
+            <div><strong>{stats.rejected}</strong><span>Rechazados</span></div>
           </button>
-
-          <button
-            type="button"
-            className={filterStatus === 'docs_complete' ? 'active' : ''}
-            onClick={() => setFilterStatus('docs_complete')}
-          >
-            Docs OK
-            <strong>{stats.docsComplete}</strong>
+          <button type="button" className={filterStatus === 'docs_complete' ? 'active' : ''} onClick={() => setFilterStatus('docs_complete')}>
+            <FileText size={18} />
+            <div><strong>{stats.docsComplete}</strong><span>Docs OK</span></div>
           </button>
-
-          <button
-            type="button"
-            className={filterStatus === 'docs_pending' ? 'active' : ''}
-            onClick={() => setFilterStatus('docs_pending')}
-          >
-            Faltan docs
-            <strong>{stats.docsPending}</strong>
+          <button type="button" className={filterStatus === 'docs_pending' ? 'active' : ''} onClick={() => setFilterStatus('docs_pending')}>
+            <AlertTriangle size={18} />
+            <div><strong>{stats.docsPending}</strong><span>Faltan docs</span></div>
           </button>
-
-          <button
-            type="button"
-            className={filterStatus === 'all' ? 'active' : ''}
-            onClick={() => setFilterStatus('all')}
-          >
-            Todos
-            <strong>{stats.total}</strong>
+          <button type="button" className={filterStatus === 'all' ? 'active' : ''} onClick={() => setFilterStatus('all')}>
+            <div><strong>{stats.total}</strong><span>Todos</span></div>
           </button>
         </section>
 
@@ -1389,6 +1482,7 @@ export default function Admin() {
             })}
           </section>
         )}
+        </div>
       </main>
 
       {previewDoc && (
@@ -1438,8 +1532,11 @@ export default function Admin() {
 const adminStyles = `
   .admin-screen {
     min-height: 100vh;
-    background: #050706;
-    color: #07110f;
+    height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: #2d3030;
+    color: #000000;
     display: flex;
     justify-content: center;
     font-family: Inter, Arial, sans-serif;
@@ -1448,9 +1545,20 @@ const adminStyles = `
   .admin-shell {
     width: 100%;
     max-width: 1080px;
-    min-height: 100vh;
     padding: 24px;
-    background: #f5f7f6;
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
+
+  .admin-panel {
+    background: #f2f4f3;
+    border-radius: 32px;
+    padding: 20px;
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    box-shadow: 0 18px 48px rgba(7, 17, 15, 0.08);
   }
 
   .admin-top {
@@ -1499,84 +1607,46 @@ const adminStyles = `
     cursor: pointer;
   }
 
-  .admin-stats {
-    margin-top: 16px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
+  .admin-filter-bar {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .admin-filter-bar::-webkit-scrollbar { display: none; }
 
-  .admin-stats div,
-  .admin-driver-card,
-  .admin-empty {
-    border-radius: 26px;
+  .admin-filter-bar button {
+    flex: 0 0 auto;
+    min-width: 118px;
+    min-height: 84px;
+    border: 0;
+    border-radius: 22px;
     background: white;
     box-shadow: 0 12px 30px rgba(0,0,0,.06);
-  }
-
-  .admin-stats div {
-    min-height: 118px;
-    padding: 16px;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     justify-content: space-between;
-  }
-
-  .admin-stats svg {
-    color: #63c0ba;
-  }
-
-  .admin-stats span {
-    color: #667085;
-    font-size: 13px;
-    font-weight: 900;
-  }
-
-  .admin-stats strong {
-    font-size: 34px;
-    line-height: 1;
-    font-weight: 950;
-  }
-
-  .admin-filters {
-    margin-top: 12px;
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 8px;
-  }
-
-  .admin-filters button {
-    min-height: 54px;
-    border: 0;
-    border-radius: 18px;
-    background: #ffffff;
-    color: #667085;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 7px;
-    padding: 0 11px;
-    font-size: 12px;
-    font-weight: 950;
+    padding: 14px;
     cursor: pointer;
-    box-shadow: 0 12px 30px rgba(0,0,0,.05);
+    color: #07110f;
   }
 
-  .admin-filters button.active {
-    background: #07110f;
-    color: #ffffff;
-  }
+  .admin-filter-bar button svg { color: #63c0ba; }
+  .admin-filter-bar button div { display: flex; flex-direction: column; }
+  .admin-filter-bar button strong { font-size: 26px; font-weight: 950; line-height: 1; }
+  .admin-filter-bar button span { color: #667085; font-size: 12px; font-weight: 900; margin-top: 2px; }
 
-  .admin-filters strong {
-    font-size: 18px;
-    line-height: 1;
-  }
+  .admin-filter-bar button.active { background: #07110f; color: white; }
+  .admin-filter-bar button.active span { color: rgba(255,255,255,.7); }
 
   .admin-message,
   .admin-session,
   .admin-empty,
   .admin-login-link {
-    margin-top: 14px;
     padding: 16px;
     font-weight: 900;
   }
@@ -1616,22 +1686,6 @@ const adminStyles = `
     text-decoration: none;
   }
 
-  .admin-simulator {
-    margin-top: 18px;
-    border-radius: 28px;
-    padding: 18px;
-    background: #07110f;
-    color: #f8fffd;
-    box-shadow: 0 18px 48px rgba(7, 17, 15, 0.16);
-  }
-
-  .admin-sim-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-    gap: 14px;
-    margin-top: 14px;
-  }
-
   .admin-sim-steps {
     display: flex;
     flex-wrap: wrap;
@@ -1650,19 +1704,6 @@ const adminStyles = `
     border: 1px solid rgba(0, 245, 212, 0.16);
     font-size: 11px;
     font-weight: 900;
-  }
-
-  .admin-sim-map {
-    min-height: 430px;
-    overflow: hidden;
-    border-radius: 24px;
-    background: #dfe8e6;
-  }
-
-  .admin-sim-map .mobility-map {
-    height: 430px;
-    margin: 0;
-    border-radius: 24px;
   }
 
   .admin-sim-panel {
@@ -1696,7 +1737,6 @@ const adminStyles = `
     color: #07110f;
   }
 
-  .admin-sim-markers,
   .admin-sim-speed,
   .admin-sim-actions {
     display: flex;
@@ -1738,10 +1778,255 @@ const adminStyles = `
     cursor: not-allowed;
   }
 
-  .admin-sim-points {
+  .admin-simulator-trigger {
+  border-radius: 24px;
+  padding: 16px 18px;
+  background: #07110f;
+  color: #f8fffd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 18px 48px rgba(7, 17, 15, 0.16);
+  }
+
+  .admin-sim-trigger-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .admin-sim-trigger-info strong { font-size: 15px; font-weight: 950; }
+  .admin-sim-trigger-info span { font-size: 12px; color: rgba(248,255,253,.6); font-weight: 850; }
+
+  .admin-sim-trigger-btn {
+    flex: 0 0 auto;
+    min-height: 46px;
+    border: 0;
+    border-radius: 999px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, #18d7a8, #00c7f5);
+    color: #04110f;
+    font-weight: 950;
+    cursor: pointer;
+  }
+
+  .admin-simulator-modal {
+    width: min(560px, 100%);
+    height: min(720px, calc(100vh - 36px));
+    max-height: calc(100vh - 36px);
+    border-radius: 28px;
+    background: #07110f;
+    color: #f8fffd;
+    padding: 18px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto 1fr;
+    gap: 14px;
+    box-shadow: 0 30px 90px rgba(0,0,0,.38);
+    overflow: hidden;
+  }
+
+  .admin-map-picker-modal {
+    width: min(560px, 100%);
+    height: min(720px, calc(100vh - 36px));
+    max-height: calc(100vh - 36px);
+    border-radius: 28px;
+    background: #07110f;
+    color: #f8fffd;
+    padding: 18px;
+    display: grid;
+    grid-template-rows: auto auto minmax(220px, 1fr) auto;
+    gap: 14px;
+    box-shadow: 0 30px 90px rgba(0,0,0,.38);
+    overflow: hidden;
+  }
+
+  .admin-sim-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    flex: 0 0 auto;
+  }
+
+  .admin-sim-modal-header p {
+    margin: 0 0 6px;
+    color: #63c0ba;
+    font-size: 11px;
+    letter-spacing: .16em;
+    font-weight: 950;
+  }
+
+  .admin-sim-modal-header h2 { margin: 0; font-size: 22px; font-weight: 950; }
+  .admin-sim-modal-header span { display: block; margin-top: 6px; color: rgba(248,255,253,.6); font-size: 12px; font-weight: 850; }
+
+  .admin-sim-modal-header .admin-preview-close {
+    background: rgba(255,255,255,.1);
+    color: #f8fffd;
+  }
+
+  .admin-sim-modal-body {
+    min-height: 0;
+    display: grid;
+    gap: 12px;
+    overflow-y: auto;
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-sim-modal-body label {
+    display: grid;
+    gap: 6px;
+    color: rgba(248, 255, 253, 0.72);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .admin-sim-modal-body select {
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f8fffd;
+    outline: 0;
+    font-weight: 850;
+  }
+
+  .admin-sim-modal-body option { color: #07110f; }
+
+  .admin-sim-location-card {
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-sim-location-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+
+  .admin-sim-location-row > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .admin-sim-location-row span { font-size: 11px; color: rgba(248,255,253,.55); font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+  .admin-sim-location-row strong { font-size: 13px; font-weight: 900; word-break: break-word; }
+
+  .admin-sim-location-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .admin-sim-map-btn {
+    flex: 1 1 auto;
+    min-height: 46px;
+    border: 0;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: linear-gradient(135deg, #18d7a8, #00c7f5);
+    color: #04110f;
+    font-weight: 950;
+    cursor: pointer;
+  }
+
+  .admin-sim-map-btn.ghost {
+    background: rgba(255,255,255,.1);
+    color: #f8fffd;
+  }
+
+  .admin-sim-route-hint { font-size: 12px; color: rgba(248,255,253,.55); font-weight: 850; }
+
+  .admin-map-picker-toggle {
+    display: flex;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+
+  .admin-map-picker-toggle button {
+    flex: 1 1 auto;
+    min-height: 46px;
+    border: 0;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #f8fffd;
+    font-weight: 950;
+    cursor: pointer;
+  }
+
+  .admin-map-picker-toggle button.active {
+    background: linear-gradient(135deg, #18d7a8, #00c7f5);
+    color: #04110f;
+  }
+
+  .admin-map-picker-map {
+    flex: 1 1 auto;
+    min-height: 0;
+    border-radius: 22px;
+    overflow: hidden;
+    background: #dfe8e6;
+  }
+
+  .admin-map-picker-map .mobility-map {
+    height: 100%;
+    min-height: 320px;
+    margin: 0;
+    border-radius: 22px;
+  }
+
+  .admin-map-picker-footer {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .admin-map-picker-coords {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    color: rgba(248,255,253,.6);
+    font-weight: 850;
+  }
+
+  .admin-map-picker-footer .approve {
+    min-height: 48px;
+    border: 0;
+    border-radius: 14px;
+    padding: 0 20px;
+    background: linear-gradient(135deg, #18d7a8, #00c7f5);
+    color: #04110f;
+    font-weight: 950;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 560px) {
+    .admin-simulator-modal,
+    .admin-map-picker-modal {
+      width: 100%;
+      height: 100%;
+      max-height: 100vh;
+      border-radius: 0;
+    }
+
+    .admin-map-picker-map { min-height: 50vh; }
+    .admin-map-picker-map .mobility-map { min-height: 50vh; }
   }
 
   .admin-sim-status {
@@ -1756,7 +2041,6 @@ const adminStyles = `
   }
 
   .admin-list {
-    margin-top: 16px;
     display: grid;
     gap: 14px;
   }
@@ -2115,14 +2399,6 @@ const adminStyles = `
   }
 
   @media (max-width: 860px) {
-    .admin-stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .admin-filters {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
     .admin-doc-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -2130,7 +2406,14 @@ const adminStyles = `
 
   @media (max-width: 560px) {
     .admin-shell {
-      padding: 18px;
+      padding: 14px;
+      gap: 14px;
+    }
+
+    .admin-panel {
+      padding: 14px;
+      border-radius: 24px;
+      gap: 14px;
     }
 
     .admin-top {
@@ -2139,14 +2422,6 @@ const adminStyles = `
 
     .admin-top h1 {
       font-size: 30px;
-    }
-
-    .admin-stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .admin-filters {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .admin-doc-grid {

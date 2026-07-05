@@ -1146,6 +1146,23 @@ button {
   pointer-events: none;
 }
 
+.map-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+}
+
+.map-empty-eyebrow {
+  margin: 0 0 4px;
+  color: #1f7aff;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
 .google-navigation-marker::before {
   inset: 2px;
   z-index: 0;
