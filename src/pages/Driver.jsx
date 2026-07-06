@@ -61,6 +61,11 @@ const DRIVER_STATIONARY_SPEED_MPS = 0.35
 const DRIVER_NAV_FIT_PADDING = { top: 190, bottom: 230, left: 34, right: 34 }
 const DRIVER_NAV_UI_SAFE_AREA = { top: 150, bottom: 190, left: 24, right: 24 }
 
+function driverSupabaseErrorText(error) {
+  if (!error) return ''
+  return [error.message, error.details, error.hint, error.code].filter(Boolean).join(' · ')
+}
+
 const SAFETY_ZONES_CDE = [
   {
     name: 'San Rafael',
@@ -701,7 +706,7 @@ export default function Driver() {
     if (!driverId) return
     const { data, error } = await getOwnDriverTrips()
     if (error) {
-      setMessage('No pude cargar solicitudes. Ejecuta supabase/driver_live_state_rpcs.sql y recarga.')
+      setMessage(`No pude cargar solicitudes: ${driverSupabaseErrorText(error) || 'ejecuta supabase/driver_live_state_rpcs.sql y recarga.'}`)
       return
     }
     setTrips(data || [])
@@ -1183,7 +1188,7 @@ if (!isValidParaguayCoord(location)) {
         .eq('driver_id', user.id)
 
       if (error) {
-        setMessage('No pude actualizar el viaje.')
+        setMessage(`No pude actualizar el viaje: ${driverSupabaseErrorText(error) || 'error desconocido, revisa la consola.'}`)
         await loadTrips()
         return
       }
