@@ -18766,6 +18766,64 @@ body.route-driver .driver-navigation-instruction.alert-arrived {
   text-align: center;
 }
 
+.auth-flow-kicker {
+  margin: 0 auto 8px;
+  color: rgba(38, 231, 210, 0.92);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.auth-progress {
+  width: min(180px, 64%);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 0 auto 14px;
+}
+
+.auth-progress span {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.auth-progress span.active {
+  background: linear-gradient(90deg, #24f3c5, #05c7f2);
+  box-shadow: 0 0 18px rgba(5, 199, 242, 0.2);
+}
+
+.auth-choice-card {
+  min-height: 76px;
+  display: grid !important;
+  align-content: center;
+  justify-items: start;
+  gap: 4px;
+  padding: 15px 16px !important;
+  text-align: left;
+}
+
+.auth-choice-card strong {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.auth-choice-card small {
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.auth-secondary-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .driver-side-legal-links {
   display: grid;
   gap: 8px;
@@ -21237,4 +21295,259 @@ body.route-client .client-trip-panel {
   body.route-driver .driver-traffic-pill {
     max-width: 160px !important;
   }
+}
+
+/* Auth minimal product pass */
+body.route-login .auth-flow-kicker,
+body.route-registro .auth-flow-kicker {
+  margin: 0 auto 8px !important;
+  color: rgba(38, 231, 210, 0.92) !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-login .auth-progress,
+body.route-registro .auth-progress {
+  width: min(180px, 64%) !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 6px !important;
+  margin: 0 auto 14px !important;
+}
+
+body.route-login .auth-progress span,
+body.route-registro .auth-progress span {
+  height: 4px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.13) !important;
+}
+
+body.route-login .auth-progress span.active,
+body.route-registro .auth-progress span.active {
+  background: linear-gradient(90deg, #24f3c5, #05c7f2) !important;
+  box-shadow: 0 0 18px rgba(5, 199, 242, 0.2) !important;
+}
+
+body.route-login .auth-choice-card,
+body.route-registro .auth-choice-card {
+  min-height: 76px !important;
+  display: grid !important;
+  align-content: center !important;
+  justify-items: start !important;
+  gap: 4px !important;
+  padding: 15px 16px !important;
+  text-align: left !important;
+}
+
+body.route-login .auth-choice-card strong,
+body.route-registro .auth-choice-card strong {
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+}
+
+body.route-login .auth-choice-card small,
+body.route-registro .auth-choice-card small {
+  color: rgba(255, 255, 255, 0.64) !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.25 !important;
+}
+
+body.route-login .login-hero-logo,
+body.route-registro .login-hero-logo {
+  width: min(198px, 58vw) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-bottom: 8px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: block !important;
+}
+
+body.route-login .login-hero-logo::before,
+body.route-login .login-hero-logo::after,
+body.route-registro .login-hero-logo::before,
+body.route-registro .login-hero-logo::after {
+  display: none !important;
+  content: none !important;
+}
+
+body.route-login .login-hero-logo img,
+body.route-registro .login-hero-logo img {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  object-fit: contain !important;
+  filter: none !important;
+}
+
+body.route-login .auth-wordmark,
+body.route-registro .auth-wordmark {
+  width: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+  margin-bottom: 16px !important;
+  transform: translateX(-2px) !important;
+}
+
+body.route-login .auth-wordmark-text,
+body.route-registro .auth-wordmark-text {
+  color: #ffffff !important;
+  font-family: Impact, "Arial Black", system-ui, sans-serif !important;
+  font-size: clamp(38px, 9vw, 56px) !important;
+  font-weight: 1000 !important;
+  font-style: italic !important;
+  letter-spacing: -0.075em !important;
+  transform: skewX(-9deg) !important;
+  text-shadow: 0 16px 34px rgba(0, 0, 0, 0.42) !important;
+}
+
+body.route-login .auth-wordmark-pin,
+body.route-registro .auth-wordmark-pin {
+  position: relative !important;
+  width: clamp(31px, 7.2vw, 44px) !important;
+  height: clamp(31px, 7.2vw, 44px) !important;
+  margin: 0 -5px 0 -2px !important;
+  border-radius: 50% 50% 56% 50% !important;
+  background: #f00616 !important;
+  transform: rotate(45deg) translateY(5px) !important;
+  box-shadow: 0 14px 30px rgba(240, 6, 22, 0.34) !important;
+}
+
+body.route-login .auth-wordmark-pin::after,
+body.route-registro .auth-wordmark-pin::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 31% !important;
+  border-radius: 999px !important;
+  background: #050708 !important;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  background:
+    linear-gradient(180deg, rgba(20, 26, 31, 0.86), rgba(5, 9, 12, 0.86)) !important;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  letter-spacing: -0.025em !important;
+}
+
+body.route-login .login-subtitle,
+body.route-registro .login-subtitle {
+  color: rgba(255, 255, 255, 0.76) !important;
+}
+
+body.route-login .login-spacer,
+body.route-registro .login-spacer {
+  height: 4px !important;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  padding-top: clamp(38px, 8vh, 64px) !important;
+}
+
+body.route-login .auth-secondary-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 18px !important;
+  margin-top: 4px !important;
+}
+
+body.route-login .auth-secondary-row .login-text-btn {
+  min-height: auto !important;
+  width: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.68) !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  text-decoration: none !important;
+}
+
+body.route-login .auth-secondary-row .login-text-btn:hover {
+  color: #26e7d2 !important;
+}
+
+body.route-login .login-step-form .auth-back-link {
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: auto !important;
+  justify-self: center !important;
+  margin-top: 2px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.56) !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  text-decoration: none !important;
+}
+
+body.route-login .login-step-form .auth-back-link:hover {
+  color: rgba(38, 231, 210, 0.92) !important;
+}
+
+body.route-login .auth-panel-back,
+body.route-registro .auth-panel-back {
+  position: absolute !important;
+  top: clamp(18px, 4.4vh, 34px) !important;
+  left: clamp(18px, 5vw, 30px) !important;
+  z-index: 4 !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease !important;
+}
+
+body.route-login .auth-panel-back:hover,
+body.route-registro .auth-panel-back:hover {
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: #ffffff !important;
+}
+
+body.route-login .auth-panel-back:active,
+body.route-registro .auth-panel-back:active {
+  transform: translateX(-1px) scale(0.96) !important;
+}
+
+body.route-registro button.login-create-link {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
 }

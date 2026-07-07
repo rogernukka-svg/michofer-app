@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronLeft } from 'lucide-react'
 import InstallMiChoferButton from '../components/InstallMiChoferButton.jsx'
 import {
   getOwnProfile,
@@ -7,7 +8,6 @@ import {
   upsertOwnDriverProfile,
   upsertOwnProfile,
 } from '../lib/supabase'
-import logo from '../assets/logo.png'
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase()
@@ -369,6 +369,66 @@ export default function Login() {
 
     return ''
   }, [step, knownUser])
+
+  const polishedTitle = useMemo(() => {
+    if (knownUser?.email && step === 'password') {
+      const firstName = knownUser.name?.split(' ')[0] || ''
+      return firstName ? `Hola ${firstName}` : 'Hola'
+    }
+
+    if (step === 'welcome') return 'Entrar a MiChofer'
+    if (step === 'email') return 'Tu correo'
+    if (step === 'password') return 'Tu clave'
+    if (step === 'role') return 'Elegir perfil'
+    if (step === 'driverDetails') return 'Perfil de chofer'
+    if (step === 'loading') return 'Entrando...'
+
+    return title
+  }, [step, knownUser, title])
+
+  const polishedSubtitle = useMemo(() => {
+    if (knownUser?.email && step === 'password') return 'Cuenta reconocida en este dispositivo.'
+    if (step === 'welcome') return 'Segui tu viaje o volve al volante.'
+    if (step === 'email') return 'Usalo solo si ya tenes cuenta con clave.'
+    if (step === 'password') return 'Ultimo paso para continuar.'
+    if (step === 'role') return 'Confirmamos como vas a usar la app.'
+    if (step === 'driverDetails') return 'Datos minimos para validar tu perfil.'
+    if (step === 'loading') return 'Verificando acceso...'
+
+    return subtitle
+  }, [step, knownUser, subtitle])
+
+  const flowLabel = useMemo(() => {
+    if (step === 'welcome') return 'Acceso seguro'
+    if (step === 'email' || step === 'password') return 'Cuenta'
+    if (step === 'role') return 'Perfil'
+    if (step === 'driverDetails') return 'Validacion'
+    return 'MiChofer'
+  }, [step])
+
+  const canGoBack = !['welcome', 'loading'].includes(step)
+
+  function handleBack() {
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    if (step === 'email') {
+      setStep('welcome')
+      return
+    }
+
+    if (step === 'password') {
+      setStep('email')
+      return
+    }
+
+    if (step === 'driverDetails') {
+      setStep('role')
+      return
+    }
+
+    setStep('welcome')
+  }
 
   async function loadProfilePreview(value) {
     const cleanEmail = normalizeEmail(value)
@@ -746,9 +806,16 @@ export default function Login() {
     <div className="login-screen">
       <div className="login-phone">
         <div className="login-panel">
-          <div className="login-hero-logo">
-            <img src={logo} alt="MiChofer" />
-          </div>
+          {canGoBack && (
+            <button
+              type="button"
+              className="auth-panel-back"
+              onClick={handleBack}
+              aria-label="Volver"
+            >
+              <ChevronLeft size={25} strokeWidth={2.4} />
+            </button>
+          )}
 
           <div className="login-spacer" />
 
@@ -762,9 +829,13 @@ export default function Login() {
             </div>
           )}
 
-          <h1>{title}</h1>
+          {!['email', 'password'].includes(step) && (
+            <div className="auth-flow-kicker">{flowLabel}</div>
+          )}
 
-          <p className="login-subtitle">{subtitle}</p>
+          <h1>{polishedTitle}</h1>
+
+          <p className="login-subtitle">{polishedSubtitle}</p>
 
                     {errorMessage && (
             <div className="login-error-message">
@@ -787,7 +858,7 @@ export default function Login() {
                 disabled={busy}
               >
                 <span className="google-mark" aria-hidden="true" />
-                {busy ? 'Conectando...' : 'Accede con Google'}
+                {busy ? 'Conectando...' : 'Continuar con Google'}
               </button>
 
               <button
@@ -795,11 +866,11 @@ export default function Login() {
                 className="login-main-btn auth-mail-btn"
                 onClick={() => setStep('email')}
               >
-                Ya soy usuario
+                Usar correo
               </button>
 
               <a className="login-create-link" href="/registro">
-                Crear cuenta nueva
+                Crear cuenta
               </a>
 
               <InstallMiChoferButton className="login-install-btn" />
@@ -818,14 +889,6 @@ export default function Login() {
 
               <button className="login-main-btn" type="submit">
                 Continuar
-              </button>
-
-              <button
-                type="button"
-                className="login-text-btn"
-                onClick={() => setStep('welcome')}
-              >
-                {'<-'} Atras
               </button>
             </form>
           )}
@@ -860,22 +923,24 @@ export default function Login() {
                 {busy ? 'Entrando...' : 'Entrar'}
               </button>
 
-                            <button
-                type="button"
-                className="login-text-btn"
-                onClick={handlePasswordReset}
-                disabled={busy}
-              >
+              <div className="auth-secondary-row">
+                <button
+                  type="button"
+                  className="login-text-btn"
+                  onClick={handlePasswordReset}
+                  disabled={busy}
+                >
                 Olvidé mi clave
-              </button>
+                </button>
 
-              <button
-                type="button"
-                className="login-text-btn"
-                onClick={() => setStep('email')}
-              >
-                Cambiar correo
-              </button>
+                <button
+                  type="button"
+                  className="login-text-btn"
+                  onClick={() => setStep('email')}
+                >
+                  Cambiar correo
+                </button>
+              </div>
             </form>
           )}
 
@@ -885,20 +950,22 @@ export default function Login() {
 
               <button
                 type="button"
-                className="login-choice-btn auth-role-choice"
+                className="login-choice-btn auth-role-choice auth-choice-card"
                 onClick={() => handleRoleChoice('passenger')}
                 disabled={busy}
               >
-                Soy pasajero
+                <strong>Pasajero</strong>
+                <small>Pedir viajes y seguir tu recorrido.</small>
               </button>
 
               <button
                 type="button"
-                className="login-choice-btn auth-role-choice"
+                className="login-choice-btn auth-role-choice auth-choice-card"
                 onClick={() => handleRoleChoice('driver')}
                 disabled={busy}
               >
-                Soy chofer
+                <strong>Chofer</strong>
+                <small>Recibir solicitudes y gestionar viajes.</small>
               </button>
 
               <button
@@ -976,13 +1043,6 @@ export default function Login() {
                 {busy ? 'Guardando...' : 'Enviar perfil'}
               </button>
 
-              <button
-                type="button"
-                className="login-text-btn"
-                onClick={() => setStep('role')}
-              >
-                {'<-'} Atras
-              </button>
             </form>
           )}
 

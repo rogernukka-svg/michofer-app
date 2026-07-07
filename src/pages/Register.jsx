@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronLeft } from 'lucide-react'
 import { signInWithGoogle, supabase, upsertOwnDriverProfile, upsertOwnProfile } from '../lib/supabase'
-import logo from '../assets/logo.png'
 
 const CAMERA_CONSTRAINTS = [
   {
@@ -212,6 +212,82 @@ export default function Register() {
     if (step === 'password') return 'Rápido, simple y seguro.'
     return ''
   }, [step, knownUser, role])
+
+  const polishedTitle = useMemo(() => {
+    if (knownUser?.email && step === 'start') {
+      const firstName = knownUser.name?.split(' ')[0] || ''
+      return firstName ? `Hola ${firstName}` : 'Bienvenido'
+    }
+
+    if (step === 'start') return 'Crear cuenta'
+    if (step === 'name') return 'Tu nombre'
+    if (step === 'role') return 'Elegir perfil'
+    if (step === 'photo') return role === 'driver' ? 'Verificacion' : 'Tu foto'
+    if (step === 'email') return 'Tu correo'
+    if (step === 'password') return 'Crear clave'
+    if (step === 'loading') return 'Creando cuenta...'
+
+    return title
+  }, [step, knownUser, role, title])
+
+  const polishedSubtitle = useMemo(() => {
+    if (knownUser?.email && step === 'start') return 'Usa tu cuenta guardada o cambia de usuario.'
+    if (step === 'start') return 'Un perfil claro para viajar o manejar.'
+    if (step === 'name') return 'Como queres aparecer en MiChofer.'
+    if (step === 'role') return 'Esto ordena tu experiencia dentro de la app.'
+    if (step === 'photo') return role === 'driver'
+      ? 'Tu foto aumenta confianza antes del primer viaje.'
+      : 'Opcional. Podes cargarla despues.'
+    if (step === 'email') return 'Lo vas a usar para entrar.'
+    if (step === 'password') return 'Minimo 6 caracteres.'
+    if (step === 'loading') return 'Guardando tu perfil...'
+
+    return subtitle
+  }, [step, knownUser, role, subtitle])
+
+  const registerSteps = ['name', 'role', 'photo', 'email', 'password']
+  const registerStepIndex = Math.max(0, registerSteps.indexOf(step))
+  const showRegisterProgress = registerSteps.includes(step)
+  const canGoBack = !['start', 'loading'].includes(step)
+
+  function clearRememberedAccount() {
+    localStorage.removeItem('michofer_last_email')
+    localStorage.removeItem('michofer_last_name')
+    localStorage.removeItem('michofer_last_photo')
+    localStorage.removeItem('michofer_last_role')
+    setKnownUser(null)
+  }
+
+  function handleBack() {
+    setErrorMessage('')
+
+    if (step === 'name') {
+      setStep('start')
+      return
+    }
+
+    if (step === 'role') {
+      setStep('name')
+      return
+    }
+
+    if (step === 'photo') {
+      setStep('role')
+      return
+    }
+
+    if (step === 'email') {
+      setStep('photo')
+      return
+    }
+
+    if (step === 'password') {
+      setStep('email')
+      return
+    }
+
+    setStep('start')
+  }
 
   function stopCameraStream() {
     if (streamRef.current) {
@@ -661,15 +737,39 @@ export default function Register() {
     <div className="login-screen">
       <div className="login-phone">
         <div className="login-panel">
-          <div className="login-hero-logo">
-            <img src={logo} alt="MiChofer" />
-          </div>
+          {canGoBack && (
+            <button
+              type="button"
+              className="auth-panel-back"
+              onClick={handleBack}
+              aria-label="Volver"
+            >
+              <ChevronLeft size={25} strokeWidth={2.4} />
+            </button>
+          )}
 
           <div className="login-spacer" />
 
-          <h1>{title}</h1>
+          {showRegisterProgress && (
+            <div className="auth-progress" aria-label="Progreso de registro">
+              {registerSteps.map((item, index) => (
+                <span
+                  key={item}
+                  className={index <= registerStepIndex ? 'active' : ''}
+                />
+              ))}
+            </div>
+          )}
 
-          <p className="login-subtitle">{subtitle}</p>
+          <div className="auth-flow-kicker">
+            {step === 'start'
+              ? (knownUser?.email ? 'Cuenta encontrada' : 'Nuevo perfil')
+              : `Paso ${registerStepIndex + 1} de ${registerSteps.length}`}
+          </div>
+
+          <h1>{polishedTitle}</h1>
+
+          <p className="login-subtitle">{polishedSubtitle}</p>
 
           {errorMessage && (
             <div className="login-error-message">
@@ -679,40 +779,68 @@ export default function Register() {
 
           {step === 'start' && (
             <div className="auth-action-stack">
-              {knownUser?.email && (
-                <button
-                  type="button"
-                  className="login-main-btn"
-                  onClick={() => {
-                    window.location.href =
-                      '/login?email=' + encodeURIComponent(knownUser.email)
-                  }}
-                >
-                  Sí, soy yo
-                </button>
+              {knownUser?.email ? (
+                <>
+                  <button
+                    type="button"
+                    className="login-main-btn"
+                    onClick={() => {
+                      window.location.href =
+                        '/login?email=' + encodeURIComponent(knownUser.email)
+                    }}
+                  >
+                    Continuar como {knownUser.name?.split(' ')[0] || knownUser.email}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="login-google-btn login-google-btn-primary"
+                    onClick={() => {
+                      clearRememberedAccount()
+                      handleGoogleRegister()
+                    }}
+                    disabled={busy}
+                  >
+                    <span className="google-mark" aria-hidden="true" />
+                    {busy ? 'Conectando...' : 'Entrar con Google'}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="login-create-link"
+                    onClick={() => {
+                      clearRememberedAccount()
+                      setStep('name')
+                    }}
+                  >
+                    Crear cuenta nueva
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="login-google-btn login-google-btn-primary"
+                    onClick={handleGoogleRegister}
+                    disabled={busy}
+                  >
+                    <span className="google-mark" aria-hidden="true" />
+                    {busy ? 'Conectando...' : 'Continuar con Google'}
+                  </button>
+
+                  <a className="login-create-link" href="/login">
+                    Ya tengo cuenta
+                  </a>
+
+                  <button
+                    type="button"
+                    className="login-main-btn auth-mail-btn"
+                    onClick={() => setStep('name')}
+                  >
+                    Crear con correo
+                  </button>
+                </>
               )}
-
-              <button
-                type="button"
-                className="login-google-btn login-google-btn-primary"
-                onClick={handleGoogleRegister}
-                disabled={busy}
-              >
-                <span className="google-mark" aria-hidden="true" />
-                {busy ? 'Conectando...' : 'Accede con Google'}
-              </button>
-
-              <a className="login-create-link" href="/login">
-                Ya soy usuario
-              </a>
-
-              <button
-                type="button"
-                className="login-main-btn auth-mail-btn"
-                onClick={() => setStep('name')}
-              >
-                Crear cuenta nueva
-              </button>
             </div>
           )}
 
@@ -728,14 +856,6 @@ export default function Register() {
               <button className="login-main-btn" type="submit">
                 Continuar
               </button>
-
-              <button
-                type="button"
-                className="login-text-btn"
-                onClick={() => setStep('start')}
-              >
-                ← Atrás
-              </button>
             </form>
           )}
 
@@ -743,27 +863,22 @@ export default function Register() {
             <div className="login-step-form">
               <button
                 type="button"
-                className="login-choice-btn"
+                className="login-choice-btn auth-choice-card"
                 onClick={() => nextFromRole('passenger')}
               >
-                Soy pasajero
+                <strong>Pasajero</strong>
+                <small>Pedir viajes y seguir tu recorrido.</small>
               </button>
 
               <button
                 type="button"
-                className="login-choice-btn"
+                className="login-choice-btn auth-choice-card"
                 onClick={() => nextFromRole('driver')}
               >
-                Soy chofer
+                <strong>Chofer</strong>
+                <small>Recibir solicitudes y gestionar viajes.</small>
               </button>
 
-              <button
-                type="button"
-                className="login-text-btn"
-                onClick={() => setStep('name')}
-              >
-                ← Atrás
-              </button>
             </div>
           )}
 
@@ -844,13 +959,6 @@ export default function Register() {
                 </>
               )}
 
-              <button
-                type="button"
-                className="login-text-btn"
-                onClick={() => setStep('role')}
-              >
-                ← Atrás
-              </button>
             </div>
           )}
 
@@ -866,14 +974,6 @@ export default function Register() {
 
               <button className="login-main-btn" type="submit">
                 Continuar
-              </button>
-
-              <button
-                type="button"
-                className="login-text-btn"
-                onClick={() => setStep('photo')}
-              >
-                ← Atrás
               </button>
             </form>
           )}
@@ -911,14 +1011,6 @@ export default function Register() {
                 type="submit"
               >
                 {busy ? 'Creando...' : 'Crear cuenta'}
-              </button>
-
-              <button
-                type="button"
-                className="login-text-btn"
-                onClick={() => setStep('email')}
-              >
-                ← Atrás
               </button>
             </form>
           )}
