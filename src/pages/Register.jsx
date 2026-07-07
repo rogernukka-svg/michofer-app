@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, FileCheck2, UploadCloud } from 'lucide-react'
 import { signInWithGoogle, supabase, upsertOwnDriverProfile, upsertOwnProfile } from '../lib/supabase'
 
 const CAMERA_CONSTRAINTS = [
@@ -20,6 +20,51 @@ const CAMERA_CONSTRAINTS = [
   {
     video: true,
     audio: false,
+  },
+]
+
+const DRIVER_DOCUMENT_REQUIREMENTS = [
+  {
+    key: 'driver_license',
+    label: 'Licencia de conducir',
+    helper: 'Vigente y habilitada para conducir.',
+    required: true,
+  },
+  {
+    key: 'identity_document',
+    label: 'Cedula / DNI',
+    helper: 'Documento de identidad claro y legible.',
+    required: true,
+  },
+  {
+    key: 'criminal_record',
+    label: 'Antecedentes',
+    helper: 'Certificado policial, penal o judicial reciente.',
+    required: true,
+  },
+  {
+    key: 'ruc_certificate',
+    label: 'Constancia de RUC',
+    helper: 'Necesaria para facturacion de ganancias.',
+    required: true,
+  },
+  {
+    key: 'vehicle_insurance',
+    label: 'Seguro vigente',
+    helper: 'Poliza del vehiculo al dia.',
+    required: true,
+  },
+  {
+    key: 'vehicle_registration',
+    label: 'Habilitacion',
+    helper: 'Permiso de circulacion o habilitacion de rodados.',
+    required: true,
+  },
+  {
+    key: 'vehicle_document',
+    label: 'Documento del vehiculo',
+    helper: 'Cedula verde, titulo o certificado del automotor.',
+    required: true,
   },
 ]
 
@@ -116,6 +161,56 @@ function readFileAsDataUrl(file) {
   })
 }
 
+function sanitizeFileName(value) {
+  return String(value || 'documento')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+}
+
+async function uploadDriverDocuments(userId, documentFiles, avatarUrl) {
+  const uploaded = {}
+  const now = new Date().toISOString()
+
+  if (avatarUrl) {
+    uploaded.driver_profile_photo = {
+      name: 'Foto de perfil',
+      url: avatarUrl,
+      uploadedAt: now,
+    }
+  }
+
+  for (const doc of DRIVER_DOCUMENT_REQUIREMENTS) {
+    const file = documentFiles[doc.key]
+    if (!file) continue
+
+    const extension = file.name.split('.').pop() || 'file'
+    const filePath = `${userId}/${doc.key}-${Date.now()}.${sanitizeFileName(extension)}`
+
+    const { error } = await supabase.storage
+      .from('driver-documents')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: file.type || undefined,
+      })
+
+    if (error) throw error
+
+    uploaded[doc.key] = {
+      name: file.name,
+      path: filePath,
+      type: file.type || '',
+      size: file.size,
+      uploadedAt: now,
+    }
+  }
+
+  return uploaded
+}
+
 async function savePendingRegistration({ email, fullName, role, photoFile }) {
   const avatarDataUrl = photoFile ? await readFileAsDataUrl(photoFile) : ''
 
@@ -146,6 +241,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState('')
+  const [driverDocumentFiles, setDriverDocumentFiles] = useState({})
   const [busy, setBusy] = useState(false)
   const [knownUser, setKnownUser] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -191,6 +287,7 @@ export default function Register() {
     if (step === 'name') return 'Tu nombre'
     if (step === 'role') return '¿Cómo querés usar MiChofer?'
     if (step === 'photo') return role === 'driver' ? 'Verificación de chofer' : 'Tu perfil'
+    if (step === 'documents') return 'Documentos de chofer'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Creá tu clave'
     if (step === 'loading') return 'Creando cuenta...'
@@ -208,6 +305,7 @@ export default function Register() {
         ? 'Tu foto ayuda a que el pasajero viaje con confianza.'
         : 'Podés agregar una foto ahora o seguir sin cargarla.'
     }
+    if (step === 'documents') return 'Cargá los documentos basicos para revision del administrador.'
     if (step === 'email') return 'Con este correo vas a entrar.'
     if (step === 'password') return 'Rápido, simple y seguro.'
     return ''
@@ -223,6 +321,7 @@ export default function Register() {
     if (step === 'name') return 'Tu nombre'
     if (step === 'role') return 'Elegir perfil'
     if (step === 'photo') return role === 'driver' ? 'Verificacion' : 'Tu foto'
+    if (step === 'documents') return 'Documentos'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Crear clave'
     if (step === 'loading') return 'Creando cuenta...'
@@ -238,6 +337,7 @@ export default function Register() {
     if (step === 'photo') return role === 'driver'
       ? 'Tu foto aumenta confianza antes del primer viaje.'
       : 'Opcional. Podes cargarla despues.'
+    if (step === 'documents') return 'Licencia, cedula, antecedentes, RUC y datos del vehiculo.'
     if (step === 'email') return 'Lo vas a usar para entrar.'
     if (step === 'password') return 'Minimo 6 caracteres.'
     if (step === 'loading') return 'Guardando tu perfil...'
@@ -245,7 +345,12 @@ export default function Register() {
     return subtitle
   }, [step, knownUser, role, subtitle])
 
-  const registerSteps = ['name', 'role', 'photo', 'email', 'password']
+  const registerSteps = useMemo(
+    () => (role === 'driver'
+      ? ['name', 'role', 'photo', 'documents', 'email', 'password']
+      : ['name', 'role', 'photo', 'email', 'password']),
+    [role]
+  )
   const registerStepIndex = Math.max(0, registerSteps.indexOf(step))
   const showRegisterProgress = registerSteps.includes(step)
   const canGoBack = !['start', 'loading'].includes(step)
@@ -276,8 +381,13 @@ export default function Register() {
       return
     }
 
-    if (step === 'email') {
+    if (step === 'documents') {
       setStep('photo')
+      return
+    }
+
+    if (step === 'email') {
+      setStep(role === 'driver' ? 'documents' : 'photo')
       return
     }
 
@@ -287,6 +397,33 @@ export default function Register() {
     }
 
     setStep('start')
+  }
+
+  function updateDriverDocument(key, file) {
+    setDriverDocumentFiles((current) => {
+      const next = { ...current }
+
+      if (file) {
+        next[key] = file
+      } else {
+        delete next[key]
+      }
+
+      return next
+    })
+  }
+
+  function nextFromDriverDocuments() {
+    setErrorMessage('')
+
+    const missing = DRIVER_DOCUMENT_REQUIREMENTS.filter((doc) => doc.required && !driverDocumentFiles[doc.key])
+
+    if (missing.length > 0) {
+      setErrorMessage(`Faltan documentos obligatorios: ${missing.map((doc) => doc.label).join(', ')}.`)
+      return
+    }
+
+    setStep('email')
   }
 
   function stopCameraStream() {
@@ -531,6 +668,16 @@ export default function Register() {
       return
     }
 
+    if (role === 'driver') {
+      const missingDocs = DRIVER_DOCUMENT_REQUIREMENTS.filter((doc) => doc.required && !driverDocumentFiles[doc.key])
+
+      if (missingDocs.length > 0) {
+        setErrorMessage(`Faltan documentos obligatorios: ${missingDocs.map((doc) => doc.label).join(', ')}.`)
+        setStep('documents')
+        return
+      }
+    }
+
     if (!password || password.length < 6) {
       setErrorMessage('La clave debe tener al menos 6 caracteres.')
       return
@@ -673,6 +820,38 @@ export default function Register() {
               `Tu cuenta se creó, pero no pude guardar el perfil de chofer: ${getSupabaseErrorMessage(driverProfileError)}`
             )
             setStep('password')
+            return
+          }
+
+          let uploadedDocuments = {}
+
+          try {
+            uploadedDocuments = await uploadDriverDocuments(userId, driverDocumentFiles, avatarUrl)
+          } catch (documentError) {
+            console.error('DRIVER DOCUMENT UPLOAD ERROR:', documentError)
+            setErrorMessage(
+              `Tu cuenta se creo, pero no pude subir los documentos: ${getSupabaseErrorMessage(documentError)}`
+            )
+            setStep('documents')
+            return
+          }
+
+          const { error: driverDocumentsError } = await supabase
+            .from('driver_profiles')
+            .update({
+              documents: uploadedDocuments,
+              verification_status: 'submitted',
+              verified: false,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', userId)
+
+          if (driverDocumentsError) {
+            console.error('DRIVER DOCUMENTS SAVE ERROR:', driverDocumentsError)
+            setErrorMessage(
+              `Los documentos subieron, pero no pude guardar la revision del chofer: ${getSupabaseErrorMessage(driverDocumentsError)}`
+            )
+            setStep('documents')
             return
           }
         }
@@ -922,7 +1101,7 @@ export default function Register() {
                     <button
                       type="button"
                       className="login-text-btn"
-                      onClick={() => setStep('email')}
+                      onClick={() => setStep(role === 'driver' ? 'documents' : 'email')}
                     >
                       Omitir por ahora
                     </button>
@@ -944,7 +1123,7 @@ export default function Register() {
                   <button
                     type="button"
                     className="login-main-btn"
-                    onClick={() => setStep('email')}
+                    onClick={() => setStep(role === 'driver' ? 'documents' : 'email')}
                   >
                     Continuar
                   </button>
@@ -959,6 +1138,60 @@ export default function Register() {
                 </>
               )}
 
+            </div>
+          )}
+
+          {step === 'documents' && (
+            <div className="login-step-form driver-documents-step">
+              <div className="driver-documents-intro">
+                <FileCheck2 size={19} />
+                <div>
+                  <strong>Revision profesional</strong>
+                  <span>Subi fotos o PDF legibles. Admin revisa todo antes de habilitar viajes.</span>
+                </div>
+              </div>
+
+              <div className="driver-documents-grid">
+                <div className="driver-document-card driver-document-card-ready">
+                  <div>
+                    <CheckCircle2 size={17} />
+                    <strong>Foto de perfil</strong>
+                  </div>
+                  <span>Tomada en el paso anterior</span>
+                </div>
+
+                {DRIVER_DOCUMENT_REQUIREMENTS.map((doc) => {
+                  const file = driverDocumentFiles[doc.key]
+
+                  return (
+                    <label
+                      className={file ? 'driver-document-card uploaded' : 'driver-document-card'}
+                      key={doc.key}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(event) => updateDriverDocument(doc.key, event.target.files?.[0] || null)}
+                      />
+
+                      <div>
+                        <UploadCloud size={17} />
+                        <strong>{doc.label}</strong>
+                      </div>
+
+                      <span>{file ? file.name : doc.helper}</span>
+                    </label>
+                  )
+                })}
+              </div>
+
+              <button
+                type="button"
+                className="login-main-btn"
+                onClick={nextFromDriverDocuments}
+              >
+                Continuar
+              </button>
             </div>
           )}
 

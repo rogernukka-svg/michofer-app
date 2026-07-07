@@ -34,55 +34,49 @@ const DOCUMENT_REQUIREMENTS = [
     key: 'driver_license',
     label: 'Licencia de conducir',
     required: true,
-    description: 'Debe estar vigente y a nombre del conductor.',
+    description: 'Vigente y con la antigüedad mínima requerida.',
   },
   {
     key: 'identity_document',
     label: 'Cédula / DNI',
     required: true,
-    description: 'Documento de identidad del conductor.',
+    description: 'Verifica identidad y edad mínima del conductor.',
   },
   {
     key: 'driver_profile_photo',
     label: 'Foto de perfil',
     required: true,
-    description: 'Foto clara del rostro del conductor.',
+    description: 'Rostro claro, de frente, a color y sin lentes oscuros.',
   },
   {
-    key: 'vehicle_photo',
-    label: 'Foto del vehículo',
+    key: 'criminal_record',
+    label: 'Antecedentes',
     required: true,
-    description: 'Debe verse el vehículo y la matrícula.',
+    description: 'Certificado policial, penal o judicial reciente.',
   },
   {
-    key: 'green_card',
-    label: 'Cédula verde',
+    key: 'ruc_certificate',
+    label: 'Constancia de RUC',
     required: true,
-    description: 'Documento del vehículo.',
+    description: 'Necesaria para facturar ganancias cuando aplica.',
   },
   {
     key: 'vehicle_insurance',
     label: 'Seguro del vehículo',
     required: true,
-    description: 'Póliza vigente del vehículo.',
+    description: 'Póliza vigente, idealmente con cobertura a terceros/pasajeros.',
   },
   {
     key: 'vehicle_registration',
-    label: 'Registro / habilitación',
+    label: 'Habilitación / permiso',
     required: true,
-    description: 'Registro o habilitación vehicular si aplica.',
+    description: 'Habilitación de rodados o permiso de circulación al día.',
   },
   {
-    key: 'criminal_record',
-    label: 'Antecedentes penales',
+    key: 'vehicle_document',
+    label: 'Documento del vehículo',
     required: true,
-    description: 'Certificado de no antecedentes.',
-  },
-  {
-    key: 'vehicle_inspection',
-    label: 'Inspección técnica',
-    required: false,
-    description: 'Revisión técnica o inspección vehicular.',
+    description: 'Tarjeta de circulación, título, cédula verde o certificado del automotor.',
   },
 ]
 
@@ -90,6 +84,10 @@ const DOCUMENT_LABELS = DOCUMENT_REQUIREMENTS.reduce((acc, item) => {
   acc[item.key] = item.label
   return acc
 }, {})
+
+const DOCUMENT_ALIASES = {
+  vehicle_document: ['green_card', 'vehicle_photo'],
+}
 
 function statusLabel(status) {
   if (status === 'approved') return 'Aprobado'
@@ -113,11 +111,11 @@ function isAdminAccount(user, profile) {
 
 function getDocumentStats(documents = {}) {
   const requiredDocs = DOCUMENT_REQUIREMENTS.filter((doc) => doc.required)
-  const uploadedRequiredCount = requiredDocs.filter((doc) => documents[doc.key]).length
+  const uploadedRequiredCount = requiredDocs.filter((doc) => getDocumentValue(documents, doc.key)).length
   const totalRequiredCount = requiredDocs.length
-  const uploadedTotalCount = DOCUMENT_REQUIREMENTS.filter((doc) => documents[doc.key]).length
+  const uploadedTotalCount = DOCUMENT_REQUIREMENTS.filter((doc) => getDocumentValue(documents, doc.key)).length
   const docsComplete = uploadedRequiredCount >= totalRequiredCount
-  const missingRequiredDocs = requiredDocs.filter((doc) => !documents[doc.key])
+  const missingRequiredDocs = requiredDocs.filter((doc) => !getDocumentValue(documents, doc.key))
 
   return {
     requiredDocs,
@@ -127,6 +125,15 @@ function getDocumentStats(documents = {}) {
     docsComplete,
     missingRequiredDocs,
   }
+}
+
+function getDocumentValue(documents = {}, key) {
+  if (documents[key]) return documents[key]
+
+  const aliases = DOCUMENT_ALIASES[key] || []
+  const aliasKey = aliases.find((item) => documents[item])
+
+  return aliasKey ? documents[aliasKey] : null
 }
 
 const DEFAULT_SIM_A = { lat: -25.5167, lng: -54.6167 }
@@ -1213,6 +1220,19 @@ export default function Admin() {
   async function openDocument(key, doc) {
     setMessage('')
 
+    if (doc?.url) {
+      const fileName = doc.name || DOCUMENT_LABELS[key] || 'Documento'
+
+      setPreviewDoc({
+        label: DOCUMENT_LABELS[key] || 'Documento',
+        name: fileName,
+        url: doc.url,
+        isImage: true,
+        isPdf: false,
+      })
+      return
+    }
+
     if (!doc?.path) {
       setMessage('Ese documento todavía no fue cargado.')
       return
@@ -1571,7 +1591,7 @@ export default function Admin() {
                     {showDocuments && (
                       <div className="admin-doc-grid">
                         {DOCUMENT_REQUIREMENTS.map((doc) => {
-                          const uploaded = documents[doc.key]
+                          const uploaded = getDocumentValue(documents, doc.key)
 
                           return (
                             <button

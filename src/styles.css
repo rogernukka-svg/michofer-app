@@ -21551,3 +21551,107 @@ body.route-registro button.login-create-link {
   box-shadow: none !important;
   cursor: pointer !important;
 }
+
+/* Driver registration documents */
+body.route-registro .driver-documents-step {
+  gap: 10px !important;
+}
+
+body.route-registro .driver-documents-intro {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(38, 231, 210, 0.22);
+  border-radius: 18px;
+  background: rgba(38, 231, 210, 0.065);
+  color: #ffffff;
+  text-align: left;
+}
+
+body.route-registro .driver-documents-intro svg {
+  color: #26e7d2;
+}
+
+body.route-registro .driver-documents-intro strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+body.route-registro .driver-documents-intro span {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+body.route-registro .driver-documents-grid {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  max-height: min(42dvh, 360px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+body.route-registro .driver-document-card {
+  width: 100%;
+  min-height: 62px;
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 17px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035)),
+    rgba(255, 255, 255, 0.045);
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+body.route-registro .driver-document-card input {
+  display: none;
+}
+
+body.route-registro .driver-document-card div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+body.route-registro .driver-document-card svg {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+body.route-registro .driver-document-card strong {
+  font-size: 13px;
+  font-weight: 920;
+}
+
+body.route-registro .driver-document-card span {
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+body.route-registro .driver-document-card.uploaded,
+body.route-registro .driver-document-card-ready {
+  border-color: rgba(38, 231, 210, 0.38);
+  background:
+    linear-gradient(180deg, rgba(38, 231, 210, 0.16), rgba(38, 231, 210, 0.055)),
+    rgba(255, 255, 255, 0.045);
+}
+
+body.route-registro .driver-document-card.uploaded svg,
+body.route-registro .driver-document-card-ready svg {
+  color: #26e7d2;
+}

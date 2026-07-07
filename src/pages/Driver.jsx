@@ -1,5 +1,5 @@
 //Driver.jsx
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -359,13 +359,14 @@ export default function Driver() {
   const [driverProfile, setDriverProfile] = useState(null)
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
-    const [message, setMessage] = useState('')
+  const [message, setMessage] = useState('')
   const [routeGuidance, setRouteGuidance] = useState(null)
   const [clientRushNotice, setClientRushNotice] = useState(false)
   const [showSideMenu, setShowSideMenu] = useState(false)
   const [tripAction, setTripAction] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const isMountedRef = useRef(true)
   const liveWatchIdRef = useRef(null)
   const liveSyncBusyRef = useRef(false)
   const liveLastSyncAtRef = useRef(0)
@@ -375,6 +376,9 @@ export default function Driver() {
   const roadsSyncBusyRef = useRef(false)
   useEffect(() => {
     init()
+    return () => {
+      isMountedRef.current = false
+    }
   }, [])
 
   useEffect(() => {
@@ -394,15 +398,17 @@ export default function Driver() {
 
   const verificationStatus = driverProfile?.verification_status || 'incomplete'
   const approved = driverProfile?.verified === true && verificationStatus === 'approved'
-  const [verificationTitle] = verificationCopy(verificationStatus, approved)
+  const verificationTitle = useMemo(() => verificationCopy(verificationStatus, approved)[0], [verificationStatus, approved])
   const isOnline = driverProfile?.is_online === true
   const isAvailable = driverProfile?.is_available === true
   const hasDriverLocation = isValidParaguayCoord(driverProfile)
-  const isReceivingTrips = isOnline && isAvailable && hasDriverLocation
+  const isReceivingTrips = useMemo(() => isOnline && isAvailable && hasDriverLocation, [isOnline, isAvailable, hasDriverLocation])
+  const driverUserId = useMemo(() => user?.id || driverProfile?.user_id || profile?.id, [user?.id, driverProfile?.user_id, profile?.id])
 
   const activeTrip = useMemo(() => trips.find((trip) => trip.status !== 'pending') || null, [trips])
+  const activeTripId = activeTrip?.id
   useEffect(() => {
-    if (!activeTrip?.id || !user?.id) {
+    if (!activeTripId || !driverUserId) {
       setClientRushNotice(false)
       return undefined
     }
@@ -414,7 +420,7 @@ export default function Driver() {
       const { data, error } = await supabase
         .from('messages')
         .select('id, body, created_at')
-        .eq('trip_id', activeTrip.id)
+        .eq('trip_id', activeTripId)
         .ilike('body', `${rushText}%`)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -427,10 +433,10 @@ export default function Driver() {
     readRushNotice()
 
     const channel = supabase
-      .channel(`driver-rush-${activeTrip.id}`)
+      .channel(`driver-rush-${activeTripId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `trip_id=eq.${activeTrip.id}` },
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `trip_id=eq.${activeTripId}` },
         ({ new: message }) => {
           if (String(message?.body || '').startsWith(rushText)) {
             setClientRushNotice(true)
@@ -443,7 +449,7 @@ export default function Driver() {
       cancelled = true
       supabase.removeChannel(channel)
     }
-  }, [activeTrip?.id, user?.id])
+  }, [activeTripId, driverUserId])
   const pendingTrips = useMemo(
     () =>
       trips
@@ -582,13 +588,12 @@ export default function Driver() {
   )
 
   const driverDisplayName = profile?.full_name || driverProfile?.full_name || 'MiChofer'
-  const currentModeLabel = activeTrip
-    ? 'En viaje'
-    : isReceivingTrips
-      ? 'Disponible'
-      : isOnline
-        ? 'Conectado'
-        : 'Desconectado'
+  const currentModeLabel = useMemo(() => {
+    if (activeTrip) return 'En viaje'
+    if (isReceivingTrips) return 'Disponible'
+    if (isOnline) return 'Conectado'
+    return 'Desconectado'
+  }, [activeTrip, isReceivingTrips, isOnline])
 
   // Pick the map destination and origin based on active state
   const mapOrigin = driverPoint
@@ -653,21 +658,29 @@ export default function Driver() {
       window.clearInterval(fallbackInterval)
     }
   }, [activeTrip?.id, activeTrip?.status, hasDriverLocation, user?.id])
-  async function init() {
+  const init = useCallback(async () => {
+    if (!isMountedRef.current) return
     setLoading(true)
     setMessage('')
 
     const { data: authData } = await supabase.auth.getUser()
     const currentUser = authData?.user || null
+
+    if (!isMountedRef.current) return
     setUser(currentUser)
 
     if (!currentUser) {
       window.location.href = '/login'
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
       return
     }
 
     const { data: profileData } = await getOwnProfile()
-    setProfile(profileData || null)
+    if (isMountedRef.current) {
+      setProfile(profileData || null)
+    }
 
     const fallbackName = profileData?.full_name || currentUser.user_metadata?.full_name || 'Chofer MiChofer'
     const fallbackAvatar = profileData?.avatar_url || currentUser.user_metadata?.avatar_url || ''
@@ -678,13 +691,13 @@ export default function Driver() {
       email: currentUser.email,
     })
 
-    if (ensureError) {
+    if (ensureError && isMountedRef.current) {
       setMessage('No pude preparar tu perfil de chofer. Ejecuta supabase/driver_live_state_rpcs.sql y recarga.')
     }
 
     let { data: driverData, error } = await getOwnDriverProfile()
 
-    if (error) {
+    if (error && isMountedRef.current) {
       setMessage('No pude leer tu estado de chofer. Ejecuta supabase/driver_live_state_rpcs.sql.')
     }
 
@@ -697,22 +710,28 @@ export default function Driver() {
       if (updatedDriver) driverData = updatedDriver
     }
 
-    setDriverProfile(driverData || null)
-    await loadTrips(currentUser.id)
-    setLoading(false)
-  }
+    if (isMountedRef.current) {
+      setDriverProfile(driverData || null)
+      await loadTrips(currentUser.id)
+      setLoading(false)
+    }
+  }, [])
 
-  async function loadTrips(driverId = user?.id) {
+  const loadTrips = useCallback(async (driverId = user?.id) => {
     if (!driverId) return
     const { data, error } = await getOwnDriverTrips()
     if (error) {
-      setMessage(`No pude cargar solicitudes: ${driverSupabaseErrorText(error) || 'ejecuta supabase/driver_live_state_rpcs.sql y recarga.'}`)
+      if (isMountedRef.current) {
+        setMessage(`No pude cargar solicitudes: ${driverSupabaseErrorText(error) || 'ejecuta supabase/driver_live_state_rpcs.sql y recarga.'}`)
+      }
       return
     }
-    setTrips(data || [])
-  }
+    if (isMountedRef.current) {
+      setTrips(data || [])
+    }
+  }, [user?.id])
 
-function getStoredLocation() {
+const getStoredLocation = useCallback(() => {
   const lat = Number(driverProfile?.lat)
   const lng = Number(driverProfile?.lng)
   const stored = {
@@ -727,9 +746,9 @@ function getStoredLocation() {
   if (!isValidParaguayCoord(stored)) return null
 
   return stored
-}
+}, [driverProfile])
 
-async function getCurrentLocation() {
+const getCurrentLocation = useCallback(async () => {
   const storedLocation = getStoredLocation()
   const fallback = storedLocation || DEFAULT_DRIVER_LOCATION
 
@@ -763,15 +782,17 @@ async function getCurrentLocation() {
       }
     )
   })
-}
-  async function pushLiveTripLocation(location, trip = activeTrip) {
-  if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
-
-  if (!isValidParaguayCoord(location)) {
-    return getStoredLocation()
-  }
-
-    const previousLocation = liveLastStoredPointRef.current || getStoredLocation()
+}, [getStoredLocation])
+  // Núcleo compartido de sincronización de ubicación del chofer.
+  // Antes esta lógica estaba duplicada casi entera entre pushLiveTripLocation
+  // (disparada por watchPosition) y syncStoredTripLocation (polling de
+  // respaldo), y se habían desincronizado: la ruta de watchPosition no
+  // aplicaba los mismos filtros de ruido (GPS impreciso en quieto, saltos
+  // chicos estando parado) que sí aplicaba la de polling. Eso podía hacer que
+  // el auto "tiemble" en el mapa del cliente/chofer cuando el GPS es ruidoso
+  // en interiores, solo en la ruta de watchPosition. Unificado acá para que
+  // ambas rutas se comporten igual.
+  const commitDriverLocationUpdate = useCallback(async (location, trip, previousLocation) => {
     const locationWithTs = { ...location, _timestamp: location._timestamp || Date.now() }
     const accuracy = Number(location.accuracy)
     const speed = Number(location.speed)
@@ -779,182 +800,15 @@ async function getCurrentLocation() {
     const movedMeters = gpsDecision.movedMeters
     const estimatedSpeed = gpsDecision.estimatedSpeed
     const effectiveSpeed = Number.isFinite(speed) ? speed : estimatedSpeed
-    const now = Date.now()
-    const moving = Number.isFinite(effectiveSpeed) && effectiveSpeed >= DRIVER_STATIONARY_SPEED_MPS
-    if (!gpsDecision.accepted) {
-      if (import.meta.env.DEV) {
-        console.info('[MiChofer GPS]', {
-          rawPoint: locationWithTs,
-          goodPoint: false,
-          reason: gpsDecision.reason,
-          rawSpeed: Number.isFinite(speed) ? speed : null,
-          estimatedSpeed,
-          accuracy: Number.isFinite(accuracy) ? accuracy : null,
-          movedMeters,
-          moving,
-        })
-      }
-      return previousLocation
-    }
-
-    if (now - liveLastSyncAtRef.current < 1200) {
-      return previousLocation || location
-    }
-
-    if (liveSyncBusyRef.current) {
-      return previousLocation || location
-    }
-
-    liveLastSyncAtRef.current = now
-    liveLastStoredPointRef.current = locationWithTs
-
-   if (import.meta.env.DEV) {
-    console.info('[MiChofer GPS]', {
-      rawPoint: locationWithTs,
-      goodPoint: true,
-      rawSpeed: Number.isFinite(speed) ? speed : null,
-      estimatedSpeed,
-      accuracy: Number.isFinite(accuracy) ? accuracy : null,
-      movedMeters,
-      moving,
-    })
-  }
-
-   if (GOOGLE_ROADS_API_ENABLED && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
-  gpsBufferRef.current.push({ lat: location.lat, lng: location.lng })
-
-  if (import.meta.env.DEV) {
-    console.info('[MiChofer Roads] buffer size:', gpsBufferRef.current.getForRoads().length)
-  }
-}
-
-setDriverProfile((current) =>
-      current ? mergeDriverLiveTelemetry(current, null, location) : current
-    )
-
-    liveSyncBusyRef.current = true
-
-    try {
-      const { data: updatedDriver } = await updateOwnDriverStatus({
-        isOnline: true,
-        isAvailable,
-        lat: location.lat,
-        lng: location.lng,
-      })
-
-      if (updatedDriver) {
-        setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
-      }
-
-     await supabase
-  .from('trips')
-  .update(tripDriverTelemetryPayload(location))
-  .eq('id', trip.id)
-  .eq('driver_id', user.id)
-
-await supabase
-  .from('driver_profiles')
-  .update(driverProfileTelemetryPayload(location))
-  .eq('user_id', user.id)
-
-      let snappedPoint = null
-      if (GOOGLE_ROADS_API_ENABLED && gpsBufferRef.current.getForRoads().length >= ROADS_MIN_POINTS) {
-        const enoughTime = Date.now() - lastRoadsSnapAtRef.current >= ROADS_SYNC_INTERVAL_MS
-        if (enoughTime && !roadsSyncBusyRef.current) {
-          roadsSyncBusyRef.current = true
-          try {
-            const rawRoadSnapped = await snapToRoads(gpsBufferRef.current.getForRoads())
-            snappedPoint = normalizeRoadSnapResult(rawRoadSnapped)
-            if (snappedPoint) {
-              lastRoadsSnapAtRef.current = Date.now()
-            }
-          } catch (error) {
-            snappedPoint = null
-            if (import.meta.env.DEV) {
-              console.warn('[MiChofer Roads] snapToRoads failed:', error)
-            }
-          } finally {
-            roadsSyncBusyRef.current = false
-          }
-        }
-      }
-
-      if (snappedPoint) {
-        try {
-          await supabase
-            .from('trips')
-            .update({
-              driver_road_lat: snappedPoint.lat,
-              driver_road_lng: snappedPoint.lng,
-              driver_road_place_id: snappedPoint.placeId,
-              driver_road_snapped_at: new Date(snappedPoint.snappedAt).toISOString(),
-            })
-            .eq('id', trip.id)
-            .eq('driver_id', user.id)
-          if (import.meta.env.DEV) {
-            console.info('[MiChofer Roads] saved snapped point:', snappedPoint)
-          }
-        } catch {
-          // Keep working if Roads columns do not exist or update fails
-        }
-      }
-
-      return location
-    } finally {
-      liveSyncBusyRef.current = false
-    }
-  }
-   async function syncStoredTripLocation(trip = activeTrip) {
-    const location = await getCurrentLocation()
-if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
-
-if (!isValidParaguayCoord(location)) {
-  return getStoredLocation()
-}
-
-    const storedLocation = getStoredLocation()
-    const locationWithTs = { ...location, _timestamp: location._timestamp || Date.now() }
-    const accuracy = Number(location.accuracy)
-    const speed = Number(location.speed)
-    const gpsDecision = shouldAcceptDriverGpsPoint(locationWithTs, storedLocation)
-    const movedMeters = gpsDecision.movedMeters
-    const estimatedSpeed = gpsDecision.estimatedSpeed
-    const effectiveSpeed = Number.isFinite(speed) ? speed : estimatedSpeed
     const looksStationary = !Number.isFinite(effectiveSpeed) || effectiveSpeed < DRIVER_STATIONARY_SPEED_MPS
     const meaningfulMovement = movedMeters >= 3 || !looksStationary
 
-    if (!gpsDecision.accepted) {
-      if (import.meta.env.DEV) {
-        console.info('[MiChofer GPS]', {
-          rawPoint: locationWithTs,
-          goodPoint: false,
-          reason: gpsDecision.reason,
-          rawSpeed: Number.isFinite(speed) ? speed : null,
-          estimatedSpeed,
-          accuracy: Number.isFinite(accuracy) ? accuracy : null,
-          movedMeters,
-          moving: !looksStationary,
-        })
-      }
-      return storedLocation
-    }
-
-    // Si el GPS viene muy impreciso, no movemos el auto.
-    // En interiores esto evita que el mapa cambie dirección estando quieto.
-    if (Number.isFinite(accuracy) && accuracy > 45 && storedLocation && !meaningfulMovement) {
-      return storedLocation
-    }
-
-    // Si el chofer parece quieto, ignoramos saltos pequeños/medianos del GPS.
-    if (storedLocation && looksStationary && movedMeters < 5) {
-      return storedLocation
-    }
-
-    // En movimiento real, dejamos pasar cambios más pequeños para curvas y giros.
-    if (import.meta.env.DEV) {
+    const logGps = (goodPoint, reason) => {
+      if (!import.meta.env.DEV) return
       console.info('[MiChofer GPS]', {
         rawPoint: locationWithTs,
-        goodPoint: true,
+        goodPoint,
+        reason,
         rawSpeed: Number.isFinite(speed) ? speed : null,
         estimatedSpeed,
         accuracy: Number.isFinite(accuracy) ? accuracy : null,
@@ -962,6 +816,25 @@ if (!isValidParaguayCoord(location)) {
         moving: !looksStationary,
       })
     }
+
+    if (!gpsDecision.accepted) {
+      logGps(false, gpsDecision.reason)
+      return previousLocation
+    }
+
+    // Si el GPS viene muy impreciso y no hay movimiento real, no movemos el auto.
+    // En interiores esto evita que el mapa cambie dirección estando quieto.
+    if (Number.isFinite(accuracy) && accuracy > 45 && previousLocation && !meaningfulMovement) {
+      return previousLocation
+    }
+
+    // Si el chofer parece quieto, ignoramos saltos pequeños/medianos del GPS.
+    if (previousLocation && looksStationary && movedMeters < 5) {
+      return previousLocation
+    }
+
+    logGps(true, null)
+    liveLastStoredPointRef.current = locationWithTs
 
     if (GOOGLE_ROADS_API_ENABLED && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
       gpsBufferRef.current.push({ lat: location.lat, lng: location.lng })
@@ -1013,12 +886,17 @@ if (!isValidParaguayCoord(location)) {
                 })
                 .eq('id', trip.id)
                 .eq('driver_id', user.id)
+              if (import.meta.env.DEV) {
+                console.info('[MiChofer Roads] saved snapped point:', snappedPoint)
+              }
             } catch {
               // Keep working if Roads columns do not exist or update fails
             }
           }
-        } catch {
-          // ignore Roads API failures and keep normal GPS position
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.warn('[MiChofer Roads] snapToRoads failed:', error)
+          }
         } finally {
           roadsSyncBusyRef.current = false
         }
@@ -1026,10 +904,73 @@ if (!isValidParaguayCoord(location)) {
     }
 
     return location
+  }, [isAvailable, user?.id, setDriverProfile, setMessage])
+
+  const pushLiveTripLocation = useCallback(async (location, trip = activeTrip) => {
+    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+
+    if (!isValidParaguayCoord(location)) {
+      return getStoredLocation()
+    }
+
+    const previousLocation = liveLastStoredPointRef.current || getStoredLocation()
+    const now = Date.now()
+
+    if (now - liveLastSyncAtRef.current < 1200) {
+      return previousLocation || location
+    }
+
+    if (liveSyncBusyRef.current) {
+      return previousLocation || location
+    }
+
+    liveLastSyncAtRef.current = now
+    liveSyncBusyRef.current = true
+
+    try {
+      return await commitDriverLocationUpdate(location, trip, previousLocation)
+    } finally {
+      liveSyncBusyRef.current = false
+    }
+  }, [activeTrip, commitDriverLocationUpdate, user?.id])
+
+  const syncStoredTripLocation = useCallback(async (trip = activeTrip) => {
+    // Si ya hubo una sincronización reciente vía watchPosition, no hace falta
+    // pedir otra vez getCurrentPosition y volver a pegarle a Supabase: esto
+    // evita que las dos rutas (watch + polling de respaldo) se pisen y manden
+    // updates duplicados casi al mismo tiempo.
+    if (Date.now() - liveLastSyncAtRef.current < 5000) {
+      return liveLastStoredPointRef.current || getStoredLocation()
+    }
+
+    const location = await getCurrentLocation()
+    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+
+    if (!isValidParaguayCoord(location)) {
+      return getStoredLocation()
+    }
+
+    const previousLocation = liveLastStoredPointRef.current || getStoredLocation()
+    liveLastSyncAtRef.current = Date.now()
+
+    return commitDriverLocationUpdate(location, trip, previousLocation)
+  }, [activeTrip, commitDriverLocationUpdate, getCurrentLocation, user?.id])
+
+  const syncDriverLocation = useCallback(async (trip = activeTrip, nextOnline = isOnline, nextAvailable = isAvailable) => {
+  let currentUser = user
+  if (!currentUser?.id) {
+    const { data: authData } = await supabase.auth.getUser()
+    currentUser = authData?.user || null
+    if (currentUser?.id && !user?.id) {
+      setUser(currentUser)
+    }
   }
 
-  async function syncDriverLocation(trip = activeTrip, nextOnline = isOnline, nextAvailable = isAvailable) {
-  if (!driverProfile?.user_id) return null
+  const driverUserId = currentUser?.id || driverProfile?.user_id || profile?.id
+  if (!driverUserId) {
+    setMessage('Todavía estoy cargando tu sesión de chofer. Esperá un momento y probá otra vez.')
+    return null
+  }
 
   const location = nextOnline ? await getCurrentLocation() : getStoredLocation()
 
@@ -1045,28 +986,35 @@ if (!isValidParaguayCoord(location)) {
     lng: location.lng,
   })
 
-  if (!error && updatedDriver) {
+  if (error) {
+    console.error('DRIVER STATUS UPDATE ERROR:', error)
+    setMessage('No pude guardar tu ubicación. Revisá el GPS o la sesión de chofer.')
+    return null
+  }
+
+  if (updatedDriver) {
     setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
   }
 
   await supabase
     .from('driver_profiles')
     .update(driverProfileTelemetryPayload(location))
-    .eq('user_id', user.id)
+    .eq('user_id', driverUserId)
 
-  if (trip?.id && LOCATION_STATUSES.includes(trip.status) && user?.id) {
+  if (trip?.id && LOCATION_STATUSES.includes(trip.status) && driverUserId) {
     await supabase
       .from('trips')
       .update(tripDriverTelemetryPayload(location))
       .eq('id', trip.id)
-      .eq('driver_id', user.id)
+      .eq('driver_id', driverUserId)
   }
 
   return location
-}
+}, [activeTrip, driverUserId, getCurrentLocation, isAvailable, isOnline, setDriverProfile, setMessage, setUser, user])
 
-  async function updateAvailability(nextOnline, nextAvailable) {
-  if (!driverProfile?.user_id) return
+  const updateAvailability = useCallback(async (nextOnline, nextAvailable) => {
+  const driverUserId = user?.id || driverProfile?.user_id || profile?.id
+  if (!driverUserId) return
 
   if (!approved) {
     setMessage('Tu cuenta esta en revision. Te avisaremos cuando puedas recibir viajes.')
@@ -1103,9 +1051,9 @@ if (!isValidParaguayCoord(location)) {
   } else {
     setMessage('Conectado, pero pausado.')
   }
-}
+}, [approved, driverProfile?.user_id, getCurrentLocation, profile?.id, setDriverProfile, setMessage, user?.id])
 
-  async function requestCategory(categoryCode) {
+  const requestCategory = useCallback(async (categoryCode) => {
     if (!driverProfile?.user_id) {
       setMessage('Primero guarda tu perfil de chofer.')
       return
@@ -1132,15 +1080,16 @@ if (!isValidParaguayCoord(location)) {
       }
     })
     setMessage(data?.status === 'approved' ? 'Categoria ya aprobada.' : 'Solicitud enviada.')
-  }
+  }, [approved, driverProfile, setDriverProfile, setMessage])
 
-   async function updateTrip(trip, status) {
-    if (!trip?.id || !user?.id) {
+   const updateTrip = useCallback(async (trip, status) => {
+    const driverUserId = user?.id || driverProfile?.user_id || profile?.id
+    if (!trip?.id || !driverUserId) {
       setMessage('No pude identificar este viaje.')
       return
     }
 
-    if (trip.driver_id !== user.id) {
+    if (trip.driver_id !== driverUserId) {
       setMessage('Este viaje no pertenece a tu cuenta de chofer.')
       return
     }
@@ -1185,7 +1134,7 @@ if (!isValidParaguayCoord(location)) {
           ...tripDriverTelemetryPayload(location),
         })
         .eq('id', trip.id)
-        .eq('driver_id', user.id)
+        .eq('driver_id', driverUserId)
 
       if (error) {
         setMessage(`No pude actualizar el viaje: ${driverSupabaseErrorText(error) || 'error desconocido, revisa la consola.'}`)
@@ -1209,7 +1158,7 @@ if (!isValidParaguayCoord(location)) {
       await supabase
         .from('driver_profiles')
         .update(driverProfileTelemetryPayload(location))
-        .eq('user_id', user.id)
+        .eq('user_id', driverUserId)
 
       if (status === 'accepted') setMessage('Ruta lista. Vamos al punto de recogida.')
       else if (status === 'cancelled') setMessage('Viaje cancelado. El cliente será avisado.')
@@ -1220,7 +1169,7 @@ if (!isValidParaguayCoord(location)) {
     } finally {
       setTripAction('')
     }
-  }
+  }, [driverUserId, getCurrentLocation, loadTrips, setDriverProfile, setMessage, setTripAction, setTrips, user?.id])
 
   // ==================== RENDER ====================
 
@@ -1250,7 +1199,6 @@ if (!isValidParaguayCoord(location)) {
             uiSafeArea={DRIVER_NAV_UI_SAFE_AREA}
             mapInteractive
             animateCamera
-            showOriginCar
             showRouteSummary={false}
             navigationMode
             navigationVariant="driver"
