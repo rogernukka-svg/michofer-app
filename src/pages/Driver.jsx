@@ -1250,9 +1250,11 @@ if (!isValidParaguayCoord(location)) {
             uiSafeArea={DRIVER_NAV_UI_SAFE_AREA}
             mapInteractive
             animateCamera
+            showOriginCar
             showRouteSummary={false}
-                       navigationMode
+            navigationMode
             navigationVariant="driver"
+            navigationCamera="cinematic"
             showMapTypeControl={false}
             safetyZones={SAFETY_ZONES_CDE}
             onRouteUpdate={setRouteGuidance}

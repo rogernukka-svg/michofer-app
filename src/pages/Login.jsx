@@ -1055,7 +1055,7 @@ export default function Login() {
           <nav className="auth-legal-links" aria-label="Links legales">
             <a href="/privacy">Privacidad</a>
             <a href="/terms">Terminos</a>
-            <a href="/delete-account">Eliminar cuenta</a>
+            <a href="/support">Ayuda</a>
           </nav>
         </div>
       </div>

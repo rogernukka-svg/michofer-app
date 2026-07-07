@@ -1247,20 +1247,8 @@ export default function Admin() {
     setMessage('')
 
     const approved = status === 'approved'
-
-    if (approved) {
-      const documents = driver.documents || {}
-      const { missingRequiredDocs } = getDocumentStats(documents)
-
-      if (missingRequiredDocs.length > 0) {
-        setMessage(
-          `No se puede aprobar. Faltan documentos obligatorios: ${missingRequiredDocs
-            .map((doc) => doc.label)
-            .join(', ')}.`
-        )
-        return
-      }
-    }
+    const documents = driver.documents || {}
+    const { missingRequiredDocs } = getDocumentStats(documents)
 
     const reviewedAt = new Date().toISOString()
 
@@ -1297,7 +1285,13 @@ export default function Admin() {
       )
     )
 
-    setMessage(approved ? 'Chofer aprobado. Ya puede comenzar viajes.' : 'Chofer rechazado. Queda bloqueado para recibir viajes.')
+    setMessage(
+      approved
+        ? missingRequiredDocs.length > 0
+          ? `Chofer aprobado con documentos pendientes: ${missingRequiredDocs.map((doc) => doc.label).join(', ')}.`
+          : 'Chofer aprobado. Ya puede comenzar viajes.'
+        : 'Chofer rechazado. Queda bloqueado para recibir viajes.'
+    )
   }
 
   async function updateCategoryRequest(request, decision) {
@@ -1609,7 +1603,7 @@ export default function Admin() {
                         className="approve"
                         onClick={() => updateDriverStatus(driver, 'approved')}
                       >
-                        Aprobar
+                        {docStats.docsComplete ? 'Aprobar' : 'Aprobar con faltantes'}
                       </button>
 
                       <button
