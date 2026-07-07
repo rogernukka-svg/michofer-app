@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CheckCircle2, ChevronLeft, FileCheck2, UploadCloud } from 'lucide-react'
+import { CarFront, CheckCircle2, ChevronLeft, FileCheck2, ShieldCheck, UploadCloud, UserRound } from 'lucide-react'
 import { signInWithGoogle, supabase, upsertOwnDriverProfile, upsertOwnProfile } from '../lib/supabase'
 
 const CAMERA_CONSTRAINTS = [
@@ -1039,14 +1039,21 @@ export default function Register() {
           )}
 
           {step === 'role' && (
-            <div className="login-step-form">
+            <div className="login-step-form register-role-step">
               <button
                 type="button"
                 className="login-choice-btn auth-choice-card"
                 onClick={() => nextFromRole('passenger')}
               >
-                <strong>Pasajero</strong>
-                <small>Pedir viajes y seguir tu recorrido.</small>
+                <span className="auth-choice-icon">
+                  <UserRound size={19} />
+                </span>
+
+                <span className="auth-choice-copy">
+                  <span className="auth-choice-label">Viajar</span>
+                  <strong>Pasajero</strong>
+                  <small>Pedir viajes, seguir el mapa y comunicarte con tu chofer.</small>
+                </span>
               </button>
 
               <button
@@ -1054,8 +1061,15 @@ export default function Register() {
                 className="login-choice-btn auth-choice-card"
                 onClick={() => nextFromRole('driver')}
               >
-                <strong>Chofer</strong>
-                <small>Recibir solicitudes y gestionar viajes.</small>
+                <span className="auth-choice-icon">
+                  <CarFront size={20} />
+                </span>
+
+                <span className="auth-choice-copy">
+                  <span className="auth-choice-label">Conducir</span>
+                  <strong>Chofer</strong>
+                  <small>Completar verificacion, subir documentos y recibir viajes.</small>
+                </span>
               </button>
 
             </div>
@@ -1071,7 +1085,9 @@ export default function Register() {
                 />
               ) : (
                 <div className="register-photo-box">
-                  <span className="photo-icon">📷</span>
+                  <span className="photo-icon">
+                    <ShieldCheck size={26} />
+                  </span>
 
                   <strong>{role === 'driver' ? 'Verificación facial' : 'Foto opcional'}</strong>
 

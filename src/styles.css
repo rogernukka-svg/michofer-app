@@ -21655,3 +21655,162 @@ body.route-registro .driver-document-card.uploaded svg,
 body.route-registro .driver-document-card-ready svg {
   color: #26e7d2;
 }
+
+/* Premium registration hierarchy */
+body.route-registro .register-role-step {
+  gap: 14px !important;
+}
+
+body.route-registro .auth-choice-card {
+  position: relative !important;
+  min-height: 92px !important;
+  display: grid !important;
+  grid-template-columns: 48px 1fr !important;
+  align-items: center !important;
+  align-content: center !important;
+  justify-items: stretch !important;
+  gap: 14px !important;
+  padding: 16px !important;
+  overflow: hidden !important;
+  border-radius: 26px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.14), transparent 34%),
+    linear-gradient(145deg, rgba(68, 76, 82, 0.78), rgba(20, 25, 29, 0.92)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 22px 58px rgba(0, 0, 0, 0.24) !important;
+  text-align: left !important;
+}
+
+body.route-registro .auth-choice-card::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  pointer-events: none;
+}
+
+body.route-registro .auth-choice-card:hover {
+  border-color: rgba(38, 231, 210, 0.36) !important;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 24px 64px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(38, 231, 210, 0.08) !important;
+}
+
+body.route-registro .auth-choice-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #26e7d2;
+  background:
+    linear-gradient(180deg, rgba(38, 231, 210, 0.18), rgba(38, 231, 210, 0.055)),
+    rgba(255, 255, 255, 0.045);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 32px rgba(38, 231, 210, 0.12);
+}
+
+body.route-registro .auth-choice-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+body.route-registro .auth-choice-label {
+  color: #26e7d2;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.route-registro .auth-choice-card strong {
+  font-size: 18px !important;
+  font-weight: 950 !important;
+  line-height: 1.05 !important;
+}
+
+body.route-registro .auth-choice-card small {
+  max-width: 250px;
+  color: rgba(255, 255, 255, 0.66) !important;
+  font-size: 12px !important;
+  font-weight: 760 !important;
+  line-height: 1.35 !important;
+}
+
+body.route-registro .register-photo-box {
+  position: relative;
+  gap: 12px !important;
+  padding: 22px !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(65, 73, 78, 0.84), rgba(21, 27, 31, 0.94)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 24px 64px rgba(0, 0, 0, 0.28) !important;
+}
+
+body.route-registro .photo-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  border-radius: 20px;
+  color: #26e7d2;
+  background:
+    linear-gradient(180deg, rgba(38, 231, 210, 0.18), rgba(38, 231, 210, 0.055)),
+    rgba(255, 255, 255, 0.045);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 16px 38px rgba(38, 231, 210, 0.12);
+  font-size: 0 !important;
+}
+
+body.route-registro .register-photo-box strong {
+  font-size: 18px !important;
+  font-weight: 950 !important;
+  line-height: 1.12 !important;
+}
+
+body.route-registro .register-photo-box small {
+  max-width: 260px;
+  justify-self: center;
+  color: rgba(255, 255, 255, 0.68) !important;
+  font-size: 12px !important;
+  font-weight: 780 !important;
+  line-height: 1.4 !important;
+}
+
+body.route-registro .register-photo-box .login-main-btn {
+  margin-top: 6px;
+}
+
+@media (max-width: 430px) {
+  body.route-registro .auth-choice-card {
+    min-height: 86px !important;
+    grid-template-columns: 44px 1fr !important;
+    gap: 12px !important;
+    padding: 14px !important;
+    border-radius: 23px !important;
+  }
+
+  body.route-registro .auth-choice-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+  }
+
+  body.route-registro .auth-choice-card strong,
+  body.route-registro .register-photo-box strong {
+    font-size: 16px !important;
+  }
+}
