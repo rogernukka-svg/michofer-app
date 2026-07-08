@@ -2324,7 +2324,17 @@ setMessage('')
               )}
 
               {categorySheet.code === 'ella' && womenModeStatus === 'requested' && (
-                <div className="notice-card">Tu solicitud de MiChofer Ella esta en revision.</div>
+                <div className="notice-card ella-trust-note">
+                  <ShieldCheck size={16} />
+                  <span>Tu solicitud de MiChofer Ella esta en revision.</span>
+                </div>
+              )}
+
+              {categorySheet.code === 'ella' && womenModeStatus === 'verified' && (
+                <div className="notice-card ella-trust-note verified">
+                  <ShieldCheck size={16} />
+                  <span>Ella verificado. Veras conductoras aprobadas para este modo.</span>
+                </div>
               )}
 
               <button

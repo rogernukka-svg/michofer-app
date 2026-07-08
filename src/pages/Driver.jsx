@@ -46,6 +46,14 @@ import {
 
 const ACTIVE_STATUSES = ['pending', 'accepted', 'arriving', 'in_progress']
 const LOCATION_STATUSES = ['accepted', 'arriving', 'in_progress']
+
+function isEllaTrip(trip) {
+  return (
+    trip?.ride_category === 'ella' ||
+    trip?.women_mode === true ||
+    trip?.safety_mode === 'women_verified'
+  )
+}
 const DEFAULT_DRIVER_LOCATION = { lat: -25.5167, lng: -54.6167 }
 
 const ARRIVED_PICKUP_METERS = 18
@@ -1261,6 +1269,13 @@ const getCurrentLocation = useCallback(async () => {
                     {/* Compact navigation action bar */}
           <section className="driver-navigation-bottom driver-trip-panel">
             <div className="driver-navigation-trip">
+              {isEllaTrip(activeTrip) && (
+                <div className="michofer-ella-trip-badge">
+                  <ShieldCheck size={14} />
+                  <span>Viaje Ella</span>
+                  <small>Pasajera verificada</small>
+                </div>
+              )}
               <span>{statusLabel(activeTrip.status)}</span>
               <strong>{activeTrip.destination_text || 'Destino'}</strong>
               <small>{formatGs(activeTrip.price)} · {guidanceDistance} · {guidanceEta}</small>
@@ -1454,9 +1469,16 @@ const getCurrentLocation = useCallback(async () => {
             {pendingTrips.slice(0, 1).map((trip) => (
               <article key={trip.id} className="driver-idle-request-card driver-trip-card">
                 <div className="driver-idle-request-top">
-                  <span>Solicitud de viaje</span>
+                  <span>{isEllaTrip(trip) ? 'Solicitud Ella' : 'Solicitud de viaje'}</span>
                   <strong>{formatGs(trip.price)}</strong>
                 </div>
+                {isEllaTrip(trip) && (
+                  <div className="michofer-ella-request-badge">
+                    <ShieldCheck size={14} />
+                    <strong>Viaje Ella</strong>
+                    <span>Pasajera verificada. Seguridad primero.</span>
+                  </div>
+                )}
                 <h2>{trip.destination_text || 'Destino solicitado'}</h2>
                 <p>
                   <MapPin size={14} /> {trip.pickup_lat && trip.pickup_lng && driverProfile?.lat && driverProfile?.lng

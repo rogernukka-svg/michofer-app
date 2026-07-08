@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CarFront, CheckCircle2, ChevronLeft, FileCheck2, ShieldCheck, UploadCloud, UserRound } from 'lucide-react'
-import { signInWithGoogle, supabase, upsertOwnDriverProfile, upsertOwnProfile } from '../lib/supabase'
+import {
+  requestDriverCategory,
+  requestWomenMode,
+  signInWithGoogle,
+  supabase,
+  upsertOwnDriverProfile,
+  upsertOwnProfile,
+} from '../lib/supabase'
 
 const CAMERA_CONSTRAINTS = [
   {
@@ -211,7 +218,7 @@ async function uploadDriverDocuments(userId, documentFiles, avatarUrl) {
   return uploaded
 }
 
-async function savePendingRegistration({ email, fullName, role, photoFile }) {
+async function savePendingRegistration({ email, fullName, role, genderIdentity, photoFile }) {
   const avatarDataUrl = photoFile ? await readFileAsDataUrl(photoFile) : ''
 
   localStorage.setItem(
@@ -220,6 +227,7 @@ async function savePendingRegistration({ email, fullName, role, photoFile }) {
       email,
       fullName,
       role,
+      genderIdentity,
       avatarDataUrl,
       avatarName: photoFile?.name || `michofer-avatar-${Date.now()}.jpg`,
       avatarType: photoFile?.type || 'image/jpeg',
@@ -230,12 +238,14 @@ async function savePendingRegistration({ email, fullName, role, photoFile }) {
   localStorage.setItem('michofer_last_email', email)
   localStorage.setItem('michofer_last_name', fullName)
   localStorage.setItem('michofer_last_role', role || 'passenger')
+  localStorage.setItem('michofer_last_gender_identity', genderIdentity || '')
 }
 
 export default function Register() {
   const [step, setStep] = useState('start')
   const [fullName, setFullName] = useState('')
   const [role, setRole] = useState('')
+  const [genderIdentity, setGenderIdentity] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -286,6 +296,7 @@ export default function Register() {
     if (step === 'start') return 'Crea tu cuenta.'
     if (step === 'name') return 'Tu nombre'
     if (step === 'role') return '¿Cómo querés usar MiChofer?'
+    if (step === 'identity') return 'Seguridad'
     if (step === 'photo') return role === 'driver' ? 'Verificación de chofer' : 'Tu perfil'
     if (step === 'documents') return 'Documentos de chofer'
     if (step === 'email') return 'Tu correo'
@@ -300,6 +311,7 @@ export default function Register() {
     if (step === 'start') return 'Entrá con Google o completá tus datos.'
     if (step === 'name') return 'Decinos cómo querés aparecer.'
     if (step === 'role') return 'Elegí tu modo para continuar.'
+    if (step === 'identity') return 'Esto nos ayuda a activar experiencias verificadas como MiChofer Ella.'
     if (step === 'photo') {
       return role === 'driver'
         ? 'Tu foto ayuda a que el pasajero viaje con confianza.'
@@ -320,6 +332,7 @@ export default function Register() {
     if (step === 'start') return 'Crear cuenta'
     if (step === 'name') return 'Tu nombre'
     if (step === 'role') return 'Elegir perfil'
+    if (step === 'identity') return 'Tu seguridad'
     if (step === 'photo') return role === 'driver' ? 'Verificacion' : 'Tu foto'
     if (step === 'documents') return 'Documentos'
     if (step === 'email') return 'Tu correo'
@@ -334,6 +347,7 @@ export default function Register() {
     if (step === 'start') return 'Un perfil claro para viajar o manejar.'
     if (step === 'name') return 'Como queres aparecer en MiChofer.'
     if (step === 'role') return 'Esto ordena tu experiencia dentro de la app.'
+    if (step === 'identity') return 'Privado. Se usa solo para seguridad y categorias verificadas.'
     if (step === 'photo') return role === 'driver'
       ? 'Tu foto aumenta confianza antes del primer viaje.'
       : 'Opcional. Podes cargarla despues.'
@@ -347,8 +361,8 @@ export default function Register() {
 
   const registerSteps = useMemo(
     () => (role === 'driver'
-      ? ['name', 'role', 'photo', 'documents', 'email', 'password']
-      : ['name', 'role', 'photo', 'email', 'password']),
+      ? ['name', 'role', 'identity', 'photo', 'documents', 'email', 'password']
+      : ['name', 'role', 'identity', 'photo', 'email', 'password']),
     [role]
   )
   const registerStepIndex = Math.max(0, registerSteps.indexOf(step))
@@ -360,6 +374,7 @@ export default function Register() {
     localStorage.removeItem('michofer_last_name')
     localStorage.removeItem('michofer_last_photo')
     localStorage.removeItem('michofer_last_role')
+    localStorage.removeItem('michofer_last_gender_identity')
     setKnownUser(null)
   }
 
@@ -376,8 +391,13 @@ export default function Register() {
       return
     }
 
-    if (step === 'photo') {
+    if (step === 'identity') {
       setStep('role')
+      return
+    }
+
+    if (step === 'photo') {
+      setStep('identity')
       return
     }
 
@@ -633,6 +653,11 @@ export default function Register() {
 
   function nextFromRole(value) {
     setRole(value)
+    setStep('identity')
+  }
+
+  function nextFromIdentity(value) {
+    setGenderIdentity(value)
     setStep('photo')
   }
 
@@ -660,6 +685,12 @@ export default function Register() {
     if (!role) {
       setErrorMessage('Elegí si vas a viajar o manejar.')
       setStep('role')
+      return
+    }
+
+    if (!genderIdentity) {
+      setErrorMessage('Elegí una opción de seguridad para continuar.')
+      setStep('identity')
       return
     }
 
@@ -694,6 +725,7 @@ export default function Register() {
           data: {
             full_name: fullName,
             role,
+            gender_identity: genderIdentity,
           },
         },
       })
@@ -736,6 +768,7 @@ export default function Register() {
             email: cleanEmail,
             fullName,
             role,
+            genderIdentity,
             photoFile,
           })
           setErrorMessage(
@@ -796,6 +829,7 @@ export default function Register() {
           role,
           avatarUrl,
           email: cleanEmail,
+          genderIdentity,
         })
 
         if (profileError) {
@@ -805,6 +839,29 @@ export default function Register() {
           )
           setStep('password')
           return
+        }
+
+        if (genderIdentity === 'woman') {
+          const { error: womenModeError } = await requestWomenMode('woman')
+
+          if (womenModeError) {
+            console.warn('WOMEN MODE REQUEST ERROR:', womenModeError)
+          }
+        } else {
+          const { error: identitySaveError } = await supabase
+            .from('profiles')
+            .update({
+              gender_identity: genderIdentity,
+              gender_visibility: 'private',
+              women_mode_requested: false,
+              women_mode_status: 'not_requested',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', userId)
+
+          if (identitySaveError) {
+            console.warn('GENDER IDENTITY SAVE ERROR:', identitySaveError)
+          }
         }
 
         if (role === 'driver') {
@@ -854,6 +911,14 @@ export default function Register() {
             setStep('documents')
             return
           }
+
+          if (genderIdentity === 'woman') {
+            const { error: driverEllaError } = await requestDriverCategory('ella')
+
+            if (driverEllaError) {
+              console.warn('DRIVER ELLA REQUEST ERROR:', driverEllaError)
+            }
+          }
         }
       }
 
@@ -869,11 +934,13 @@ export default function Register() {
           full_name: fullName,
           avatar_url: avatarUrl,
           role,
+          gender_identity: genderIdentity,
         },
       })
 
       const targetRole = role || 'passenger'
       localStorage.setItem('michofer_last_role', targetRole)
+      localStorage.setItem('michofer_last_gender_identity', genderIdentity)
 
       if (targetRole === 'driver') {
         window.location.replace('/driver')
@@ -1072,6 +1139,52 @@ export default function Register() {
                 </span>
               </button>
 
+            </div>
+          )}
+
+          {step === 'identity' && (
+            <div className="login-step-form register-identity-step">
+              <button
+                type="button"
+                className="login-choice-btn auth-choice-card ella-identity-card"
+                onClick={() => nextFromIdentity('woman')}
+              >
+                <span className="auth-choice-icon">
+                  <ShieldCheck size={19} />
+                </span>
+
+                <span className="auth-choice-copy">
+                  <span className="auth-choice-label">MiChofer Ella</span>
+                  <strong>Soy mujer</strong>
+                  <small>
+                    Activamos seguridad verificada para pasajeras y conductoras Ella.
+                  </small>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="login-choice-btn auth-choice-card"
+                onClick={() => nextFromIdentity('man')}
+              >
+                <span className="auth-choice-icon">
+                  <UserRound size={19} />
+                </span>
+
+                <span className="auth-choice-copy">
+                  <span className="auth-choice-label">Perfil estandar</span>
+                  <strong>Soy hombre</strong>
+                  <small>Configuramos tu experiencia para viajes regulares.</small>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="login-create-link auth-skip-identity"
+                onClick={() => nextFromIdentity('prefer_not_to_say')}
+              >
+                Prefiero no decir
+              </button>
             </div>
           )}
 

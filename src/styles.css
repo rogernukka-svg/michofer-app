@@ -21814,3 +21814,429 @@ body.route-registro .register-photo-box .login-main-btn {
     font-size: 16px !important;
   }
 }
+
+/* MiChofer signature driver markers: car + identity pin */
+.google-driver-marker {
+  width: 64px !important;
+  height: 78px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: translate(-50%, -100%) !important;
+  isolation: isolate;
+}
+
+.google-driver-marker > span {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.google-driver-marker-bubble {
+  position: absolute !important;
+  left: 50% !important;
+  top: 0 !important;
+  min-width: 88px !important;
+  max-width: 122px !important;
+  display: grid !important;
+  justify-items: center !important;
+  gap: 4px !important;
+  padding: 8px 10px !important;
+  transform: translateX(-50%) translateY(6px) scale(0.9) !important;
+  transform-origin: center bottom !important;
+  border-radius: 15px !important;
+  border: 1px solid rgba(15, 23, 28, 0.12) !important;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 1), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(239, 245, 244, 0.98)) !important;
+  color: #0d151a !important;
+  box-shadow:
+    0 12px 28px rgba(12, 24, 28, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.86) inset !important;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  animation: driverBubbleSweetFloat 4.2s ease-in-out infinite;
+}
+
+.google-driver-marker-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1px solid rgba(15, 23, 28, 0.1);
+  border-bottom: 1px solid rgba(15, 23, 28, 0.1);
+  border-radius: 0 0 4px 0;
+  background: rgba(239, 245, 244, 0.98);
+}
+
+.google-driver-marker-bubble strong,
+.google-driver-marker-bubble small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.google-driver-marker-bubble strong {
+  color: #0b1115 !important;
+  font-size: 11.5px !important;
+  font-weight: 950 !important;
+  text-shadow: none !important;
+}
+
+.google-driver-marker-bubble small {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  padding: 3px 6px !important;
+  border-radius: 999px !important;
+  background: rgba(12, 22, 28, 0.9) !important;
+  color: rgba(255, 255, 255, 0.96) !important;
+  font-size: 8.75px !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+
+.google-driver-marker-glow {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 2px !important;
+  width: 46px !important;
+  height: 15px !important;
+  transform: translateX(-50%) !important;
+  border-radius: 999px !important;
+  background: radial-gradient(ellipse at center, rgba(22, 190, 168, 0.22), rgba(10, 20, 24, 0.08) 42%, rgba(10, 20, 24, 0));
+  filter: blur(5px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.google-driver-marker-car {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 0 !important;
+  width: 46px !important;
+  height: 46px !important;
+  display: block !important;
+  transform: translateX(-50%) !important;
+  background: transparent !important;
+  filter:
+    drop-shadow(0 10px 12px rgba(7, 18, 22, 0.2))
+    drop-shadow(0 0 10px rgba(38, 231, 210, 0.12));
+  animation: driverCarSweetFloat 3.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.google-driver-marker-car img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+.google-driver-marker-pin {
+  position: absolute !important;
+  left: 50% !important;
+  top: 16px !important;
+  width: 34px !important;
+  height: 34px !important;
+  display: grid !important;
+  place-items: center !important;
+  transform: translateX(-50%) !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(225, 234, 239, 0.96)),
+    #ffffff !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 4px rgba(38, 231, 210, 0.14),
+    0 10px 20px rgba(4, 16, 20, 0.14) !important;
+  animation: driverPinSweetFloat 3.8s ease-in-out infinite;
+  z-index: 3;
+}
+
+.google-driver-marker-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 0 0 4px 0;
+  background: inherit;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.14);
+  z-index: -1;
+}
+
+.google-driver-marker-content {
+  position: relative !important;
+  inset: auto !important;
+  width: 27px !important;
+  height: 27px !important;
+  min-width: 27px !important;
+  min-height: 27px !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  background: #071018 !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  box-shadow: none !important;
+}
+
+.google-driver-marker-content img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+}
+
+.google-driver-marker-content > span:not(.google-driver-marker-status) {
+  width: 100% !important;
+  height: 100% !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: inherit !important;
+  background:
+    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, 0.16), transparent 34%),
+    linear-gradient(180deg, #20313a, #0b1116) !important;
+}
+
+.google-driver-marker-status {
+  position: absolute !important;
+  right: -1px !important;
+  bottom: -1px !important;
+  width: 8px !important;
+  height: 8px !important;
+  display: block !important;
+  border-radius: 999px !important;
+  border: 2px solid #ffffff !important;
+  background: #9ca3af !important;
+}
+
+.google-driver-marker.online .google-driver-marker-pin {
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 4px rgba(35, 242, 155, 0.16),
+    0 10px 20px rgba(4, 16, 20, 0.14) !important;
+}
+
+.google-driver-marker.online .google-driver-marker-status {
+  background: #23f29b !important;
+}
+
+.google-driver-marker.offline .google-driver-marker-pin,
+.google-driver-marker.busy .google-driver-marker-pin {
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.88),
+    0 0 0 4px rgba(255, 176, 88, 0.14),
+    0 10px 20px rgba(4, 16, 20, 0.14) !important;
+}
+
+.google-driver-marker.offline .google-driver-marker-status,
+.google-driver-marker.busy .google-driver-marker-status {
+  background: #ffb058 !important;
+}
+
+.google-driver-marker.active .google-driver-marker-pin {
+  transform: translateX(-50%) translateY(-3px) scale(1.08) !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.94),
+    0 0 0 5px rgba(38, 231, 210, 0.2),
+    0 0 24px rgba(38, 231, 210, 0.24),
+    0 16px 30px rgba(0, 0, 0, 0.22) !important;
+}
+
+.google-driver-marker.active .google-driver-marker-bubble,
+.google-driver-marker:hover .google-driver-marker-bubble {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-18px) scale(1) !important;
+  box-shadow:
+    0 16px 30px rgba(12, 24, 28, 0.22),
+    0 0 0 3px rgba(255, 255, 255, 0.58) !important;
+}
+
+.google-driver-marker.active .google-driver-marker-car {
+  transform: translateX(-50%) scale(1.08) !important;
+  filter:
+    drop-shadow(0 12px 16px rgba(7, 18, 22, 0.22))
+    drop-shadow(0 0 16px rgba(38, 231, 210, 0.2));
+}
+
+.google-driver-marker:hover .google-driver-marker-pin {
+  transform: translateX(-50%) translateY(-4px) scale(1.05) !important;
+}
+
+.google-driver-marker,
+.google-driver-marker-bubble,
+.google-driver-marker-pin,
+.google-driver-marker-car {
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    filter 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+@keyframes driverBubbleSweetFloat {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+
+  50% {
+    margin-top: -2px;
+  }
+}
+
+@keyframes driverCarSweetFloat {
+  0%,
+  100% {
+    margin-bottom: 0;
+  }
+
+  50% {
+    margin-bottom: 2px;
+  }
+}
+
+@keyframes driverPinSweetFloat {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+
+  50% {
+    margin-top: -3px;
+  }
+}
+
+/* MiChofer Ella: registration and trip trust signals */
+body.route-registro .register-identity-step {
+  gap: 12px;
+}
+
+body.route-registro .ella-identity-card {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    radial-gradient(circle at 18% 12%, rgba(255, 181, 213, 0.2), transparent 42%),
+    rgba(12, 18, 22, 0.86) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 18px 36px rgba(6, 10, 14, 0.2) !important;
+}
+
+body.route-registro .ella-identity-card .auth-choice-icon {
+  background: linear-gradient(180deg, rgba(255, 232, 241, 0.98), rgba(255, 189, 214, 0.94));
+  color: #7a173b;
+  box-shadow: 0 0 0 3px rgba(255, 200, 221, 0.14);
+}
+
+body.route-registro .ella-identity-card .auth-choice-label {
+  color: #ffc6dc;
+}
+
+body.route-registro .auth-skip-identity {
+  width: max-content;
+  margin: 4px auto 0;
+  padding: 8px 0;
+  color: rgba(238, 246, 247, 0.72);
+}
+
+.ella-trust-note {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 200, 221, 0.34) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 246, 250, 0.96), rgba(255, 232, 242, 0.94)) !important;
+  color: #351421 !important;
+}
+
+.ella-trust-note svg {
+  flex: 0 0 auto;
+  color: #b51f5d;
+}
+
+.ella-trust-note.verified {
+  border-color: rgba(255, 255, 255, 0.68) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 241, 246, 0.95)) !important;
+  color: #111820 !important;
+}
+
+.michofer-ella-trip-badge,
+.michofer-ella-request-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid rgba(255, 207, 226, 0.3);
+  background:
+    linear-gradient(180deg, rgba(255, 244, 249, 0.98), rgba(255, 226, 239, 0.94));
+  color: #2b111c;
+  box-shadow: 0 12px 26px rgba(10, 16, 20, 0.14);
+}
+
+.michofer-ella-trip-badge {
+  margin-bottom: 7px;
+  padding: 6px 9px;
+  border-radius: 999px;
+}
+
+.michofer-ella-trip-badge svg,
+.michofer-ella-request-badge svg {
+  color: #b51f5d;
+}
+
+.michofer-ella-trip-badge span,
+.michofer-ella-trip-badge small {
+  color: inherit !important;
+}
+
+.michofer-ella-trip-badge span {
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.michofer-ella-trip-badge small {
+  font-size: 10px;
+  font-weight: 850;
+  opacity: 0.72;
+}
+
+.michofer-ella-request-badge {
+  margin: 10px 0 8px;
+  padding: 9px 11px;
+  border-radius: 16px;
+}
+
+.michofer-ella-request-badge strong {
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.michofer-ella-request-badge span {
+  color: rgba(43, 17, 28, 0.72);
+  font-size: 11px;
+  font-weight: 850;
+}

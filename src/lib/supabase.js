@@ -27,13 +27,33 @@ export function signInWithGoogle() {
   })
 }
 
-export function upsertOwnProfile({ fullName, role, avatarUrl, email }) {
-  return supabase.rpc('upsert_own_profile', {
+function isMissingGenderProfileArg(error) {
+  const message = String(error?.message || error?.details || '').toLowerCase()
+  return (
+    error?.code === 'PGRST202' ||
+    message.includes('p_gender_identity') ||
+    message.includes('could not find the function')
+  )
+}
+
+export async function upsertOwnProfile({ fullName, role, avatarUrl, email, genderIdentity }) {
+  const payload = {
     p_full_name: fullName || null,
     p_role: role || 'passenger',
     p_avatar_url: avatarUrl || null,
     p_email: email || null,
+  }
+
+  const result = await supabase.rpc('upsert_own_profile', {
+    ...payload,
+    p_gender_identity: genderIdentity || null,
   })
+
+  if (result.error && isMissingGenderProfileArg(result.error)) {
+    return supabase.rpc('upsert_own_profile', payload)
+  }
+
+  return result
 }
 
 export function getOwnProfile() {

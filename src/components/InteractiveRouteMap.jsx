@@ -1237,10 +1237,22 @@ const MICHOFER_DARK_MAP_STYLE = [
 
 // ==================== OVERLAY CREATORS ====================
 
+function escapeOverlayHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function createDriverOverlay(driver, selected, onSelect, google) {
   const overlay = new google.maps.OverlayView()
   const element = document.createElement('button')
   const initials = String(driver.name || 'CH').slice(0, 2).toUpperCase()
+  const driverName = String(driver.name || 'Chofer MiChofer')
+  const driverFirstName = driverName.split(' ')[0] || 'Chofer'
+  const avatarUrl = driver.avatar ? String(driver.avatar) : ''
 
   element.type = 'button'
 
@@ -1255,7 +1267,7 @@ function createDriverOverlay(driver, selected, onSelect, google) {
 
   element.className = `google-driver-marker${selected ? ' active' : ''} ${online ? 'online' : 'offline'}`
   element.dataset.driverId = driver.id
-  element.title = driver.name
+  element.setAttribute('aria-label', `${driverName}, chofer cerca`)
   element.style.position = 'absolute'
   element.style.transform = 'translate(-50%, -100%)'
   element.style.cursor = 'pointer'
@@ -1263,10 +1275,22 @@ function createDriverOverlay(driver, selected, onSelect, google) {
   element.style.padding = '0'
   element.style.background = 'transparent'
   element.style.zIndex = String(selected ? MAP_LAYER_Z.driverMarkers + 20 : MAP_LAYER_Z.driverMarkers)
+  element.style.transition = 'left 900ms cubic-bezier(0.22, 1, 0.36, 1), top 900ms cubic-bezier(0.22, 1, 0.36, 1)'
+  element.style.willChange = 'left, top'
   element.innerHTML = `
-    <span class="google-driver-marker-content">
-      ${driver.avatar ? `<img src="${driver.avatar}" alt="${driver.name}" />` : `<span>${initials}</span>`}
-      <span class="google-driver-marker-status" aria-hidden="true"></span>
+    <span class="google-driver-marker-bubble">
+      <strong>${escapeOverlayHtml(driverFirstName)}</strong>
+      <small>Estoy cerca</small>
+    </span>
+    <span class="google-driver-marker-glow" aria-hidden="true"></span>
+    <span class="google-driver-marker-car" aria-hidden="true">
+      <img src="${carTopImg}" alt="" />
+    </span>
+    <span class="google-driver-marker-pin">
+      <span class="google-driver-marker-content">
+        ${avatarUrl ? `<img src="${escapeOverlayHtml(avatarUrl)}" alt="${escapeOverlayHtml(driverName)}" />` : `<span>${escapeOverlayHtml(initials)}</span>`}
+        <span class="google-driver-marker-status" aria-hidden="true"></span>
+      </span>
     </span>
   `
 
