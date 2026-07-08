@@ -16205,6 +16205,124 @@ body.route-driver .driver-idle-notice {
   font-weight: 850 !important;
 }
 
+body.route-driver .driver-ella-status-card {
+  position: absolute !important;
+  left: 18px !important;
+  right: 18px !important;
+  top: calc(env(safe-area-inset-top, 0px) + 108px) !important;
+  z-index: 84 !important;
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 13px !important;
+  border-radius: 25px !important;
+  color: #fff7fb !important;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(255, 121, 171, 0.22), transparent 34%),
+    linear-gradient(135deg, rgba(35, 16, 31, 0.92), rgba(12, 19, 27, 0.86)) !important;
+  border: 1px solid rgba(255, 194, 219, 0.22) !important;
+  box-shadow:
+    0 24px 68px rgba(28, 8, 18, 0.34),
+    0 0 36px rgba(255, 121, 171, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11) !important;
+  backdrop-filter: blur(24px) saturate(1.16) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.16) !important;
+}
+
+body.route-driver .driver-ella-status-card.with-message {
+  top: calc(env(safe-area-inset-top, 0px) + 138px) !important;
+}
+
+body.route-driver .driver-ella-status-card.verified {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(255, 121, 171, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(18, 38, 31, 0.93), rgba(12, 19, 27, 0.86)) !important;
+  border-color: rgba(151, 244, 202, 0.24) !important;
+  box-shadow:
+    0 24px 68px rgba(0, 0, 0, 0.32),
+    0 0 32px rgba(35, 242, 155, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11) !important;
+}
+
+body.route-driver .driver-ella-status-card.rejected {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(255, 121, 171, 0.2), transparent 34%),
+    linear-gradient(135deg, rgba(43, 21, 24, 0.94), rgba(12, 19, 27, 0.86)) !important;
+  border-color: rgba(255, 150, 166, 0.24) !important;
+}
+
+body.route-driver .driver-ella-status-orb {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 18px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #fff !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 121, 171, 0.3)),
+    linear-gradient(135deg, #ff5fa2, #ffc0d8) !important;
+  box-shadow:
+    0 12px 28px rgba(255, 95, 162, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.48) !important;
+}
+
+body.route-driver .driver-ella-status-card.verified .driver-ella-status-orb {
+  background: linear-gradient(135deg, #23f29b, #ffd0e1) !important;
+  color: #071013 !important;
+}
+
+body.route-driver .driver-ella-status-copy {
+  min-width: 0 !important;
+}
+
+body.route-driver .driver-ella-status-copy span {
+  display: block !important;
+  color: #ffc7dc !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-driver .driver-ella-status-card.verified .driver-ella-status-copy span {
+  color: #b7ffd8 !important;
+}
+
+body.route-driver .driver-ella-status-copy strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  line-height: 1.02 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
+}
+
+body.route-driver .driver-ella-status-copy small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(255, 247, 251, 0.7) !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+}
+
+body.route-driver .driver-ella-status-card button {
+  grid-column: 1 / -1 !important;
+  min-height: 42px !important;
+  border-radius: 17px !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  color: #2a0717 !important;
+  background: linear-gradient(135deg, #fff4f8, #ff9fc6) !important;
+  box-shadow:
+    0 14px 32px rgba(255, 95, 162, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+}
+
 /* =========================
    IDLE: controles inferiores
    Estrategia:
@@ -22239,4 +22357,142 @@ body.route-registro .auth-skip-identity {
   color: rgba(43, 17, 28, 0.72);
   font-size: 11px;
   font-weight: 850;
+}
+/* =========================
+   Ella polish: perfil, avisos y seleccion
+========================= */
+
+body.route-driver .driver-side-notifications {
+  margin-top: 14px !important;
+  display: grid !important;
+  gap: 8px !important;
+}
+
+body.route-driver .driver-side-notifications > strong {
+  color: rgba(248, 251, 255, 0.54) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+}
+
+body.route-driver .driver-side-notifications > small {
+  min-height: 48px !important;
+  border-radius: 18px !important;
+  padding: 0 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  color: rgba(248, 251, 255, 0.52) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+body.route-driver .driver-side-notification {
+  min-height: 64px !important;
+  border-radius: 20px !important;
+  padding: 12px 13px !important;
+  display: grid !important;
+  gap: 4px !important;
+  color: #f8fbff !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.route-driver .driver-side-notification span {
+  color: rgba(248, 251, 255, 0.48) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+}
+
+body.route-driver .driver-side-notification strong {
+  color: #f8fbff !important;
+  font-size: 13px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .driver-side-notification small {
+  color: rgba(248, 251, 255, 0.64) !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+}
+
+body.route-driver .driver-side-notification.success {
+  border-color: rgba(35, 242, 155, 0.18) !important;
+  background: linear-gradient(135deg, rgba(35, 242, 155, 0.1), rgba(255, 255, 255, 0.045)) !important;
+}
+
+body.route-driver .driver-side-notification.info {
+  border-color: rgba(255, 143, 188, 0.2) !important;
+  background: linear-gradient(135deg, rgba(255, 143, 188, 0.12), rgba(255, 255, 255, 0.045)) !important;
+}
+
+body.route-driver .driver-side-notification.danger {
+  border-color: rgba(255, 77, 99, 0.22) !important;
+  background: linear-gradient(135deg, rgba(255, 77, 99, 0.13), rgba(255, 255, 255, 0.045)) !important;
+}
+
+body.route-driver .driver-phone.driver-ella-profile .driver-idle-bar,
+body.route-driver .driver-phone.driver-ella-profile .driver-idle-controls {
+  border-color: rgba(255, 143, 188, 0.22) !important;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(255, 143, 188, 0.16), transparent 36%),
+    linear-gradient(135deg, rgba(14, 22, 27, 0.94), rgba(8, 13, 19, 0.9)) !important;
+}
+
+body.route-driver .driver-phone.driver-ella-profile .driver-idle-btn.active {
+  color: #270714 !important;
+  background: linear-gradient(135deg, #ffe5f0, #ff8fbc) !important;
+  box-shadow: 0 16px 42px rgba(255, 116, 176, 0.24) !important;
+}
+
+body.route-driver .driver-phone.driver-ella-profile .driver-idle-dot.online {
+  background: #ff8fbc !important;
+  box-shadow: 0 0 0 5px rgba(255, 143, 188, 0.18), 0 0 22px rgba(255, 143, 188, 0.3) !important;
+}
+
+body.route-client .client-woman-profile .map-search-bar {
+  border-color: rgba(255, 143, 188, 0.22) !important;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.26),
+    0 0 34px rgba(255, 143, 188, 0.12) !important;
+}
+
+body.route-client .client-woman-profile .route-point-origin,
+body.route-client .client-woman-profile .route-point-destination {
+  background: linear-gradient(135deg, #ff8fbc, #35e3ff) !important;
+}
+
+body.route-client .client-woman-profile .client-trip-panel,
+body.route-client .client-woman-profile .michofer-live-sheet {
+  border-color: rgba(255, 143, 188, 0.2) !important;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 143, 188, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(13, 27, 35, 0.96), rgba(7, 14, 19, 0.98)) !important;
+}
+
+body.route-client .driver-picker-pro-card.ella-driver-option {
+  border-color: rgba(255, 143, 188, 0.24) !important;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 143, 188, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.045)) !important;
+}
+
+body.route-client .driver-picker-pro-card.ella-driver-option .driver-picker-pro-name em {
+  min-height: 20px !important;
+  border-radius: 999px !important;
+  padding: 0 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #33091a !important;
+  background: linear-gradient(135deg, #fff2f7, #ff9fc6) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
 }

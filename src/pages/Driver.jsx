@@ -361,6 +361,72 @@ function verificationCopy(status, approved) {
   return ['Perfil incompleto', 'Carga tus datos y documentos para empezar.']
 }
 
+function isWomanDriverProfile(profile, driverProfile) {
+  return (
+    profile?.gender_identity === 'woman' ||
+    driverProfile?.gender_identity === 'woman' ||
+    driverProfile?.gender === 'woman' ||
+    driverProfile?.women_mode === true ||
+    driverProfile?.women_driver_requested === true ||
+    driverProfile?.women_driver_verified === true ||
+    driverProfile?.women_driver_status === 'requested' ||
+    driverProfile?.women_driver_status === 'verified' ||
+    driverProfile?.women_driver_status === 'rejected'
+  )
+}
+
+function getEllaDriverStatus(driverProfile) {
+  if (driverProfile?.women_driver_verified === true || driverProfile?.women_driver_status === 'verified') return 'verified'
+  if (driverProfile?.women_driver_status === 'rejected') return 'rejected'
+  if (driverProfile?.women_driver_requested === true || driverProfile?.women_driver_status === 'requested') return 'requested'
+  return 'not_requested'
+}
+
+function ellaDriverStatusCopy(status, baseApproved) {
+  if (!baseApproved) {
+    return {
+      label: 'Seguridad Ella',
+      title: 'Perfil base en revision',
+      body: 'Cuando admin apruebe tu perfil, vas a poder activar o completar MiChofer Ella.',
+      action: '',
+    }
+  }
+
+  if (status === 'verified') {
+    return {
+      label: 'Ella habilitada',
+      title: 'Lista para viajes Ella',
+      body: 'Tu cuenta puede recibir solicitudes de pasajeras verificadas con prioridad de seguridad.',
+      action: '',
+    }
+  }
+
+  if (status === 'requested') {
+    return {
+      label: 'Ella en revision',
+      title: 'Estamos verificando tu acceso',
+      body: 'Admin esta revisando tu solicitud. Te avisamos apenas quede habilitada.',
+      action: '',
+    }
+  }
+
+  if (status === 'rejected') {
+    return {
+      label: 'Ella requiere atencion',
+      title: 'Necesitamos revisar datos',
+      body: 'Tu solicitud Ella no fue aprobada. Revisá tus documentos o pedí soporte.',
+      action: 'Solicitar nuevamente',
+    }
+  }
+
+  return {
+    label: 'MiChofer Ella',
+    title: 'Activá viajes Ella',
+    body: 'Recibí solicitudes de pasajeras verificadas en un entorno más cuidado y seguro.',
+    action: 'Solicitar habilitacion',
+  }
+}
+
 export default function Driver() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -374,6 +440,7 @@ export default function Driver() {
   const [tripAction, setTripAction] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const [driverNotifications, setDriverNotifications] = useState([])
   const isMountedRef = useRef(true)
   const liveWatchIdRef = useRef(null)
   const liveSyncBusyRef = useRef(false)
@@ -407,11 +474,40 @@ export default function Driver() {
   const verificationStatus = driverProfile?.verification_status || 'incomplete'
   const approved = driverProfile?.verified === true && verificationStatus === 'approved'
   const verificationTitle = useMemo(() => verificationCopy(verificationStatus, approved)[0], [verificationStatus, approved])
+  const isWomanDriver = useMemo(() => isWomanDriverProfile(profile, driverProfile), [profile, driverProfile])
+  const ellaDriverStatus = useMemo(() => getEllaDriverStatus(driverProfile), [driverProfile])
+  const ellaDriverCopy = useMemo(
+    () => ellaDriverStatusCopy(ellaDriverStatus, approved),
+    [ellaDriverStatus, approved]
+  )
+  const showEllaDriverPanel = isWomanDriver || ellaDriverStatus !== 'not_requested'
   const isOnline = driverProfile?.is_online === true
   const isAvailable = driverProfile?.is_available === true
   const hasDriverLocation = isValidParaguayCoord(driverProfile)
   const isReceivingTrips = useMemo(() => isOnline && isAvailable && hasDriverLocation, [isOnline, isAvailable, hasDriverLocation])
   const driverUserId = useMemo(() => user?.id || driverProfile?.user_id || profile?.id, [user?.id, driverProfile?.user_id, profile?.id])
+
+  const pushDriverNotification = useCallback((title, body, tone = 'info') => {
+    const item = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title,
+      body,
+      tone,
+      time: new Date().toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' }),
+    }
+
+    setDriverNotifications((current) => [item, ...current].slice(0, 8))
+  }, [])
+
+  useEffect(() => {
+    if (!message) return undefined
+
+    const sticky = /no pude|gps inv|revisi|pertenece|permitido|sesion|sesión/i.test(message)
+    if (sticky) return undefined
+
+    const timeout = window.setTimeout(() => setMessage(''), 4200)
+    return () => window.clearTimeout(timeout)
+  }, [message])
 
   const activeTrip = useMemo(() => trips.find((trip) => trip.status !== 'pending') || null, [trips])
   const activeTripId = activeTrip?.id
@@ -728,16 +824,51 @@ export default function Driver() {
   const loadTrips = useCallback(async (driverId = user?.id) => {
     if (!driverId) return
     const { data, error } = await getOwnDriverTrips()
-    if (error) {
+    let nextTrips = data || []
+
+    if (error || nextTrips.length === 0) {
+      const { data: directTrips, error: directError } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('driver_id', driverId)
+        .in('status', ACTIVE_STATUSES)
+        .order('created_at', { ascending: false })
+
+      if (import.meta.env.DEV) {
+        console.info('[MiChofer Driver Trips]', {
+          driverId,
+          authEmail: user?.email || null,
+          driverProfileUserId: driverProfile?.user_id || null,
+          driverProfileEmail: driverProfile?.email || null,
+          driverProfileName: driverProfile?.full_name || null,
+          rpcCount: Array.isArray(data) ? data.length : null,
+          rpcError: error?.message || null,
+          directCount: Array.isArray(directTrips) ? directTrips.length : null,
+          directError: directError?.message || null,
+        })
+      }
+
+      if (!directError && Array.isArray(directTrips)) {
+        nextTrips = directTrips
+      } else if (error) {
+        if (isMountedRef.current) {
+          setMessage(`No pude cargar solicitudes: ${driverSupabaseErrorText(error) || 'ejecuta supabase/driver_live_state_rpcs.sql y recarga.'}`)
+        }
+        return
+      }
+    }
+
+    if (error && nextTrips.length === 0) {
       if (isMountedRef.current) {
         setMessage(`No pude cargar solicitudes: ${driverSupabaseErrorText(error) || 'ejecuta supabase/driver_live_state_rpcs.sql y recarga.'}`)
       }
       return
     }
+
     if (isMountedRef.current) {
-      setTrips(data || [])
+      setTrips(nextTrips)
     }
-  }, [user?.id])
+  }, [driverProfile?.email, driverProfile?.full_name, driverProfile?.user_id, user?.email, user?.id])
 
 const getStoredLocation = useCallback(() => {
   const lat = Number(driverProfile?.lat)
@@ -1087,8 +1218,14 @@ const getCurrentLocation = useCallback(async () => {
         premium_status: categoryCode === 'premium' ? 'requested' : current?.premium_status,
       }
     })
+    const title = categoryCode === 'ella' ? 'Solicitud Ella enviada' : 'Solicitud enviada'
+    const body = data?.status === 'approved'
+      ? 'Esta categoria ya estaba habilitada.'
+      : 'Admin revisara tu habilitacion y te avisaremos.'
+
     setMessage(data?.status === 'approved' ? 'Categoria ya aprobada.' : 'Solicitud enviada.')
-  }, [approved, driverProfile, setDriverProfile, setMessage])
+    pushDriverNotification(title, body, data?.status === 'approved' ? 'success' : 'info')
+  }, [approved, driverProfile, pushDriverNotification, setDriverProfile, setMessage])
 
    const updateTrip = useCallback(async (trip, status) => {
     const driverUserId = user?.id || driverProfile?.user_id || profile?.id
@@ -1173,11 +1310,19 @@ const getCurrentLocation = useCallback(async () => {
       else if (status === 'completed') setMessage('Viaje finalizado.')
       else setMessage('')
 
+      if (status === 'accepted') {
+        pushDriverNotification('Viaje aceptado', trip.destination_text || 'Ruta al punto de recogida lista.', 'success')
+      } else if (status === 'cancelled') {
+        pushDriverNotification('Viaje cancelado', trip.destination_text || 'Solicitud cancelada.', 'danger')
+      } else if (status === 'completed') {
+        pushDriverNotification('Viaje finalizado', trip.destination_text || 'Guardado en tu historial de actividad.', 'success')
+      }
+
       await loadTrips()
     } finally {
       setTripAction('')
     }
-  }, [driverUserId, getCurrentLocation, loadTrips, setDriverProfile, setMessage, setTripAction, setTrips, user?.id])
+  }, [driverUserId, getCurrentLocation, loadTrips, pushDriverNotification, setDriverProfile, setMessage, setTripAction, setTrips, user?.id])
 
   // ==================== RENDER ====================
 
@@ -1186,7 +1331,7 @@ const getCurrentLocation = useCallback(async () => {
     return (
       <main className="app-shell">
         <section
-          className="phone driver-phone driver-cockpit driver-nav-layout"
+          className={`phone driver-phone driver-cockpit driver-nav-layout ${showEllaDriverPanel || isEllaTrip(activeTrip) ? 'driver-ella-profile' : ''}`}
           style={{
             '--driver-nav-top-safe': '136px',
             '--driver-nav-bottom-safe': '178px',
@@ -1400,7 +1545,7 @@ const getCurrentLocation = useCallback(async () => {
   // --- Idle / Dashboard state ---
   return (
     <main className="app-shell">
-      <section className="phone driver-phone driver-idle">
+      <section className={`phone driver-phone driver-idle ${showEllaDriverPanel ? 'driver-ella-profile' : ''}`}>
         {/* Map background */}
                 <div className="driver-idle-map">
           {driverPoint ? (
@@ -1462,6 +1607,27 @@ const getCurrentLocation = useCallback(async () => {
 
         {/* Message */}
         {message && <div className="driver-idle-notice">{message}</div>}
+
+
+        {showEllaDriverPanel && pendingTrips.length === 0 && (
+          <article className={`driver-ella-status-card ${ellaDriverStatus} ${message ? 'with-message' : ''}`} role="status" aria-live="polite">
+            <div className="driver-ella-status-orb">
+              <ShieldCheck size={21} />
+            </div>
+
+            <div className="driver-ella-status-copy">
+              <span>{ellaDriverCopy.label}</span>
+              <strong>{ellaDriverCopy.title}</strong>
+              <small>{ellaDriverCopy.body}</small>
+            </div>
+
+            {ellaDriverCopy.action && (
+              <button type="button" onClick={() => requestCategory('ella')} disabled={!approved}>
+                {ellaDriverCopy.action}
+              </button>
+            )}
+          </article>
+        )}
 
         {/* Pending trip request */}
         {pendingTrips.length > 0 && (
@@ -1600,6 +1766,21 @@ const getCurrentLocation = useCallback(async () => {
                     </button>
                   )
                 })}
+              </div>
+
+              <div className="driver-side-notifications">
+                <strong>Notificaciones</strong>
+                {driverNotifications.length === 0 ? (
+                  <small>No hay avisos nuevos.</small>
+                ) : (
+                  driverNotifications.map((item) => (
+                    <article key={item.id} className={`driver-side-notification ${item.tone}`}>
+                      <span>{item.time}</span>
+                      <strong>{item.title}</strong>
+                      <small>{item.body}</small>
+                    </article>
+                  ))
+                )}
               </div>
 
               <nav className="driver-side-legal-links" aria-label="Links legales">

@@ -750,8 +750,23 @@ const [locationReady, setLocationReady] = useState(false)
     }
   }, [activeTrip?.id, user?.id])
 
+  const clientCanUseElla = canUseWomenMode(profile)
+  const isClientWomanProfile = Boolean(
+    profile?.gender_identity === 'woman' ||
+    profile?.women_mode_verified === true ||
+    profile?.women_mode_status === 'verified' ||
+    profile?.women_mode_requested === true
+  )
+
   const visibleDrivers = useMemo(() => {
-    const filtered = drivers.filter((driver) => matchesRideCategory(driver, mode))
+    const filtered = drivers.filter((driver) => {
+      if (!matchesRideCategory(driver, mode)) return false
+
+      const driverIsElla = isWomenDriver(driver)
+      if (mode === 'ella') return driverIsElla
+      if (driverIsElla && !clientCanUseElla) return false
+      return true
+    })
 
     if (sort === 'rating') {
       filtered.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
@@ -759,8 +774,12 @@ const [locationReady, setLocationReady] = useState(false)
       filtered.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
     }
 
+    if (mode === 'all' && clientCanUseElla) {
+      filtered.sort((a, b) => Number(isWomenDriver(b)) - Number(isWomenDriver(a)))
+    }
+
     return filtered
-  }, [drivers, mode, sort])
+  }, [clientCanUseElla, drivers, mode, sort])
 
   useEffect(() => {
     if (!selectedDriver) return
@@ -1715,7 +1734,7 @@ setMessage('')
 
   return (
     <main className="app-shell">
-      <section className={`${mode === 'ella' ? 'phone client-phone women-client-mode' : 'phone client-phone'} client-premium`}>
+      <section className={`phone client-phone client-premium ${mode === 'ella' ? 'women-client-mode' : ''} ${isClientWomanProfile ? 'client-woman-profile' : ''}`}>
         <header className="client-top premium-map-header">
           <section className="route-search-card map-search-bar" aria-label="Elegir ruta">
             <div className="route-point-stack" aria-hidden="true">
@@ -2239,7 +2258,7 @@ setMessage('')
                         <button
                           key={driver.id}
                           type="button"
-                          className={`driver-picker-pro-card driver-option-card ${index === 0 ? 'recommended' : ''}`}
+                          className={`driver-picker-pro-card driver-option-card ${index === 0 ? 'recommended' : ''} ${isWomenDriver(driver) ? 'ella-driver-option' : ''}`}
                           onClick={() => {
                             setSelectedDriver(driver)
                             setShowDriverChooser(false)
