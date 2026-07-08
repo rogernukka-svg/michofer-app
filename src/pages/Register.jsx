@@ -218,7 +218,7 @@ async function uploadDriverDocuments(userId, documentFiles, avatarUrl) {
   return uploaded
 }
 
-async function savePendingRegistration({ email, fullName, role, genderIdentity, photoFile }) {
+async function savePendingRegistration({ email, fullName, role, genderIdentity, ridePreference, photoFile }) {
   const avatarDataUrl = photoFile ? await readFileAsDataUrl(photoFile) : ''
 
   localStorage.setItem(
@@ -228,6 +228,7 @@ async function savePendingRegistration({ email, fullName, role, genderIdentity, 
       fullName,
       role,
       genderIdentity,
+      ridePreference,
       avatarDataUrl,
       avatarName: photoFile?.name || `michofer-avatar-${Date.now()}.jpg`,
       avatarType: photoFile?.type || 'image/jpeg',
@@ -239,6 +240,7 @@ async function savePendingRegistration({ email, fullName, role, genderIdentity, 
   localStorage.setItem('michofer_last_name', fullName)
   localStorage.setItem('michofer_last_role', role || 'passenger')
   localStorage.setItem('michofer_last_gender_identity', genderIdentity || '')
+  localStorage.setItem('michofer_last_ride_preference', ridePreference || 'standard')
 }
 
 export default function Register() {
@@ -246,6 +248,7 @@ export default function Register() {
   const [fullName, setFullName] = useState('')
   const [role, setRole] = useState('')
   const [genderIdentity, setGenderIdentity] = useState('')
+  const [ridePreference, setRidePreference] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -296,7 +299,7 @@ export default function Register() {
     if (step === 'start') return 'Crea tu cuenta.'
     if (step === 'name') return 'Tu nombre'
     if (step === 'role') return '¿Cómo querés usar MiChofer?'
-    if (step === 'identity') return 'Seguridad'
+    if (step === 'identity') return 'Elegí tu viaje'
     if (step === 'photo') return role === 'driver' ? 'Verificación de chofer' : 'Tu perfil'
     if (step === 'documents') return 'Documentos de chofer'
     if (step === 'email') return 'Tu correo'
@@ -311,7 +314,7 @@ export default function Register() {
     if (step === 'start') return 'Entrá con Google o completá tus datos.'
     if (step === 'name') return 'Decinos cómo querés aparecer.'
     if (step === 'role') return 'Elegí tu modo para continuar.'
-    if (step === 'identity') return 'Esto nos ayuda a activar experiencias verificadas como MiChofer Ella.'
+    if (step === 'identity') return 'Tu elección es privada. Podés cambiarla después.'
     if (step === 'photo') {
       return role === 'driver'
         ? 'Tu foto ayuda a que el pasajero viaje con confianza.'
@@ -332,8 +335,8 @@ export default function Register() {
     if (step === 'start') return 'Crear cuenta'
     if (step === 'name') return 'Tu nombre'
     if (step === 'role') return 'Elegir perfil'
-    if (step === 'identity') return 'Tu seguridad'
-    if (step === 'photo') return role === 'driver' ? 'Verificacion' : 'Tu foto'
+    if (step === 'identity') return 'Elegí tu viaje'
+    if (step === 'photo') return role === 'driver' ? 'Verificación' : 'Tu foto'
     if (step === 'documents') return 'Documentos'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Crear clave'
@@ -345,15 +348,15 @@ export default function Register() {
   const polishedSubtitle = useMemo(() => {
     if (knownUser?.email && step === 'start') return 'Usa tu cuenta guardada o cambia de usuario.'
     if (step === 'start') return 'Un perfil claro para viajar o manejar.'
-    if (step === 'name') return 'Como queres aparecer en MiChofer.'
+    if (step === 'name') return 'Cómo querés aparecer en MiChofer.'
     if (step === 'role') return 'Esto ordena tu experiencia dentro de la app.'
-    if (step === 'identity') return 'Privado. Se usa solo para seguridad y categorias verificadas.'
+    if (step === 'identity') return 'Tu elección es privada. Podés cambiarla después.'
     if (step === 'photo') return role === 'driver'
       ? 'Tu foto aumenta confianza antes del primer viaje.'
-      : 'Opcional. Podes cargarla despues.'
-    if (step === 'documents') return 'Licencia, cedula, antecedentes, RUC y datos del vehiculo.'
+      : 'Opcional. Podés cargarla después.'
+    if (step === 'documents') return 'Licencia, cédula, antecedentes, RUC y datos del vehículo.'
     if (step === 'email') return 'Lo vas a usar para entrar.'
-    if (step === 'password') return 'Minimo 6 caracteres.'
+    if (step === 'password') return 'Mínimo 6 caracteres.'
     if (step === 'loading') return 'Guardando tu perfil...'
 
     return subtitle
@@ -375,6 +378,7 @@ export default function Register() {
     localStorage.removeItem('michofer_last_photo')
     localStorage.removeItem('michofer_last_role')
     localStorage.removeItem('michofer_last_gender_identity')
+    localStorage.removeItem('michofer_last_ride_preference')
     setKnownUser(null)
   }
 
@@ -656,8 +660,9 @@ export default function Register() {
     setStep('identity')
   }
 
-  function nextFromIdentity(value) {
-    setGenderIdentity(value)
+  function nextFromRidePreference(value) {
+    setRidePreference(value)
+    setGenderIdentity(value === 'female_driver_priority' ? 'woman' : 'prefer_not_to_say')
     setStep('photo')
   }
 
@@ -689,7 +694,7 @@ export default function Register() {
     }
 
     if (!genderIdentity) {
-      setErrorMessage('Elegí una opción de seguridad para continuar.')
+      setErrorMessage('Elegí una preferencia de viaje para continuar.')
       setStep('identity')
       return
     }
@@ -726,6 +731,7 @@ export default function Register() {
             full_name: fullName,
             role,
             gender_identity: genderIdentity,
+            ride_preference: ridePreference || 'standard',
           },
         },
       })
@@ -769,6 +775,7 @@ export default function Register() {
             fullName,
             role,
             genderIdentity,
+            ridePreference,
             photoFile,
           })
           setErrorMessage(
@@ -935,12 +942,14 @@ export default function Register() {
           avatar_url: avatarUrl,
           role,
           gender_identity: genderIdentity,
+          ride_preference: ridePreference || 'standard',
         },
       })
 
       const targetRole = role || 'passenger'
       localStorage.setItem('michofer_last_role', targetRole)
       localStorage.setItem('michofer_last_gender_identity', genderIdentity)
+      localStorage.setItem('michofer_last_ride_preference', ridePreference || 'standard')
 
       if (targetRole === 'driver') {
         window.location.replace('/driver')
@@ -1147,43 +1156,41 @@ export default function Register() {
               <button
                 type="button"
                 className="login-choice-btn auth-choice-card ella-identity-card"
-                onClick={() => nextFromIdentity('woman')}
+                onClick={() => nextFromRidePreference('female_driver_priority')}
               >
                 <span className="auth-choice-icon">
                   <ShieldCheck size={19} />
                 </span>
 
                 <span className="auth-choice-copy">
-                  <span className="auth-choice-label">MiChofer Ella</span>
-                  <strong>Soy mujer</strong>
-                  <small>
-                    Activamos seguridad verificada para pasajeras y conductoras Ella.
-                  </small>
+                  <span className="auth-choice-label">Más privacidad</span>
+                  <strong>Conductora verificada</strong>
+                  <small>Si hay una cerca, la buscamos primero.</small>
                 </span>
               </button>
 
               <button
                 type="button"
                 className="login-choice-btn auth-choice-card"
-                onClick={() => nextFromIdentity('man')}
+                onClick={() => nextFromRidePreference('standard')}
               >
                 <span className="auth-choice-icon">
                   <UserRound size={19} />
                 </span>
 
                 <span className="auth-choice-copy">
-                  <span className="auth-choice-label">Perfil estandar</span>
-                  <strong>Soy hombre</strong>
-                  <small>Configuramos tu experiencia para viajes regulares.</small>
+                  <span className="auth-choice-label">Más rápido</span>
+                  <strong>Chofer cercano</strong>
+                  <small>Buscamos la mejor opción disponible.</small>
                 </span>
               </button>
 
               <button
                 type="button"
                 className="login-create-link auth-skip-identity"
-                onClick={() => nextFromIdentity('prefer_not_to_say')}
+                onClick={() => nextFromRidePreference('standard')}
               >
-                Prefiero no decir
+                Elegir después
               </button>
             </div>
           )}

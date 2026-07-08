@@ -1345,11 +1345,11 @@ export default function Admin() {
 
     if (error) {
       console.error('ADMIN WOMEN REVIEW ERROR:', error)
-      setMessage('No pude revisar MiChofer Ella. Revisá permisos admin.')
+      setMessage('No pude revisar la preferencia de confianza. Revisa permisos admin.')
       return
     }
 
-    setMessage(decision === 'approved' ? 'Acceso Ella aprobado.' : 'Acceso Ella rechazado.')
+    setMessage(decision === 'approved' ? 'Preferencia de confianza aprobada.' : 'Preferencia de confianza rechazada.')
     await loadDrivers()
   }
 
@@ -1431,7 +1431,7 @@ export default function Admin() {
         {womenRequests.length > 0 && (
           <section className="admin-list">
             <div className="admin-list-title">
-              <strong>MiChofer Ella pasajeras</strong>
+              <strong>Preferencia de confianza</strong>
               <span>{womenRequests.length} pendiente{womenRequests.length === 1 ? '' : 's'}</span>
             </div>
 
@@ -1440,20 +1440,20 @@ export default function Admin() {
                 <div className="admin-driver-head">
                   <div>
                     <span className="admin-status submitted">En revisión</span>
-                    <h2>{request.full_name || request.email || 'Pasajera MiChofer'}</h2>
-                    <p>Solicitó acceso a viajes con conductoras verificadas.</p>
+                    <h2>{request.full_name || request.email || 'Persona MiChofer'}</h2>
+                    <p>Solicito activar preferencia de conductora verificada para viajes con mas privacidad.</p>
                   </div>
                 </div>
 
                 <div className="admin-driver-meta">
                   <span>{request.email || 'Sin correo'}</span>
-                  <span>Género privado</span>
+                  <span>Identidad privada</span>
                   <span>{request.women_mode_status || 'requested'}</span>
                 </div>
 
                 <div className="admin-actions">
                   <button className="approve" type="button" onClick={() => updateWomenRequest(request, 'approved')}>
-                    Aprobar Ella
+                    Aprobar preferencia
                   </button>
 
                   <button className="reject" type="button" onClick={() => updateWomenRequest(request, 'rejected')}>

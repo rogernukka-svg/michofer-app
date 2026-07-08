@@ -4703,7 +4703,7 @@ body.route-driver .logout-button {
   }
 }
 
-/* MiChofer Ella: identidad rosa glass en toda la experiencia cliente */
+/* Confidence preference: soft glass signals across the client experience */
 body.route-client .women-client-mode::before {
   content: '';
   position: absolute;
@@ -21781,16 +21781,16 @@ body.route-registro .register-role-step {
 
 body.route-registro .auth-choice-card {
   position: relative !important;
-  min-height: 92px !important;
+  min-height: 78px !important;
   display: grid !important;
-  grid-template-columns: 48px 1fr !important;
+  grid-template-columns: 42px 1fr !important;
   align-items: center !important;
   align-content: center !important;
   justify-items: stretch !important;
-  gap: 14px !important;
-  padding: 16px !important;
+  gap: 12px !important;
+  padding: 13px 14px !important;
   overflow: hidden !important;
-  border-radius: 26px !important;
+  border-radius: 22px !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   background:
     radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.14), transparent 34%),
@@ -21820,11 +21820,11 @@ body.route-registro .auth-choice-card:hover {
 }
 
 body.route-registro .auth-choice-icon {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 18px;
+  border-radius: 16px;
   color: #26e7d2;
   background:
     linear-gradient(180deg, rgba(38, 231, 210, 0.18), rgba(38, 231, 210, 0.055)),
@@ -21837,29 +21837,38 @@ body.route-registro .auth-choice-icon {
 body.route-registro .auth-choice-copy {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 body.route-registro .auth-choice-label {
   color: #26e7d2;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 950;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.075em;
   text-transform: uppercase;
 }
 
 body.route-registro .auth-choice-card strong {
-  font-size: 18px !important;
+  font-size: 16px !important;
   font-weight: 950 !important;
-  line-height: 1.05 !important;
+  line-height: 1.08 !important;
 }
 
 body.route-registro .auth-choice-card small {
-  max-width: 250px;
+  max-width: 240px;
   color: rgba(255, 255, 255, 0.66) !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 760 !important;
-  line-height: 1.35 !important;
+  line-height: 1.22 !important;
+}
+
+body.route-registro .auth-choice-copy em {
+  max-width: 255px;
+  color: rgba(217, 252, 248, 0.7);
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.25;
 }
 
 body.route-registro .register-photo-box {
@@ -21914,17 +21923,17 @@ body.route-registro .register-photo-box .login-main-btn {
 
 @media (max-width: 430px) {
   body.route-registro .auth-choice-card {
-    min-height: 86px !important;
-    grid-template-columns: 44px 1fr !important;
-    gap: 12px !important;
-    padding: 14px !important;
-    border-radius: 23px !important;
+    min-height: 76px !important;
+    grid-template-columns: 40px 1fr !important;
+    gap: 11px !important;
+    padding: 12px 13px !important;
+    border-radius: 21px !important;
   }
 
   body.route-registro .auth-choice-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 15px;
   }
 
   body.route-registro .auth-choice-card strong,
@@ -22245,37 +22254,56 @@ body.route-registro .register-photo-box .login-main-btn {
   }
 }
 
-/* MiChofer Ella: registration and trip trust signals */
+/* Private driver preference: registration and trip trust signals */
 body.route-registro .register-identity-step {
-  gap: 12px;
+  gap: 10px;
 }
 
 body.route-registro .ella-identity-card {
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(38, 231, 210, 0.26) !important;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
-    radial-gradient(circle at 18% 12%, rgba(255, 181, 213, 0.2), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.115), rgba(255, 255, 255, 0.04)),
+    radial-gradient(circle at 18% 12%, rgba(38, 231, 210, 0.22), transparent 42%),
+    radial-gradient(circle at 88% 12%, rgba(5, 199, 242, 0.13), transparent 34%),
     rgba(12, 18, 22, 0.86) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 18px 36px rgba(6, 10, 14, 0.2) !important;
+    0 18px 36px rgba(6, 10, 14, 0.22),
+    0 0 0 1px rgba(38, 231, 210, 0.08) !important;
 }
 
 body.route-registro .ella-identity-card .auth-choice-icon {
-  background: linear-gradient(180deg, rgba(255, 232, 241, 0.98), rgba(255, 189, 214, 0.94));
-  color: #7a173b;
-  box-shadow: 0 0 0 3px rgba(255, 200, 221, 0.14);
+  background:
+    linear-gradient(180deg, rgba(38, 231, 210, 0.92), rgba(5, 199, 242, 0.72)),
+    rgba(255, 255, 255, 0.1);
+  color: #031315;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 0 0 3px rgba(38, 231, 210, 0.12),
+    0 16px 34px rgba(5, 199, 242, 0.16);
 }
 
 body.route-registro .ella-identity-card .auth-choice-label {
-  color: #ffc6dc;
+  color: #69fff0;
 }
 
 body.route-registro .auth-skip-identity {
   width: max-content;
-  margin: 4px auto 0;
-  padding: 8px 0;
-  color: rgba(238, 246, 247, 0.72);
+  margin: 6px auto 0;
+  padding: 9px 13px;
+  border-radius: 999px;
+  color: rgba(238, 246, 247, 0.82);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+body.route-registro .auth-skip-identity:hover {
+  color: #ffffff;
+  border-color: rgba(38, 231, 210, 0.24);
+  background: rgba(38, 231, 210, 0.065);
 }
 
 .ella-trust-note {
@@ -22495,4 +22523,25 @@ body.route-client .driver-picker-pro-card.ella-driver-option .driver-picker-pro-
   line-height: 1 !important;
   font-style: normal !important;
   font-weight: 950 !important;
+}
+
+body.route-client .driver-picker-pro .driver-picker-pro-modes.driver-picker-mode-cards .ride-category-card.ella-safety {
+  border-color: rgba(255, 134, 188, 0.2) !important;
+  background: linear-gradient(180deg, rgba(255, 134, 188, 0.12), rgba(255, 255, 255, 0.045)) !important;
+}
+
+body.route-client .driver-picker-pro .driver-picker-pro-modes.driver-picker-mode-cards .ride-category-card.ella-safety.active {
+  color: #fff7fb !important;
+  border-color: rgba(255, 134, 188, 0.48) !important;
+  background: linear-gradient(180deg, rgba(255, 134, 188, 0.26), rgba(32, 241, 210, 0.12)) !important;
+  box-shadow: 0 14px 32px rgba(255, 134, 188, 0.16) !important;
+}
+
+body.route-client .driver-picker-pro .driver-picker-pro-modes.driver-picker-mode-cards .ride-category-card.ella-safety .mode-card-copy small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: rgba(255, 232, 243, 0.78) !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
 }

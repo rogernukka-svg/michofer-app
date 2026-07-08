@@ -197,7 +197,7 @@ export async function requestTrip({
 
   const result = await supabase.rpc('request_trip', {
     ...payload,
-    p_ride_category: rideCategory || (womenMode ? 'ella' : 'auto_standard'),
+    p_ride_category: rideCategory || 'auto_standard',
   })
 
   if (result.error && isMissingRideCategoryArg(result.error)) {

@@ -385,25 +385,25 @@ function getEllaDriverStatus(driverProfile) {
 function ellaDriverStatusCopy(status, baseApproved) {
   if (!baseApproved) {
     return {
-      label: 'Seguridad Ella',
+      label: 'Preferencia confianza',
       title: 'Perfil base en revision',
-      body: 'Cuando admin apruebe tu perfil, vas a poder activar o completar MiChofer Ella.',
+      body: 'Cuando admin apruebe tu perfil, vas a poder activar esta preferencia de privacidad.',
       action: '',
     }
   }
 
   if (status === 'verified') {
     return {
-      label: 'Ella habilitada',
-      title: 'Lista para viajes Ella',
-      body: 'Tu cuenta puede recibir solicitudes de pasajeras verificadas con prioridad de seguridad.',
+      label: 'Confianza habilitada',
+      title: 'Lista para viajes con preferencia',
+      body: 'Tu cuenta puede recibir viajes donde el pasajero pide una conductora verificada.',
       action: '',
     }
   }
 
   if (status === 'requested') {
     return {
-      label: 'Ella en revision',
+      label: 'Confianza en revision',
       title: 'Estamos verificando tu acceso',
       body: 'Admin esta revisando tu solicitud. Te avisamos apenas quede habilitada.',
       action: '',
@@ -412,17 +412,17 @@ function ellaDriverStatusCopy(status, baseApproved) {
 
   if (status === 'rejected') {
     return {
-      label: 'Ella requiere atencion',
+      label: 'Confianza requiere atencion',
       title: 'Necesitamos revisar datos',
-      body: 'Tu solicitud Ella no fue aprobada. Revisá tus documentos o pedí soporte.',
+      body: 'Tu solicitud de preferencia no fue aprobada. Revisa tus documentos o pedi soporte.',
       action: 'Solicitar nuevamente',
     }
   }
 
   return {
-    label: 'MiChofer Ella',
-    title: 'Activá viajes Ella',
-    body: 'Recibí solicitudes de pasajeras verificadas en un entorno más cuidado y seguro.',
+    label: 'Modo Confianza',
+    title: 'Activa viajes con preferencia',
+    body: 'Recibi viajes donde el pasajero busca mas privacidad y prefiere una conductora.',
     action: 'Solicitar habilitacion',
   }
 }
@@ -1218,7 +1218,7 @@ const getCurrentLocation = useCallback(async () => {
         premium_status: categoryCode === 'premium' ? 'requested' : current?.premium_status,
       }
     })
-    const title = categoryCode === 'ella' ? 'Solicitud Ella enviada' : 'Solicitud enviada'
+    const title = categoryCode === 'ella' ? 'Solicitud con preferencia enviada' : 'Solicitud enviada'
     const body = data?.status === 'approved'
       ? 'Esta categoria ya estaba habilitada.'
       : 'Admin revisara tu habilitacion y te avisaremos.'
@@ -1417,8 +1417,8 @@ const getCurrentLocation = useCallback(async () => {
               {isEllaTrip(activeTrip) && (
                 <div className="michofer-ella-trip-badge">
                   <ShieldCheck size={14} />
-                  <span>Viaje Ella</span>
-                  <small>Pasajera verificada</small>
+                  <span>Viaje Confianza</span>
+                  <small>Preferencia verificada</small>
                 </div>
               )}
               <span>{statusLabel(activeTrip.status)}</span>
@@ -1635,14 +1635,14 @@ const getCurrentLocation = useCallback(async () => {
             {pendingTrips.slice(0, 1).map((trip) => (
               <article key={trip.id} className="driver-idle-request-card driver-trip-card">
                 <div className="driver-idle-request-top">
-                  <span>{isEllaTrip(trip) ? 'Solicitud Ella' : 'Solicitud de viaje'}</span>
+                  <span>{isEllaTrip(trip) ? 'Solicitud con preferencia' : 'Solicitud de viaje'}</span>
                   <strong>{formatGs(trip.price)}</strong>
                 </div>
                 {isEllaTrip(trip) && (
                   <div className="michofer-ella-request-badge">
                     <ShieldCheck size={14} />
-                    <strong>Viaje Ella</strong>
-                    <span>Pasajera verificada. Seguridad primero.</span>
+                    <strong>Viaje Confianza</strong>
+                    <span>Preferencia verificada. Seguridad primero.</span>
                   </div>
                 )}
                 <h2>{trip.destination_text || 'Destino solicitado'}</h2>

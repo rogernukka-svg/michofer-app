@@ -139,7 +139,7 @@ values
   ('auto_standard', 'MiChofer Auto', 'Viaje estandar con chofer verificado.', 'auto', null, false, false, false, false, 1.00, 10),
   ('moto', 'MiChofer Moto', 'Rapido para trayectos cortos, con casco extra obligatorio.', 'moto', null, false, true, false, false, 0.72, 20),
   ('comfort', 'MiChofer Comfort', 'Auto comodo con aire acondicionado.', 'auto', 2014, true, true, false, false, 1.18, 30),
-  ('ella', 'MiChofer Ella', 'Pasajeras verificadas con conductoras verificadas por MiChofer.', 'women', null, false, true, true, true, 1.12, 40),
+  ('ella', 'Modo Confianza', 'Preferencia opcional para viajar con una conductora verificada cuando se busca mas privacidad.', 'women', null, false, true, true, true, 1.12, 40),
   ('premium', 'MiChofer Premium', 'Autos seleccionados para aeropuerto, eventos y noche.', 'premium', 2018, true, true, false, false, 1.45, 50),
   ('black', 'MiChofer Black', 'Autos ejecutivos aprobados manualmente.', 'premium', 2018, true, true, false, false, 1.75, 60),
   ('deportivo', 'MiChofer Deportivo', 'Categoria curada para experiencias, eventos y marketing.', 'premium', 2016, true, true, false, false, 2.10, 70),
@@ -472,7 +472,7 @@ begin
     auth.uid(),
     auth.uid(),
     'women_mode_requested',
-    'Solicitud de MiChofer Ella creada por la usuaria.',
+    'Solicitud de preferencia de confianza creada por la usuaria.',
     jsonb_build_object('gender_identity', normalized_gender)
   );
 
@@ -520,7 +520,7 @@ begin
     p_user_id,
     auth.uid(),
     case when approved then 'women_mode_approved' else 'women_mode_rejected' end,
-    coalesce(p_reason, case when approved then 'MiChofer Ella aprobado.' else 'MiChofer Ella rechazado.' end),
+    coalesce(p_reason, case when approved then 'Preferencia de confianza aprobada.' else 'Preferencia de confianza rechazada.' end),
     '{}'::jsonb
   );
 
@@ -892,11 +892,13 @@ begin
     raise exception 'destination required';
   end if;
 
-  if coalesce(p_women_mode, false) = true then
-    normalized_category := 'ella';
+  if normalized_category in ('auto', '') then
+    normalized_category := 'auto_standard';
   end if;
 
-  if normalized_category in ('auto', '') then
+  -- Ella is a safety layer, not a vehicle category. Keep backwards compatibility
+  -- for older clients that may still send p_ride_category = 'ella'.
+  if normalized_category = 'ella' then
     normalized_category := 'auto_standard';
   end if;
 
@@ -929,7 +931,7 @@ begin
         and profiles.women_mode_verified = true
         and profiles.women_mode_status = 'verified'
     ) then
-      raise exception 'MiChofer Ella requiere verificacion de pasajera';
+      raise exception 'Modo Confianza requiere verificacion de identidad';
     end if;
 
     if not exists (
@@ -939,11 +941,11 @@ begin
         and driver_profiles.women_driver_verified = true
         and driver_profiles.women_driver_status = 'verified'
     ) then
-      raise exception 'Esta conductora aun no esta verificada para MiChofer Ella';
+      raise exception 'Esta conductora aun no esta verificada para Modo Confianza';
     end if;
   end if;
 
-  if normalized_category not in ('auto_standard', 'ella') then
+  if normalized_category not in ('auto_standard') then
     if not exists (
       select 1
       from public.driver_profiles
@@ -1000,7 +1002,7 @@ begin
     'pending',
     coalesce(p_women_mode, false),
     normalized_category,
-    case when normalized_category = 'ella' then 'women_verified' else 'standard' end,
+    case when coalesce(p_women_mode, false) then 'women_verified' else 'standard' end,
     now(),
     now()
   )

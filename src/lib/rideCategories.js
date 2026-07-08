@@ -13,12 +13,12 @@ export const RIDE_CATEGORY_OPTIONS = [
   {
     code: 'ella',
     dbCode: 'ella',
-    label: 'MiChofer Ella',
-    shortLabel: 'Ella',
-    title: 'MiChofer Ella',
-    description: 'Viajes para pasajeras verificadas con conductoras verificadas.',
-    cta: 'Activar Ella',
-    bullets: ['Identidad revisada', 'Conductoras aprobadas', 'Viaje con soporte y trazabilidad'],
+    label: 'Modo Confianza',
+    shortLabel: 'Confianza',
+    title: 'Modo Confianza',
+    description: 'Preferencia opcional para viajar con una conductora verificada cuando quieras mas privacidad.',
+    cta: 'Activar preferencia',
+    bullets: ['Identidad privada', 'Conductoras verificadas', 'Preferencia flexible para cada viaje'],
   },
   {
     code: 'moto',
@@ -61,9 +61,9 @@ export const DRIVER_CATEGORY_ACTIONS = [
   },
   {
     code: 'ella',
-    title: 'MiChofer Ella',
-    description: 'Para conductoras verificadas que quieran recibir viajes Ella.',
-    button: 'Solicitar Ella',
+    title: 'Preferencia Confianza',
+    description: 'Para conductoras verificadas que quieran recibir viajes con preferencia de privacidad.',
+    button: 'Solicitar preferencia',
   },
   {
     code: 'comfort',
@@ -125,14 +125,47 @@ export function isWomenDriver(driver) {
   )
 }
 
-export function hasApprovedCategory(driver, categoryCode) {
+export function driverHasVehicleCategory(driver, categoryCode) {
   const code = getRideCategoryDbCode(categoryCode)
   if (code === 'auto_standard') return driver?.verified === true
   if (code === 'ella') return isWomenDriver(driver)
 
   const approved = normalizeArray(driver?.approved_categories)
   const available = normalizeArray(driver?.available_categories)
-  return approved.includes(code) || available.includes(code)
+  const driverType = String(driver?.driver_type || driver?.vehicle_type || '').toLowerCase()
+  const vehicleCategory = String(driver?.vehicle_category || '').toLowerCase()
+
+  if (approved.includes(code) || available.includes(code)) return true
+  if (code === 'moto' && (driverType === 'moto' || driverType === 'auto_and_moto' || vehicleCategory === 'moto')) return true
+  return vehicleCategory === code
+}
+
+export function getDriverPreferredRideCategory(driver, requestedCategory = 'all') {
+  const requested = getRideCategoryDbCode(requestedCategory || 'all')
+
+  if (requested !== 'auto_standard' && requested !== 'ella') {
+    return requested
+  }
+
+  const approved = normalizeArray(driver?.approved_categories)
+  const available = normalizeArray(driver?.available_categories)
+  const categories = [...approved, ...available]
+  const vehicleCategory = String(driver?.vehicle_category || '').toLowerCase()
+  const driverType = String(driver?.driver_type || driver?.vehicle_type || '').toLowerCase()
+
+  if (vehicleCategory && vehicleCategory !== 'auto_standard' && vehicleCategory !== 'auto') return vehicleCategory
+  if (categories.includes('premium')) return 'premium'
+  if (categories.includes('comfort')) return 'comfort'
+  if (categories.includes('moto') || driverType === 'moto') return 'moto'
+  return 'auto_standard'
+}
+
+export function hasApprovedCategory(driver, categoryCode) {
+  const code = getRideCategoryDbCode(categoryCode)
+  if (code === 'auto_standard') return driver?.verified === true
+  if (code === 'ella') return isWomenDriver(driver)
+
+  return driverHasVehicleCategory(driver, code)
 }
 
 export function matchesRideCategory(driver, categoryCode) {

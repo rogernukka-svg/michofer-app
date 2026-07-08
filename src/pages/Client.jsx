@@ -31,7 +31,7 @@ import {
 import {
   RIDE_CATEGORY_OPTIONS,
   canUseWomenMode,
-  getRideCategoryDbCode,
+  getDriverPreferredRideCategory,
   getRideCategoryMeta,
   getWomenModeStatus,
   isWomenDriver,
@@ -65,6 +65,8 @@ const RIDE_CATEGORY_ICONS = {
   comfort: iconRideComfort,
   premium: iconRidePremium,
 }
+
+const VEHICLE_CATEGORY_OPTIONS = RIDE_CATEGORY_OPTIONS.filter((category) => category.code !== 'ella')
 
 function isValidParaguayCoord(point) {
   const lat = Number(point?.lat)
@@ -377,6 +379,7 @@ export default function Client() {
   const [destinationPlace, setDestinationPlace] = useState(null)
   const [googlePlacesReady, setGooglePlacesReady] = useState(false)
   const [mode, setMode] = useState('all')
+  const [womenOnly, setWomenOnly] = useState(false)
   const [sort, setSort] = useState('near')
   const [drivers, setDrivers] = useState([])
   const [selectedDriver, setSelectedDriver] = useState(null)
@@ -440,41 +443,28 @@ const [locationReady, setLocationReady] = useState(false)
     }
   }, [destinationPoint, clientLocation, routeGuidance])
 
+  const clientCanUseElla = canUseWomenMode(profile)
+  const ellaSafetyActive = womenOnly || mode === 'ella'
+  const vehicleMode = mode === 'ella' ? 'all' : mode
+
   const currentFare = useMemo(() => {
     if (!fares) return null
-    const catKey = mode === 'all' || mode === 'ella' ? 'auto_standard' : mode
+    const catKey = vehicleMode === 'all' ? 'auto_standard' : vehicleMode
     return fares[catKey] ?? fares['auto_standard']
-  }, [fares, mode])
+  }, [fares, vehicleMode])
 
   const routeKm = fares?.details?.distanceKm ?? null
-  const routePrice = currentFare
 
   const getDriverFare = (driver) => {
     if (!fares) return null
-    
-    // Si estamos en un modo específico (no 'all' ni 'ella'), usamos la tarifa de ese modo
-    if (mode !== 'all' && mode !== 'ella') {
-      return currentFare
-    }
-    
-    // Si el modo es 'all' o 'ella', determinamos la categoría del chofer
-    const approvedStr = String(driver.approved_categories || '')
-    const availableStr = String(driver.available_categories || '')
-    
-    const approved = approvedStr.replace(/[{}"]/g, '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
-    const available = availableStr.replace(/[{}"]/g, '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
-
-    const categories = [...approved, ...available]
-
-    if (categories.includes('premium')) return fares.premium
-    if (categories.includes('comfort')) return fares.comfort
-    if (categories.includes('moto') || String(driver.vehicle_type).toLowerCase() === 'moto') return fares.moto
-    return fares.auto_standard
+    const driverCategory = getDriverPreferredRideCategory(driver, vehicleMode)
+    return fares[driverCategory] ?? fares.auto_standard
   }
 
+  const routePrice = selectedDriver ? getDriverFare(selectedDriver) : currentFare
 
   const accountEmail = user?.email || profile?.email || localStorage.getItem('michofer_last_email') || ''
-  const selectedModeMeta = useMemo(() => getRideCategoryMeta(mode), [mode])
+  const selectedModeMeta = useMemo(() => getRideCategoryMeta(vehicleMode), [vehicleMode])
   const womenModeStatus = getWomenModeStatus(profile)
   const destinationSuggestions = useMemo(
     () => searchLocalPlaces(destination, localPlaces, 6),
@@ -750,7 +740,6 @@ const [locationReady, setLocationReady] = useState(false)
     }
   }, [activeTrip?.id, user?.id])
 
-  const clientCanUseElla = canUseWomenMode(profile)
   const isClientWomanProfile = Boolean(
     profile?.gender_identity === 'woman' ||
     profile?.women_mode_verified === true ||
@@ -760,11 +749,11 @@ const [locationReady, setLocationReady] = useState(false)
 
   const visibleDrivers = useMemo(() => {
     const filtered = drivers.filter((driver) => {
-      if (!matchesRideCategory(driver, mode)) return false
+      if (!matchesRideCategory(driver, vehicleMode)) return false
 
       const driverIsElla = isWomenDriver(driver)
-      if (mode === 'ella') return driverIsElla
-      if (driverIsElla && !clientCanUseElla) return false
+      if (ellaSafetyActive) return clientCanUseElla && driverIsElla
+      if (driverIsElla) return false
       return true
     })
 
@@ -774,12 +763,8 @@ const [locationReady, setLocationReady] = useState(false)
       filtered.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
     }
 
-    if (mode === 'all' && clientCanUseElla) {
-      filtered.sort((a, b) => Number(isWomenDriver(b)) - Number(isWomenDriver(a)))
-    }
-
     return filtered
-  }, [clientCanUseElla, drivers, mode, sort])
+  }, [clientCanUseElla, drivers, ellaSafetyActive, sort, vehicleMode])
 
   useEffect(() => {
     if (!selectedDriver) return
@@ -1283,6 +1268,7 @@ if (!normalized.length) {
     setMessage('')
 
     const destinationTextFinal = destinationPlace?.formatted_address || destinationPlace?.name || destination
+    const requestedRideCategory = getDriverPreferredRideCategory(selectedDriver, vehicleMode)
 
     console.log('[MiChofer Route] origin:', clientLocation)
     console.log('[MiChofer Route] destination:', destinationPoint, destinationTextFinal)
@@ -1299,8 +1285,8 @@ if (!normalized.length) {
       routeKm,
       price: routePrice,
       paymentMethod,
-      womenMode: mode === 'ella',
-      rideCategory: getRideCategoryDbCode(mode),
+      womenMode: ellaSafetyActive,
+      rideCategory: requestedRideCategory,
     })
     setRequesting(false)
 
@@ -1318,12 +1304,30 @@ if (!normalized.length) {
   }
 
   function handleModeSelect(nextMode) {
-    if (nextMode === 'ella' && !canUseWomenMode(profile)) {
-      setCategorySheet(getRideCategoryMeta('ella'))
+    if (nextMode === 'ella') {
+      handleEllaSafetyToggle()
       return
     }
 
     setMode(nextMode)
+    setSelectedDriver(null)
+    setMessage('')
+  }
+
+  function handleEllaSafetyToggle() {
+    if (ellaSafetyActive) {
+      setWomenOnly(false)
+      setSelectedDriver(null)
+      setMessage('')
+      return
+    }
+
+    if (!canUseWomenMode(profile)) {
+      setCategorySheet(getRideCategoryMeta('ella'))
+      return
+    }
+
+    setWomenOnly(true)
     setSelectedDriver(null)
     setMessage('')
   }
@@ -1335,7 +1339,7 @@ if (!normalized.length) {
     }
 
     if (canUseWomenMode(profile)) {
-      setMode('ella')
+      setWomenOnly(true)
       setSelectedDriver(null)
       setCategorySheet(null)
       return
@@ -1354,10 +1358,10 @@ if (!normalized.length) {
         women_mode_status: data?.women_mode_status || 'requested',
       }))
       setCategorySheet(null)
-      setMessage('Solicitud enviada. MiChofer Ella se activa cuando admin verifica tu perfil.')
+      setMessage('Solicitud enviada. La preferencia de confianza se activa cuando admin verifica tu perfil.')
     } catch (error) {
       console.error('WOMEN MODE REQUEST ERROR:', error)
-      setMessage('No pude solicitar MiChofer Ella. Revisa que hayas corrido la migracion nueva en Supabase.')
+      setMessage('No pude solicitar la preferencia de confianza. Revisa que hayas corrido la migracion nueva en Supabase.')
     } finally {
       setWomenRequesting(false)
     }
@@ -1734,7 +1738,7 @@ setMessage('')
 
   return (
     <main className="app-shell">
-      <section className={`phone client-phone client-premium ${mode === 'ella' ? 'women-client-mode' : ''} ${isClientWomanProfile ? 'client-woman-profile' : ''}`}>
+      <section className={`phone client-phone client-premium ${ellaSafetyActive ? 'women-client-mode' : ''} ${isClientWomanProfile ? 'client-woman-profile' : ''}`}>
         <header className="client-top premium-map-header">
           <section className="route-search-card map-search-bar" aria-label="Elegir ruta">
             <div className="route-point-stack" aria-hidden="true">
@@ -2149,13 +2153,11 @@ setMessage('')
               </section>
 
               <div className="driver-picker-pro-modes driver-picker-mode-cards driver-picker-focus-modes" aria-label="Tipo de viaje">
-                {RIDE_CATEGORY_OPTIONS.map((category) => {
+                {VEHICLE_CATEGORY_OPTIONS.map((category) => {
                   const categoryFareKey =
                     category.code === 'all'
                       ? 'auto_standard'
-                      : category.code === 'ella'
-                        ? 'ella'
-                        : category.code
+                      : category.code
 
                   const categoryFare = fares?.[categoryFareKey]
 
@@ -2163,10 +2165,6 @@ setMessage('')
                     all: {
                       title: 'Todos',
                       label: 'Todas las opciones',
-                    },
-                    ella: {
-                      title: 'Ella',
-                      label: 'Chofer mujer',
                     },
                     moto: {
                       title: 'Moto',
@@ -2194,7 +2192,7 @@ setMessage('')
                     <button
                       key={category.code}
                       type="button"
-                      className={`ride-mode-pill ride-category-card ${mode === category.code ? 'active' : ''} ${category.code}`}
+                      className={`ride-mode-pill ride-category-card ${vehicleMode === category.code ? 'active' : ''} ${category.code}`}
                       onClick={() => handleModeSelect(category.code)}
                       aria-label={`${copy.label}${fareText}`}
                       title={`${copy.label}${fareText}`}
@@ -2209,14 +2207,33 @@ setMessage('')
                     </button>
                   )
                 })}
+
+                <button
+                  type="button"
+                  className={`ride-mode-pill ride-category-card ella-safety ${ellaSafetyActive ? 'active' : ''}`}
+                  onClick={handleEllaSafetyToggle}
+                  aria-label={ellaSafetyActive ? 'Modo Confianza activo' : 'Activar Modo Confianza'}
+                  title={ellaSafetyActive ? 'Modo Confianza activo' : 'Activar Modo Confianza'}
+                >
+                  <span className="mode-card-icon" aria-hidden="true">
+                    <img src={RIDE_CATEGORY_ICONS.ella} alt="" />
+                  </span>
+
+                  <span className="mode-card-copy">
+                    <strong>Confianza</strong>
+                    <small>{ellaSafetyActive ? 'Activa' : 'Privacidad'}</small>
+                  </span>
+                </button>
               </div>
 
-              {mode !== 'all' && (
-                <div className={`driver-picker-pro-mode-note ${mode}`}>
+              {(vehicleMode !== 'all' || ellaSafetyActive) && (
+                <div className={`driver-picker-pro-mode-note ${ellaSafetyActive ? 'ella' : vehicleMode}`}>
                   <ShieldCheck size={15} />
                   <span>
-                    <strong>{selectedModeMeta.title}</strong>
-                    {selectedModeMeta.description}
+                    <strong>{ellaSafetyActive ? `Confianza ${selectedModeMeta.shortLabel === 'Todos' ? 'Auto' : selectedModeMeta.shortLabel}` : selectedModeMeta.title}</strong>
+                    {ellaSafetyActive
+                      ? `Preferimos conductoras verificadas${vehicleMode === 'moto' ? ' en moto' : ''}. Privacidad y seguridad primero.`
+                      : selectedModeMeta.description}
                   </span>
                 </div>
               )}
@@ -2246,8 +2263,8 @@ setMessage('')
                   </div>
                 ) : visibleDrivers.length === 0 ? (
                   <div className="driver-picker-empty driver-picker-pro-empty">
-                    <strong>No hay choferes ahora</strong>
-                    <span>Probá otro modo de viaje.</span>
+                    <strong>{ellaSafetyActive ? 'Sin conductoras verificadas ahora' : 'No hay choferes ahora'}</strong>
+                    <span>{ellaSafetyActive ? 'Desactiva Confianza o espera una conductora disponible.' : 'Proba otro modo de viaje.'}</span>
                   </div>
                 ) : (
                   <div className="driver-picker-pro-list">
@@ -2284,7 +2301,7 @@ setMessage('')
                             <div className="driver-picker-pro-name">
                               <strong>{firstName(driver.name)}</strong>
                               {driver.verified && <CheckCircle2 size={14} />}
-                              {isWomenDriver(driver) && <em>Ella</em>}
+                              {isWomenDriver(driver) && <em>Confianza</em>}
                             </div>
 
                             <small>{driver.vehicle || 'Chofer verificado'}</small>
@@ -2345,14 +2362,14 @@ setMessage('')
               {categorySheet.code === 'ella' && womenModeStatus === 'requested' && (
                 <div className="notice-card ella-trust-note">
                   <ShieldCheck size={16} />
-                  <span>Tu solicitud de MiChofer Ella esta en revision.</span>
+                  <span>Tu preferencia de confianza esta en revision.</span>
                 </div>
               )}
 
               {categorySheet.code === 'ella' && womenModeStatus === 'verified' && (
                 <div className="notice-card ella-trust-note verified">
                   <ShieldCheck size={16} />
-                  <span>Ella verificado. Veras conductoras aprobadas para este modo.</span>
+                  <span>Preferencia verificada. Vas a poder elegir conductoras aprobadas cuando quieras mas privacidad.</span>
                 </div>
               )}
 
