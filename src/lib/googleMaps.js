@@ -2,8 +2,21 @@ export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '
 export const GOOGLE_MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || ''
 export const GOOGLE_MAPS_LIGHT_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_LIGHT_MAP_ID || ''
 export const GOOGLE_MAPS_DARK_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_DARK_MAP_ID || ''
-export const GOOGLE_ROADS_API_ENABLED = import.meta.env.VITE_GOOGLE_ROADS_API_ENABLED === 'true'
-export const GOOGLE_ROUTES_API_ENABLED = import.meta.env.VITE_GOOGLE_ROUTES_API_ENABLED === 'true'
+function isLocalNetworkHost(hostname) {
+  if (!hostname) return false
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return true
+  // Private IPv4 ranges (10.x, 192.168.x, 172.16-31.x)
+  if (/^10\./.test(hostname)) return true
+  if (/^192\.168\./.test(hostname)) return true
+  if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)) return true
+  return false
+}
+
+const RUNTIME_HOSTNAME = typeof window !== 'undefined' ? window.location.hostname : ''
+const DISABLE_ROUTES_IN_LOCAL = isLocalNetworkHost(RUNTIME_HOSTNAME)
+
+export const GOOGLE_ROADS_API_ENABLED = import.meta.env.VITE_GOOGLE_ROADS_API_ENABLED === 'true' && !DISABLE_ROUTES_IN_LOCAL
+export const GOOGLE_ROUTES_API_ENABLED = import.meta.env.VITE_GOOGLE_ROUTES_API_ENABLED === 'true' && !DISABLE_ROUTES_IN_LOCAL
 export const GOOGLE_PLACES_NEW_ENABLED = import.meta.env.VITE_GOOGLE_PLACES_NEW_ENABLED === 'true'
 const GOOGLE_MAPS_JS = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry,marker`
 
