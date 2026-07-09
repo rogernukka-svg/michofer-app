@@ -21774,6 +21774,128 @@ body.route-registro .driver-document-card-ready svg {
   color: #26e7d2;
 }
 
+/* Driver vehicle registration */
+body.route-registro .driver-vehicle-step {
+  gap: 12px !important;
+}
+
+body.route-registro .driver-vehicle-type-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+body.route-registro .driver-vehicle-type {
+  min-width: 0;
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 12px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.045);
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+body.route-registro .driver-vehicle-type:hover {
+  transform: translateY(-1px);
+  border-color: rgba(38, 231, 210, 0.32);
+}
+
+body.route-registro .driver-vehicle-type.active {
+  border-color: rgba(38, 231, 210, 0.54);
+  background:
+    linear-gradient(180deg, rgba(38, 231, 210, 0.18), rgba(38, 231, 210, 0.055)),
+    rgba(255, 255, 255, 0.045);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(38, 231, 210, 0.12) inset;
+}
+
+body.route-registro .driver-vehicle-type span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  border-radius: 14px;
+  background: rgba(38, 231, 210, 0.12);
+  color: #26e7d2;
+}
+
+body.route-registro .driver-vehicle-type strong {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+body.route-registro .driver-vehicle-type small {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+body.route-registro .driver-vehicle-fields {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+body.route-registro .driver-vehicle-fields > span {
+  color: rgba(38, 231, 210, 0.92);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+body.route-registro .driver-vehicle-note {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 8px;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1.35;
+  text-align: left;
+}
+
+body.route-registro .driver-vehicle-note svg {
+  color: #26e7d2;
+}
+
+@media (max-width: 520px) {
+  body.route-registro .driver-vehicle-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.route-registro .driver-vehicle-type {
+    min-height: 72px;
+    grid-template-columns: 36px 1fr;
+    align-items: center;
+    align-content: center;
+    text-align: left;
+  }
+
+  body.route-registro .driver-vehicle-type span {
+    grid-row: span 2;
+  }
+}
+
 /* Premium registration hierarchy */
 body.route-registro .register-role-step {
   gap: 14px !important;

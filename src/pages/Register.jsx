@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CarFront, CheckCircle2, ChevronLeft, FileCheck2, ShieldCheck, UploadCloud, UserRound } from 'lucide-react'
+import { Bike, CarFront, CheckCircle2, ChevronLeft, FileCheck2, ShieldCheck, UploadCloud, UserRound } from 'lucide-react'
 import {
   requestDriverCategory,
   requestWomenMode,
@@ -72,6 +72,33 @@ const DRIVER_DOCUMENT_REQUIREMENTS = [
     label: 'Documento del vehiculo',
     helper: 'Cedula verde, titulo o certificado del automotor.',
     required: true,
+  },
+  {
+    key: 'vehicle_photo',
+    label: 'Foto del vehiculo',
+    helper: 'Foto clara del auto o moto, idealmente con matricula visible.',
+    required: true,
+  },
+]
+
+const DRIVER_VEHICLE_TYPES = [
+  {
+    value: 'auto',
+    title: 'Auto',
+    description: 'Para viajes regulares de pasajeros.',
+    icon: CarFront,
+  },
+  {
+    value: 'moto',
+    title: 'Moto',
+    description: 'Para viajes rapidos y trayectos cortos.',
+    icon: Bike,
+  },
+  {
+    value: 'auto_and_moto',
+    title: 'Auto y moto',
+    description: 'Admin revisa ambos antes de habilitar.',
+    icon: CarFront,
   },
 ]
 
@@ -255,6 +282,16 @@ export default function Register() {
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState('')
   const [driverDocumentFiles, setDriverDocumentFiles] = useState({})
+  const [driverVehicle, setDriverVehicle] = useState({
+    driverType: 'auto',
+    vehicleMake: '',
+    vehicleModel: '',
+    vehicleColor: '',
+    vehiclePlate: '',
+    motoBrand: '',
+    motoModel: '',
+    motoPlate: '',
+  })
   const [busy, setBusy] = useState(false)
   const [knownUser, setKnownUser] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -301,6 +338,7 @@ export default function Register() {
     if (step === 'role') return '¿Cómo querés usar MiChofer?'
     if (step === 'identity') return 'Elegí tu viaje'
     if (step === 'photo') return role === 'driver' ? 'Verificación de chofer' : 'Tu perfil'
+    if (step === 'vehicle') return 'Tu vehículo'
     if (step === 'documents') return 'Documentos de chofer'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Creá tu clave'
@@ -320,7 +358,8 @@ export default function Register() {
         ? 'Tu foto ayuda a que el pasajero viaje con confianza.'
         : 'Podés agregar una foto ahora o seguir sin cargarla.'
     }
-    if (step === 'documents') return 'Cargá los documentos basicos para revision del administrador.'
+    if (step === 'vehicle') return 'Auto, moto o ambos. Admin lo revisa antes de habilitar viajes.'
+    if (step === 'documents') return 'Cargá los documentos básicos para revisión del administrador.'
     if (step === 'email') return 'Con este correo vas a entrar.'
     if (step === 'password') return 'Rápido, simple y seguro.'
     return ''
@@ -337,6 +376,7 @@ export default function Register() {
     if (step === 'role') return 'Elegir perfil'
     if (step === 'identity') return 'Elegí tu viaje'
     if (step === 'photo') return role === 'driver' ? 'Verificación' : 'Tu foto'
+    if (step === 'vehicle') return 'Tu vehículo'
     if (step === 'documents') return 'Documentos'
     if (step === 'email') return 'Tu correo'
     if (step === 'password') return 'Crear clave'
@@ -354,6 +394,7 @@ export default function Register() {
     if (step === 'photo') return role === 'driver'
       ? 'Tu foto aumenta confianza antes del primer viaje.'
       : 'Opcional. Podés cargarla después.'
+    if (step === 'vehicle') return 'Datos claros para que Admin apruebe tu perfil sin vueltas.'
     if (step === 'documents') return 'Licencia, cédula, antecedentes, RUC y datos del vehículo.'
     if (step === 'email') return 'Lo vas a usar para entrar.'
     if (step === 'password') return 'Mínimo 6 caracteres.'
@@ -364,7 +405,7 @@ export default function Register() {
 
   const registerSteps = useMemo(
     () => (role === 'driver'
-      ? ['name', 'role', 'identity', 'photo', 'documents', 'email', 'password']
+      ? ['name', 'role', 'identity', 'photo', 'vehicle', 'documents', 'email', 'password']
       : ['name', 'role', 'identity', 'photo', 'email', 'password']),
     [role]
   )
@@ -405,8 +446,13 @@ export default function Register() {
       return
     }
 
-    if (step === 'documents') {
+    if (step === 'vehicle') {
       setStep('photo')
+      return
+    }
+
+    if (step === 'documents') {
+      setStep(role === 'driver' ? 'vehicle' : 'photo')
       return
     }
 
@@ -435,6 +481,43 @@ export default function Register() {
 
       return next
     })
+  }
+
+  function updateDriverVehicle(key, value) {
+    setDriverVehicle((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
+  function nextFromDriverVehicle() {
+    setErrorMessage('')
+
+    const driverType = driverVehicle.driverType || 'auto'
+    const needsAuto = driverType === 'auto' || driverType === 'auto_and_moto'
+    const needsMoto = driverType === 'moto' || driverType === 'auto_and_moto'
+
+    const missing = []
+
+    if (needsAuto) {
+      if (!driverVehicle.vehicleMake.trim()) missing.push('marca del auto')
+      if (!driverVehicle.vehicleModel.trim()) missing.push('modelo del auto')
+      if (!driverVehicle.vehicleColor.trim()) missing.push('color del auto')
+      if (!driverVehicle.vehiclePlate.trim()) missing.push('chapa del auto')
+    }
+
+    if (needsMoto) {
+      if (!driverVehicle.motoBrand.trim()) missing.push('marca de la moto')
+      if (!driverVehicle.motoModel.trim()) missing.push('modelo de la moto')
+      if (!driverVehicle.motoPlate.trim()) missing.push('chapa de la moto')
+    }
+
+    if (missing.length > 0) {
+      setErrorMessage(`Falta completar: ${missing.join(', ')}.`)
+      return
+    }
+
+    setStep('documents')
   }
 
   function nextFromDriverDocuments() {
@@ -705,6 +788,30 @@ export default function Register() {
     }
 
     if (role === 'driver') {
+      const driverType = driverVehicle.driverType || 'auto'
+      const needsAuto = driverType === 'auto' || driverType === 'auto_and_moto'
+      const needsMoto = driverType === 'moto' || driverType === 'auto_and_moto'
+      const missingVehicle = []
+
+      if (needsAuto) {
+        if (!driverVehicle.vehicleMake.trim()) missingVehicle.push('marca del auto')
+        if (!driverVehicle.vehicleModel.trim()) missingVehicle.push('modelo del auto')
+        if (!driverVehicle.vehicleColor.trim()) missingVehicle.push('color del auto')
+        if (!driverVehicle.vehiclePlate.trim()) missingVehicle.push('chapa del auto')
+      }
+
+      if (needsMoto) {
+        if (!driverVehicle.motoBrand.trim()) missingVehicle.push('marca de la moto')
+        if (!driverVehicle.motoModel.trim()) missingVehicle.push('modelo de la moto')
+        if (!driverVehicle.motoPlate.trim()) missingVehicle.push('chapa de la moto')
+      }
+
+      if (missingVehicle.length > 0) {
+        setErrorMessage(`Falta completar: ${missingVehicle.join(', ')}.`)
+        setStep('vehicle')
+        return
+      }
+
       const missingDocs = DRIVER_DOCUMENT_REQUIREMENTS.filter((doc) => doc.required && !driverDocumentFiles[doc.key])
 
       if (missingDocs.length > 0) {
@@ -900,10 +1007,39 @@ export default function Register() {
             return
           }
 
+          const driverType = driverVehicle.driverType || 'auto'
+          const cleanVehicleMake = driverVehicle.vehicleMake.trim()
+          const cleanVehicleModel = driverVehicle.vehicleModel.trim()
+          const cleanVehicleColor = driverVehicle.vehicleColor.trim()
+          const cleanVehiclePlate = driverVehicle.vehiclePlate.trim().toUpperCase()
+          const cleanMotoBrand = driverVehicle.motoBrand.trim()
+          const cleanMotoModel = driverVehicle.motoModel.trim()
+          const cleanMotoPlate = driverVehicle.motoPlate.trim().toUpperCase()
+          const hasAuto = driverType === 'auto' || driverType === 'auto_and_moto'
+          const primaryPlate = hasAuto ? cleanVehiclePlate : cleanMotoPlate
+
           const { error: driverDocumentsError } = await supabase
             .from('driver_profiles')
             .update({
               documents: uploadedDocuments,
+              driver_type: driverType,
+              vehicle_category: driverType === 'moto' ? 'moto' : 'auto_standard',
+              vehicle_make: hasAuto ? cleanVehicleMake : null,
+              vehicle_model: hasAuto ? cleanVehicleModel : null,
+              vehicle_color: hasAuto ? cleanVehicleColor : null,
+              vehicle_plate: hasAuto ? cleanVehiclePlate : null,
+              car_brand: hasAuto ? cleanVehicleMake : null,
+              car_model: hasAuto ? cleanVehicleModel : null,
+              car_color: hasAuto ? cleanVehicleColor : null,
+              plate: primaryPlate,
+              moto_brand: driverType === 'moto' || driverType === 'auto_and_moto' ? cleanMotoBrand : null,
+              moto_model: driverType === 'moto' || driverType === 'auto_and_moto' ? cleanMotoModel : null,
+              moto_plate: driverType === 'moto' || driverType === 'auto_and_moto' ? cleanMotoPlate : null,
+              requested_categories: driverType === 'moto'
+                ? ['moto']
+                : driverType === 'auto_and_moto'
+                  ? ['auto_standard', 'moto']
+                  : ['auto_standard'],
               verification_status: 'submitted',
               verified: false,
               updated_at: new Date().toISOString(),
@@ -917,6 +1053,14 @@ export default function Register() {
             )
             setStep('documents')
             return
+          }
+
+          if (driverType === 'moto' || driverType === 'auto_and_moto') {
+            const { error: driverMotoError } = await requestDriverCategory('moto')
+
+            if (driverMotoError) {
+              console.warn('DRIVER MOTO REQUEST ERROR:', driverMotoError)
+            }
           }
 
           if (genderIdentity === 'woman') {
@@ -1237,7 +1381,7 @@ export default function Register() {
                     <button
                       type="button"
                       className="login-text-btn"
-                      onClick={() => setStep(role === 'driver' ? 'documents' : 'email')}
+                      onClick={() => setStep(role === 'driver' ? 'vehicle' : 'email')}
                     >
                       Omitir por ahora
                     </button>
@@ -1259,7 +1403,7 @@ export default function Register() {
                   <button
                     type="button"
                     className="login-main-btn"
-                    onClick={() => setStep(role === 'driver' ? 'documents' : 'email')}
+                    onClick={() => setStep(role === 'driver' ? 'vehicle' : 'email')}
                   >
                     Continuar
                   </button>
@@ -1274,6 +1418,92 @@ export default function Register() {
                 </>
               )}
 
+            </div>
+          )}
+
+          {step === 'vehicle' && (
+            <div className="login-step-form driver-vehicle-step">
+              <div className="driver-vehicle-type-grid">
+                {DRIVER_VEHICLE_TYPES.map((item) => {
+                  const Icon = item.icon
+                  const active = driverVehicle.driverType === item.value
+
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      className={active ? 'driver-vehicle-type active' : 'driver-vehicle-type'}
+                      onClick={() => updateDriverVehicle('driverType', item.value)}
+                    >
+                      <span>
+                        <Icon size={18} />
+                      </span>
+                      <strong>{item.title}</strong>
+                      <small>{item.description}</small>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {(driverVehicle.driverType === 'auto' || driverVehicle.driverType === 'auto_and_moto') && (
+                <div className="driver-vehicle-fields">
+                  <span>Datos del auto</span>
+                  <input
+                    placeholder="Marca del auto"
+                    value={driverVehicle.vehicleMake}
+                    onChange={(e) => updateDriverVehicle('vehicleMake', e.target.value)}
+                  />
+                  <input
+                    placeholder="Modelo"
+                    value={driverVehicle.vehicleModel}
+                    onChange={(e) => updateDriverVehicle('vehicleModel', e.target.value)}
+                  />
+                  <input
+                    placeholder="Color"
+                    value={driverVehicle.vehicleColor}
+                    onChange={(e) => updateDriverVehicle('vehicleColor', e.target.value)}
+                  />
+                  <input
+                    placeholder="Chapa / matricula"
+                    value={driverVehicle.vehiclePlate}
+                    onChange={(e) => updateDriverVehicle('vehiclePlate', e.target.value.toUpperCase())}
+                  />
+                </div>
+              )}
+
+              {(driverVehicle.driverType === 'moto' || driverVehicle.driverType === 'auto_and_moto') && (
+                <div className="driver-vehicle-fields">
+                  <span>Datos de la moto</span>
+                  <input
+                    placeholder="Marca de la moto"
+                    value={driverVehicle.motoBrand}
+                    onChange={(e) => updateDriverVehicle('motoBrand', e.target.value)}
+                  />
+                  <input
+                    placeholder="Modelo"
+                    value={driverVehicle.motoModel}
+                    onChange={(e) => updateDriverVehicle('motoModel', e.target.value)}
+                  />
+                  <input
+                    placeholder="Chapa / matricula"
+                    value={driverVehicle.motoPlate}
+                    onChange={(e) => updateDriverVehicle('motoPlate', e.target.value.toUpperCase())}
+                  />
+                </div>
+              )}
+
+              <div className="driver-vehicle-note">
+                <ShieldCheck size={16} />
+                <span>Estos datos aparecen en Admin y ayudan a aprobar tu perfil con menos friccion.</span>
+              </div>
+
+              <button
+                type="button"
+                className="login-main-btn"
+                onClick={nextFromDriverVehicle}
+              >
+                Continuar
+              </button>
             </div>
           )}
 

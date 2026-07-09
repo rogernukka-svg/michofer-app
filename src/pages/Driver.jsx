@@ -74,6 +74,19 @@ function driverSupabaseErrorText(error) {
   return [error.message, error.details, error.hint, error.code].filter(Boolean).join(' · ')
 }
 
+function driverVehicleLabel(driverProfile = {}) {
+  const driverType = String(driverProfile.driver_type || '').toLowerCase()
+  const autoTitle = [driverProfile.vehicle_make || driverProfile.car_brand, driverProfile.vehicle_model || driverProfile.car_model]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+  const motoTitle = [driverProfile.moto_brand, driverProfile.moto_model].filter(Boolean).join(' ').trim()
+
+  if (driverType === 'moto') return motoTitle || 'Moto lista'
+  if (driverType === 'auto_and_moto') return [autoTitle || 'Auto', motoTitle || 'Moto'].join(' + ')
+  return autoTitle || 'Vehículo listo'
+}
+
 const SAFETY_ZONES_CDE = [
   {
     name: 'San Rafael',
@@ -1738,7 +1751,7 @@ const getCurrentLocation = useCallback(async () => {
                 </div>
                 <div>
                   <strong>{driverDisplayName}</strong>
-                  <small>{[driverProfile?.car_brand, driverProfile?.car_model].filter(Boolean).join(' ') || 'Vehículo listo'}</small>
+                  <small>{driverVehicleLabel(driverProfile)}</small>
                 </div>
               </div>
 

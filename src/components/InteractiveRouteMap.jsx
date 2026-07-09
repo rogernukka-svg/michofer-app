@@ -1952,6 +1952,37 @@ export default function InteractiveRouteMap({
       if (driverRouteOverlayRef.current) {
         driverRouteOverlayRef.current.setMap(null)
         driverRouteOverlayRef.current = null
+
+        // Restore classic polylines styles when overlay is removed
+        const style = stableDriverNavigation ? ROUTE_STYLE.driver : ROUTE_STYLE.client
+        try {
+          if (routePolylineRef.current) {
+            routePolylineRef.current.setOptions({
+              strokeOpacity: style.opacity,
+              strokeWeight: navigationMode ? style.mainWeight : Math.max(5, ROUTE_STYLE.client.mainWeight - 3),
+            })
+          }
+          if (focusRouteGlowRef.current) {
+            focusRouteGlowRef.current.setOptions({
+              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.18) : 0,
+              strokeWeight: navigationMode ? style.glowWeight : 0,
+            })
+          }
+          if (routeCompletedPolylineRef.current) {
+            routeCompletedPolylineRef.current.setOptions({
+              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.32 : 0.22) : 0,
+              strokeWeight: navigationMode ? Math.max(4, style.mainWeight - 2) : 0,
+            })
+          }
+          if (routeNextStepPolylineRef.current) {
+            routeNextStepPolylineRef.current.setOptions({
+              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.9 : 0.72) : 0,
+              strokeWeight: navigationMode ? Math.max(5, style.mainWeight - 1) : 0,
+            })
+          }
+        } catch (e) {
+          // ignore restore errors
+        }
       }
       return
     }
@@ -1960,6 +1991,15 @@ export default function InteractiveRouteMap({
       const routeOverlayHost = mapContainerRef.current?.closest('.mobility-map') || mapContainerRef.current?.parentElement
       driverRouteOverlayRef.current = createDriverRouteOverlay(googleApi, routeOverlayHost)
       driverRouteOverlayRef.current.setMap(map)
+      // Hide underlying google.maps.Polyline visuals to avoid duplicate rendering
+      try {
+        if (routePolylineRef.current) routePolylineRef.current.setOptions({ strokeOpacity: 0, strokeWeight: 0 })
+        if (focusRouteGlowRef.current) focusRouteGlowRef.current.setOptions({ strokeOpacity: 0, strokeWeight: 0 })
+        if (routeCompletedPolylineRef.current) routeCompletedPolylineRef.current.setOptions({ strokeOpacity: 0, strokeWeight: 0 })
+        if (routeNextStepPolylineRef.current) routeNextStepPolylineRef.current.setOptions({ strokeOpacity: 0, strokeWeight: 0 })
+      } catch (e) {
+        // ignore
+      }
     }
 
     driverRouteOverlayRef.current.updatePath(routePath)
@@ -2045,7 +2085,8 @@ export default function InteractiveRouteMap({
       zIndex: MAP_LAYER_Z.nextStep,
     })
 
-    completedPolyline?.setPath(stableDriverNavigation ? mainVisiblePath : completedPath)
+    // The completed path should represent the already-travelled segment (past path).
+    completedPolyline?.setPath(completedPath)
     currentFocusGlow?.setPath(remainingVisiblePath)
     currentPolyline?.setPath(mainVisiblePath)
     nextStepPolyline?.setPath(nextStepPath)
@@ -3402,7 +3443,8 @@ const visibleDrivers = useMemo(() => {
               strokeWeight: Math.max(4, style.mainWeight - 2),
               zIndex: MAP_LAYER_Z.completedRoute,
             })
-            currentCompletedPolyline.setPath(routePath)
+            // start with an empty completed path; it will be filled as the vehicle progresses
+            currentCompletedPolyline.setPath([])
           } else {
             currentCompletedPolyline.setPath([])
           }

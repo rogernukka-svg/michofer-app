@@ -185,8 +185,21 @@ function normalizeDriver(driver, location) {
   const hasLocation = isValidParaguayCoord({ lat, lng })
   const km = hasLocation && isValidParaguayCoord(location) ? distanceKm(location, { lat, lng }) : null
   const price = estimatePrice(km)
-  const car = [driver?.car_brand, driver?.car_model].filter(Boolean).join(' ').trim()
-  const vehicle = [car, driver?.car_color, maskPlate(driver?.plate)].filter(Boolean).join(' · ')
+  const driverType = String(driver?.driver_type || '').toLowerCase()
+  const car = [driver?.vehicle_make || driver?.car_brand, driver?.vehicle_model || driver?.car_model].filter(Boolean).join(' ').trim()
+  const moto = [driver?.moto_brand, driver?.moto_model].filter(Boolean).join(' ').trim()
+  const vehicleTitle = driverType === 'moto'
+    ? moto || 'Moto'
+    : driverType === 'auto_and_moto'
+      ? [car || 'Auto', moto || 'Moto'].join(' + ')
+      : car || 'Vehículo'
+  const vehiclePlate = driverType === 'moto'
+    ? driver?.moto_plate || driver?.plate
+    : driverType === 'auto_and_moto'
+      ? driver?.vehicle_plate || driver?.plate || driver?.moto_plate
+      : driver?.vehicle_plate || driver?.plate
+  const vehicleColor = driverType === 'moto' ? '' : driver?.vehicle_color || driver?.car_color
+  const vehicle = [vehicleTitle, vehicleColor, maskPlate(vehiclePlate)].filter(Boolean).join(' · ')
 
   return {
     ...driver,
