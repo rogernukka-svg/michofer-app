@@ -1,5 +1,8 @@
 //Driver.jsx
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import driverRequestTone from '../assets/tonodriver.mp3'
+import messageTone from '../assets/toonomensaje.mp3'
 import {
   ArrowLeft,
   ArrowRight,
@@ -17,6 +20,7 @@ import {
   RotateCcw,
   ShieldCheck,
   Square,
+  Star,
   ToggleLeft,
   ToggleRight,
   UserRound,
@@ -309,7 +313,13 @@ function closeArrivalCopy({ status, distanceMeters, side }) {
 function formatGs(value) {
   return `${Number(value || 0).toLocaleString('es-PY')} Gs.`
 }
+function tripPaymentLabel(trip) {
+  const method = String(trip?.payment_method || trip?.paymentMethod || 'cash').toLowerCase()
 
+  if (method === 'card') return 'Tarjeta'
+  if (method === 'transfer' || method === 'transferencia') return 'Transferencia'
+  return 'Efectivo'
+}
 function formatKm(value) {
   if (value == null) return 'Sin ubicación'
   if (value < 1) return `${Math.max(1, Math.round(value * 1000))} m`
@@ -453,7 +463,18 @@ export default function Driver() {
   const [tripAction, setTripAction] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const [chatUnreadCount, setChatUnreadCount] = useState(0)
   const [driverNotifications, setDriverNotifications] = useState([])
+  const [passengerRatingTrip, setPassengerRatingTrip] = useState(null)
+  const [passengerRatingStars, setPassengerRatingStars] = useState(5)
+  const [passengerRatingComment, setPassengerRatingComment] = useState('')
+  const [passengerRatingSubmitting, setPassengerRatingSubmitting] = useState(false)
+
+   const pendingTripsAudioRef = useRef(null)
+  const messageAudioRef = useRef(null)
+  const lastChatUnreadCountRef = useRef(0)
+  const lastMessageSoundAtRef = useRef(0)
+  const hasLoadedTripsRef = useRef(false)
   const isMountedRef = useRef(true)
   const liveWatchIdRef = useRef(null)
   const liveSyncBusyRef = useRef(false)
@@ -462,8 +483,11 @@ export default function Driver() {
   const gpsBufferRef = useRef(new GpsBuffer(20))
   const lastRoadsSnapAtRef = useRef(0)
   const roadsSyncBusyRef = useRef(false)
-  useEffect(() => {
+   useEffect(() => {
+    isMountedRef.current = true
+
     init()
+
     return () => {
       isMountedRef.current = false
     }
@@ -472,13 +496,49 @@ export default function Driver() {
   useEffect(() => {
     if (!user?.id) return undefined
 
+    let refreshTimeout = 0
+
+    const refreshTrips = () => {
+      window.clearTimeout(refreshTimeout)
+      refreshTimeout = window.setTimeout(() => {
+        loadTrips(user.id)
+      }, 120)
+    }
+
+    // Primera carga inmediata al entrar al panel del chofer.
+    loadTrips(user.id)
+
     const channel = supabase
       .channel(`driver-trips-${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => loadTrips(user.id))
-      .subscribe()
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trips',
+          filter: `driver_id=eq.${user.id}`,
+        },
+        refreshTrips
+      )
+      .subscribe((status) => {
+        if (import.meta.env.DEV) {
+          console.info('[MiChofer Driver Realtime]', {
+            status,
+            driverId: user.id,
+          })
+        }
 
-       const interval = window.setInterval(() => loadTrips(user.id), 1800)
+        if (status === 'SUBSCRIBED') {
+          refreshTrips()
+        }
+      })
+
+    const interval = window.setInterval(() => {
+      loadTrips(user.id)
+    }, 1200)
+
     return () => {
+      window.clearTimeout(refreshTimeout)
       window.clearInterval(interval)
       supabase.removeChannel(channel)
     }
@@ -579,6 +639,93 @@ export default function Driver() {
         }),
     [driverProfile?.lat, driverProfile?.lng, trips]
   )
+
+   function playDriverTripNotificationSound() {
+    try {
+      if (!pendingTripsAudioRef.current) {
+        pendingTripsAudioRef.current = new Audio(driverRequestTone)
+        pendingTripsAudioRef.current.preload = 'auto'
+        pendingTripsAudioRef.current.volume = 0.95
+      }
+
+      pendingTripsAudioRef.current.currentTime = 0
+      pendingTripsAudioRef.current.play().catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn('Driver trip audio blocked or failed:', error)
+        }
+      })
+    } catch (error) {
+      console.warn('Driver trip audio failed:', error)
+    }
+  }
+
+   function playMessageNotificationSound() {
+    const now = Date.now()
+
+    // Evita doble sonido cuando TripChatModal y Realtime avisan casi al mismo tiempo.
+    if (now - lastMessageSoundAtRef.current < 900) return
+
+    try {
+      lastMessageSoundAtRef.current = now
+
+      if (!messageAudioRef.current) {
+        messageAudioRef.current = new Audio(messageTone)
+        messageAudioRef.current.preload = 'auto'
+        messageAudioRef.current.volume = 0.9
+      }
+
+      messageAudioRef.current.pause()
+      messageAudioRef.current.currentTime = 0
+
+      messageAudioRef.current.play().catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn('MiChofer message tone blocked or failed:', error)
+        }
+      })
+    } catch (error) {
+      console.warn('MiChofer message tone failed:', error)
+    }
+  }
+
+   useEffect(() => {
+    // No reproducimos sonido desde chatUnreadCount.
+    // Ese contador puede cambiar cuando se abre el modal y causar un beep raro.
+    // El sonido real queda controlado solo por el listener Realtime de messages.
+    lastChatUnreadCountRef.current = Number(chatUnreadCount) || 0
+  }, [chatUnreadCount])
+
+  useEffect(() => {
+    if (!activeTripId || !driverUserId) return undefined
+
+    const channel = supabase
+      .channel(`driver-message-tone-${activeTripId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `trip_id=eq.${activeTripId}`,
+        },
+        ({ new: newMessage }) => {
+          const senderId = String(newMessage?.sender_id || '')
+          const currentDriverId = String(driverUserId || '')
+
+          // No sonar por mensajes que escribió el mismo chofer.
+          if (!senderId || senderId === currentDriverId) return
+
+          // Si el chat está abierto, no notificar con sonido.
+          if (chatOpen) return
+
+          playMessageNotificationSound()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [activeTripId, driverUserId, chatOpen])
 
   const focusTrip = activeTrip || pendingTrips[0] || null
   const driverPoint = useMemo(() => {
@@ -834,55 +981,168 @@ export default function Driver() {
     }
   }, [])
 
-  const loadTrips = useCallback(async (driverId = user?.id) => {
-    if (!driverId) return
-    const { data, error } = await getOwnDriverTrips()
-    let nextTrips = data || []
+ const loadTrips = useCallback(async (driverId = user?.id) => {
+  /*
+    FIX REAL:
+    El viaje sí se crea. El problema es que el driver no lo pinta.
+    En desarrollo, React StrictMode puede dejar isMountedRef en false
+    si no lo reactivamos bien. Por eso acá NO bloqueamos setTrips
+    por un false viejo del ref.
+  */
 
-    if (error || nextTrips.length === 0) {
-      const { data: directTrips, error: directError } = await supabase
-        .from('trips')
-        .select('*')
-        .eq('driver_id', driverId)
-        .in('status', ACTIVE_STATUSES)
-        .order('created_at', { ascending: false })
+  isMountedRef.current = true
 
-      if (import.meta.env.DEV) {
-        console.info('[MiChofer Driver Trips]', {
-          driverId,
-          authEmail: user?.email || null,
-          driverProfileUserId: driverProfile?.user_id || null,
-          driverProfileEmail: driverProfile?.email || null,
-          driverProfileName: driverProfile?.full_name || null,
-          rpcCount: Array.isArray(data) ? data.length : null,
-          rpcError: error?.message || null,
-          directCount: Array.isArray(directTrips) ? directTrips.length : null,
-          directError: directError?.message || null,
-        })
-      }
+  let authUser = null
 
-      if (!directError && Array.isArray(directTrips)) {
-        nextTrips = directTrips
-      } else if (error) {
-        if (isMountedRef.current) {
-          setMessage(`No pude cargar solicitudes: ${driverSupabaseErrorText(error) || 'ejecuta supabase/driver_live_state_rpcs.sql y recarga.'}`)
-        }
-        return
-      }
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+
+    if (authError) {
+      console.warn('[MiChofer Driver Trips] auth.getUser error:', authError)
     }
 
-    if (error && nextTrips.length === 0) {
-      if (isMountedRef.current) {
-        setMessage(`No pude cargar solicitudes: ${driverSupabaseErrorText(error) || 'ejecuta supabase/driver_live_state_rpcs.sql y recarga.'}`)
+    authUser = authData?.user || null
+  } catch (authError) {
+    console.warn('[MiChofer Driver Trips] auth.getUser throw:', authError)
+  }
+
+  const effectiveDriverId =
+    driverId ||
+    authUser?.id ||
+    user?.id ||
+    driverProfile?.user_id ||
+    null
+
+  if (!effectiveDriverId) {
+    if (import.meta.env.DEV) {
+      console.warn('[MiChofer Driver Trips] sin driverId efectivo', {
+        driverId,
+        authUserId: authUser?.id || null,
+        authEmail: authUser?.email || null,
+        stateUserId: user?.id || null,
+        stateUserEmail: user?.email || null,
+        driverProfileUserId: driverProfile?.user_id || null,
+        driverProfileEmail: driverProfile?.email || null,
+      })
+    }
+    return
+  }
+
+  let nextTrips = []
+  let directError = null
+  let rpcV2Error = null
+  let legacyRpcError = null
+
+  const directResult = await supabase
+    .from('trips')
+    .select('*')
+    .eq('driver_id', effectiveDriverId)
+    .in('status', ACTIVE_STATUSES)
+    .order('created_at', { ascending: false })
+
+  if (directResult.error) {
+    directError = directResult.error
+  } else if (Array.isArray(directResult.data)) {
+    nextTrips = directResult.data
+  }
+
+  if (nextTrips.length === 0) {
+    try {
+      const { data, error } = await supabase.rpc('get_own_driver_trips_v2')
+
+      if (error) {
+        rpcV2Error = error
+      } else if (Array.isArray(data) && data.length > 0) {
+        nextTrips = data
       }
-      return
+    } catch (error) {
+      rpcV2Error = error
+    }
+  }
+
+  if (nextTrips.length === 0) {
+    try {
+      const { data, error } = await getOwnDriverTrips()
+
+      if (error) {
+        legacyRpcError = error
+      } else if (Array.isArray(data) && data.length > 0) {
+        nextTrips = data
+      }
+    } catch (error) {
+      legacyRpcError = error
+    }
+  }
+
+  nextTrips = (nextTrips || [])
+    .filter((trip) => trip?.id)
+    .filter((trip) => String(trip.driver_id || '') === String(effectiveDriverId))
+    .filter((trip) => ACTIVE_STATUSES.includes(String(trip.status || '').toLowerCase()))
+    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+
+  const nextPendingCount = nextTrips.filter((trip) => trip.status === 'pending').length
+
+  if (import.meta.env.DEV) {
+    console.info('[MiChofer Driver Trips FINAL]', {
+      effectiveDriverId,
+      authUserId: authUser?.id || null,
+      authEmail: authUser?.email || null,
+      stateUserId: user?.id || null,
+      stateUserEmail: user?.email || null,
+      driverProfileUserId: driverProfile?.user_id || null,
+      driverProfileEmail: driverProfile?.email || null,
+      directCount: Array.isArray(directResult.data) ? directResult.data.length : 0,
+      directError: directError?.message || null,
+      rpcV2Error: rpcV2Error?.message || null,
+      legacyRpcError: legacyRpcError?.message || null,
+      finalCount: nextTrips.length,
+      pendingCount: nextPendingCount,
+      isMountedRef: isMountedRef.current,
+      statuses: nextTrips.map((trip) => ({
+        id: trip.id,
+        status: trip.status,
+        driver_id: trip.driver_id,
+        client_id: trip.client_id,
+        ride_category: trip.ride_category,
+        created_at: trip.created_at,
+      })),
+    })
+  }
+
+  if (directError && rpcV2Error && legacyRpcError && nextTrips.length === 0) {
+    setMessage(
+      `No pude cargar solicitudes: ${
+        driverSupabaseErrorText(directError) ||
+        driverSupabaseErrorText(rpcV2Error) ||
+        driverSupabaseErrorText(legacyRpcError) ||
+        'revisá permisos de trips.'
+      }`
+    )
+    return
+  }
+
+  setTrips((currentTrips) => {
+    const previousPendingCount = currentTrips.filter((trip) => trip.status === 'pending').length
+
+    if (hasLoadedTripsRef.current && nextPendingCount > previousPendingCount) {
+      playDriverTripNotificationSound()
+      pushDriverNotification(
+        'Nuevo viaje',
+        'Tenés una solicitud pendiente esperando confirmación.',
+        'success'
+      )
     }
 
-    if (isMountedRef.current) {
-      setTrips(nextTrips)
-    }
-  }, [driverProfile?.email, driverProfile?.full_name, driverProfile?.user_id, user?.email, user?.id])
-
+    hasLoadedTripsRef.current = true
+    return nextTrips
+  })
+}, [
+  driverProfile?.email,
+  driverProfile?.user_id,
+  pushDriverNotification,
+  user?.email,
+  user?.id,
+])
 const getStoredLocation = useCallback(() => {
   const lat = Number(driverProfile?.lat)
   const lng = Number(driverProfile?.lng)
@@ -1239,104 +1499,178 @@ const getCurrentLocation = useCallback(async () => {
     setMessage(data?.status === 'approved' ? 'Categoria ya aprobada.' : 'Solicitud enviada.')
     pushDriverNotification(title, body, data?.status === 'approved' ? 'success' : 'info')
   }, [approved, driverProfile, pushDriverNotification, setDriverProfile, setMessage])
+const submitDriverPassengerRating = useCallback(async () => {
+  const driverUserId = user?.id || driverProfile?.user_id || profile?.id
 
-   const updateTrip = useCallback(async (trip, status) => {
-    const driverUserId = user?.id || driverProfile?.user_id || profile?.id
-    if (!trip?.id || !driverUserId) {
-      setMessage('No pude identificar este viaje.')
-      return
-    }
+  if (!passengerRatingTrip?.id || !passengerRatingTrip?.client_id || !driverUserId) {
+    setMessage('No pude identificar el pasajero para calificar.')
+    return
+  }
 
-    if (trip.driver_id !== driverUserId) {
-      setMessage('Este viaje no pertenece a tu cuenta de chofer.')
-      return
-    }
+  try {
+    setPassengerRatingSubmitting(true)
 
-    const allowedTransitions = {
-      pending: ['accepted', 'cancelled'],
-      accepted: ['arriving', 'cancelled'],
-      arriving: ['in_progress', 'cancelled'],
-      in_progress: ['completed', 'cancelled'],
-    }
-
-    const currentStatus = trip.status || 'pending'
-    const validNextStatuses = allowedTransitions[currentStatus] || []
-
-    if (!validNextStatuses.includes(status)) {
-      setMessage('Cambio de estado no permitido para este viaje.')
-      return
-    }
-
-    try {
-      setTripAction(status)
-      setMessage(tripActionLabel(status))
-
-      const location = await getCurrentLocation()
-
-      setTrips((current) =>
-        current.map((item) =>
-          item.id === trip.id
-            ? {
-                ...item,
-                status,
-                ...tripDriverTelemetryPayload(location),
-              }
-            : item
-        )
+    const { error } = await supabase
+      .from('ratings')
+      .upsert(
+        {
+          trip_id: passengerRatingTrip.id,
+          rater_id: driverUserId,
+          ratee_id: passengerRatingTrip.client_id,
+          type: 'driver_to_client',
+          stars: passengerRatingStars,
+          comment: passengerRatingComment.trim() || null,
+          admin_status: 'new',
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'trip_id,rater_id,ratee_id,type',
+        }
       )
 
-      const { error } = await supabase
-        .from('trips')
-        .update({
-          status,
-          ...tripDriverTelemetryPayload(location),
-        })
-        .eq('id', trip.id)
-        .eq('driver_id', driverUserId)
-
-      if (error) {
-        setMessage(`No pude actualizar el viaje: ${driverSupabaseErrorText(error) || 'error desconocido, revisa la consola.'}`)
-        await loadTrips()
-        return
-      }
-
-      const nextAvailable = status === 'completed' || status === 'cancelled'
-
-      const { data: updatedDriver } = await updateOwnDriverStatus({
-        isOnline: true,
-        isAvailable: nextAvailable,
-        lat: location.lat,
-        lng: location.lng,
-      })
-
-      if (updatedDriver) {
-        setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
-      }
-
-      await supabase
-        .from('driver_profiles')
-        .update(driverProfileTelemetryPayload(location))
-        .eq('user_id', driverUserId)
-
-      if (status === 'accepted') setMessage('Ruta lista. Vamos al punto de recogida.')
-      else if (status === 'cancelled') setMessage('Viaje cancelado. El cliente será avisado.')
-      else if (status === 'completed') setMessage('Viaje finalizado.')
-      else setMessage('')
-
-      if (status === 'accepted') {
-        pushDriverNotification('Viaje aceptado', trip.destination_text || 'Ruta al punto de recogida lista.', 'success')
-      } else if (status === 'cancelled') {
-        pushDriverNotification('Viaje cancelado', trip.destination_text || 'Solicitud cancelada.', 'danger')
-      } else if (status === 'completed') {
-        pushDriverNotification('Viaje finalizado', trip.destination_text || 'Guardado en tu historial de actividad.', 'success')
-      }
-
-      await loadTrips()
-    } finally {
-      setTripAction('')
+    if (error) {
+      console.error('DRIVER PASSENGER RATING ERROR:', error)
+      setMessage('No pude enviar la calificación del pasajero. Revisá la tabla ratings.')
+      return
     }
-  }, [driverUserId, getCurrentLocation, loadTrips, pushDriverNotification, setDriverProfile, setMessage, setTripAction, setTrips, user?.id])
 
+    setPassengerRatingTrip(null)
+    setPassengerRatingStars(5)
+    setPassengerRatingComment('')
+    setMessage('Calificación enviada. Gracias por cuidar la comunidad MiChofer.')
+    await loadTrips()
+  } finally {
+    setPassengerRatingSubmitting(false)
+  }
+}, [
+  driverProfile?.user_id,
+  loadTrips,
+  passengerRatingComment,
+  passengerRatingStars,
+  passengerRatingTrip,
+  profile?.id,
+  setMessage,
+  user?.id,
+])
+const updateTrip = useCallback(async (trip, status) => {
+  const driverUserId = user?.id || driverProfile?.user_id || profile?.id
+
+  if (!trip?.id || !driverUserId) {
+    setMessage('No pude identificar este viaje.')
+    return
+  }
+
+  if (trip.driver_id !== driverUserId) {
+    setMessage('Este viaje no pertenece a tu cuenta de chofer.')
+    return
+  }
+
+  const allowedTransitions = {
+    pending: ['accepted', 'cancelled'],
+    accepted: ['arriving', 'cancelled'],
+    arriving: ['in_progress', 'cancelled'],
+    in_progress: ['completed', 'cancelled'],
+  }
+
+  const currentStatus = trip.status || 'pending'
+  const validNextStatuses = allowedTransitions[currentStatus] || []
+
+  if (!validNextStatuses.includes(status)) {
+    setMessage('Cambio de estado no permitido para este viaje.')
+    return
+  }
+
+  try {
+    setTripAction(status)
+    setMessage(tripActionLabel(status))
+
+    const location = await getCurrentLocation()
+
+    const nextTrip = {
+      ...trip,
+      status,
+      ...tripDriverTelemetryPayload(location),
+    }
+
+    setTrips((current) =>
+      current.map((item) =>
+        item.id === trip.id ? nextTrip : item
+      )
+    )
+
+    const { error } = await supabase
+      .from('trips')
+      .update({
+        status,
+        ...tripDriverTelemetryPayload(location),
+      })
+      .eq('id', trip.id)
+      .eq('driver_id', driverUserId)
+
+    if (error) {
+      setMessage(`No pude actualizar el viaje: ${driverSupabaseErrorText(error) || 'error desconocido, revisa la consola.'}`)
+      await loadTrips()
+      return
+    }
+
+    const nextAvailable = status === 'completed' || status === 'cancelled'
+
+    const { data: updatedDriver } = await updateOwnDriverStatus({
+      isOnline: true,
+      isAvailable: nextAvailable,
+      lat: location.lat,
+      lng: location.lng,
+    })
+
+    if (updatedDriver) {
+      setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
+    }
+
+    await supabase
+      .from('driver_profiles')
+      .update(driverProfileTelemetryPayload(location))
+      .eq('user_id', driverUserId)
+
+    if (status === 'accepted') {
+      setMessage('Ruta lista. Vamos al punto de recogida.')
+      pushDriverNotification('Viaje aceptado', trip.destination_text || 'Ruta al punto de recogida lista.', 'success')
+      await loadTrips()
+      return
+    }
+
+    if (status === 'cancelled') {
+      setMessage('Viaje cancelado. El cliente será avisado.')
+      pushDriverNotification('Viaje cancelado', trip.destination_text || 'Solicitud cancelada.', 'danger')
+      await loadTrips()
+      return
+    }
+
+    if (status === 'completed') {
+      setPassengerRatingTrip(nextTrip)
+      setPassengerRatingStars(5)
+      setPassengerRatingComment('')
+      setMessage('Viaje finalizado. Calificá al pasajero para mejorar la seguridad de MiChofer.')
+      pushDriverNotification('Viaje finalizado', trip.destination_text || 'Guardado en tu historial de actividad.', 'success')
+      return
+    }
+
+    setMessage('')
+    await loadTrips()
+  } finally {
+    setTripAction('')
+  }
+}, [
+  driverProfile?.user_id,
+  getCurrentLocation,
+  loadTrips,
+  profile?.id,
+  pushDriverNotification,
+  setDriverProfile,
+  setMessage,
+  setTripAction,
+  setTrips,
+  user?.id,
+])
   // ==================== RENDER ====================
 
   // --- Active navigation (accepted, arriving, in_progress) ---
@@ -1464,8 +1798,11 @@ const getCurrentLocation = useCallback(async () => {
                               onClick={() => setChatOpen(true)}
                               aria-label="Abrir chat"
                             >
-                <MessageCircle size={20} />
-              </button>
+                              <MessageCircle size={20} />
+                              {chatUnreadCount > 0 && (
+                                <span className="chat-unread-badge driver-chat-badge">{chatUnreadCount}</span>
+                              )}
+                            </button>
 
                 <button
                 type="button"
@@ -1542,11 +1879,85 @@ const getCurrentLocation = useCallback(async () => {
               </section>
             </div>
           )}
+{passengerRatingTrip && (
+  <div className="mc-rating-backdrop" role="presentation">
+    <section className="mc-rating-sheet" role="dialog" aria-modal="true" aria-label="Calificar pasajero">
+      <div className="mc-rating-handle" />
 
+      <header className="mc-rating-head">
+        <span>Viaje finalizado</span>
+        <h2>¿Cómo fue el pasajero?</h2>
+        <p>
+          Esta puntuación queda visible para administración y ayuda a cuidar a los choferes.
+        </p>
+      </header>
+
+      <div className="mc-rating-profile">
+        <div className="mc-rating-avatar">
+          <UserRound size={30} />
+        </div>
+
+        <div>
+          <span>Pasajero</span>
+          <strong>Cliente MiChofer</strong>
+          <small>{passengerRatingTrip.destination_text || 'Viaje MiChofer'}</small>
+        </div>
+      </div>
+
+      <div className="mc-rating-stars" aria-label="Puntuación">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            className={passengerRatingStars >= star ? 'active' : ''}
+            onClick={() => setPassengerRatingStars(star)}
+            aria-label={`${star} estrellas`}
+          >
+            <Star size={27} fill="currentColor" />
+          </button>
+        ))}
+      </div>
+
+      <textarea
+        className="mc-rating-textarea"
+        value={passengerRatingComment}
+        onChange={(event) => setPassengerRatingComment(event.target.value)}
+        placeholder="Mensaje opcional para admin: trato, espera, ubicación, comportamiento..."
+        maxLength={400}
+      />
+
+      <div className="mc-rating-actions">
+        <button
+          type="button"
+          className="mc-rating-secondary"
+          onClick={async () => {
+            setPassengerRatingTrip(null)
+            setPassengerRatingStars(5)
+            setPassengerRatingComment('')
+            await loadTrips()
+          }}
+          disabled={passengerRatingSubmitting}
+        >
+          Omitir
+        </button>
+
+        <button
+          type="button"
+          className="mc-rating-primary"
+          onClick={submitDriverPassengerRating}
+          disabled={passengerRatingSubmitting}
+        >
+          {passengerRatingSubmitting ? 'Enviando...' : 'Enviar calificación'}
+        </button>
+      </div>
+    </section>
+  </div>
+)}
           <TripChatModal
             tripId={activeTrip.id}
             open={chatOpen}
             onClose={() => setChatOpen(false)}
+            onUnreadCountChange={setChatUnreadCount}
             currentUser={user}
             trip={activeTrip}
           />
@@ -1556,10 +1967,85 @@ const getCurrentLocation = useCallback(async () => {
   }
 
   // --- Idle / Dashboard state ---
-  return (
-    <main className="app-shell">
-      <section className={`phone driver-phone driver-idle ${showEllaDriverPanel ? 'driver-ella-profile' : ''}`}>
-        {/* Map background */}
+ return (
+  <main className="app-shell">
+    <section className={`phone driver-phone driver-idle ${showEllaDriverPanel ? 'driver-ella-profile' : ''}`}>
+      {passengerRatingTrip && (
+        <div className="mc-rating-backdrop" role="presentation">
+          <section className="mc-rating-sheet" role="dialog" aria-modal="true" aria-label="Calificar pasajero">
+            <div className="mc-rating-handle" />
+
+            <header className="mc-rating-head">
+              <span>Viaje finalizado</span>
+              <h2>¿Cómo fue el pasajero?</h2>
+              <p>
+                Esta puntuación queda visible para administración y ayuda a cuidar a los choferes.
+              </p>
+            </header>
+
+            <div className="mc-rating-profile">
+              <div className="mc-rating-avatar">
+                <UserRound size={30} />
+              </div>
+
+              <div>
+                <span>Pasajero</span>
+                <strong>Cliente MiChofer</strong>
+                <small>{passengerRatingTrip.destination_text || 'Viaje MiChofer'}</small>
+              </div>
+            </div>
+
+            <div className="mc-rating-stars" aria-label="Puntuación">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  className={passengerRatingStars >= star ? 'active' : ''}
+                  onClick={() => setPassengerRatingStars(star)}
+                  aria-label={`${star} estrellas`}
+                >
+                  <Star size={27} fill="currentColor" />
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              className="mc-rating-textarea"
+              value={passengerRatingComment}
+              onChange={(event) => setPassengerRatingComment(event.target.value)}
+              placeholder="Mensaje opcional para admin: trato, espera, ubicación, comportamiento..."
+              maxLength={400}
+            />
+
+            <div className="mc-rating-actions">
+              <button
+                type="button"
+                className="mc-rating-secondary"
+                onClick={async () => {
+                  setPassengerRatingTrip(null)
+                  setPassengerRatingStars(5)
+                  setPassengerRatingComment('')
+                  await loadTrips()
+                }}
+                disabled={passengerRatingSubmitting}
+              >
+                Omitir
+              </button>
+
+              <button
+                type="button"
+                className="mc-rating-primary"
+                onClick={submitDriverPassengerRating}
+                disabled={passengerRatingSubmitting}
+              >
+                {passengerRatingSubmitting ? 'Enviando...' : 'Enviar calificación'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* Map background */}
                 <div className="driver-idle-map">
           {driverPoint ? (
             <InteractiveRouteMap
@@ -1596,27 +2082,41 @@ const getCurrentLocation = useCallback(async () => {
                    )}
         </div>
 
-        {/* Driver status bar */}
-        <header className="driver-idle-bar">
-          <button
-            type="button"
-            className="driver-idle-avatar"
-            onClick={() => setShowSideMenu(true)}
-            aria-label="Abrir menú"
-          >
-            {driverAvatar ? <img src={driverAvatar} alt={driverDisplayName} /> : <UserRound size={22} />}
-          </button>
-          <div className="driver-idle-bar-center">
-            <span className={`driver-idle-dot ${isReceivingTrips ? 'online' : isOnline ? 'standby' : 'offline'}`} />
-            <div>
-              <strong>{currentModeLabel}</strong>
-              <small>{hasDriverLocation ? 'GPS activo' : 'Sin GPS'}</small>
-            </div>
-          </div>
-          <button type="button" className="driver-idle-refresh" onClick={init} aria-label="Actualizar">
-            <RefreshCw size={18} />
-          </button>
-        </header>
+     {/* Driver status bar */}
+<header className="mc-driver-hud">
+  <button
+    type="button"
+    className="mc-driver-hud-avatar"
+    onClick={() => setShowSideMenu(true)}
+    aria-label="Abrir perfil del chofer"
+  >
+    {driverAvatar ? <img src={driverAvatar} alt={driverDisplayName} /> : <UserRound size={22} />}
+  </button>
+
+  <div className="mc-driver-hud-main">
+    <div className="mc-driver-hud-status">
+      <span className={`mc-driver-status-dot ${isReceivingTrips ? 'online' : isOnline ? 'standby' : 'offline'}`} />
+      <strong>{currentModeLabel}</strong>
+    </div>
+
+    <small>
+      {hasDriverLocation
+        ? isReceivingTrips
+          ? 'GPS activo · recibiendo viajes'
+          : 'GPS activo · en espera'
+        : 'GPS pendiente'}
+    </small>
+  </div>
+
+  <button
+    type="button"
+    className="mc-driver-hud-refresh"
+    onClick={init}
+    aria-label="Actualizar estado"
+  >
+    <RefreshCw size={18} />
+  </button>
+</header>
 
         {/* Message */}
         {message && <div className="driver-idle-notice">{message}</div>}
@@ -1642,93 +2142,126 @@ const getCurrentLocation = useCallback(async () => {
           </article>
         )}
 
-        {/* Pending trip request */}
-        {pendingTrips.length > 0 && (
-          <div className="driver-idle-request">
-            {pendingTrips.slice(0, 1).map((trip) => (
-              <article key={trip.id} className="driver-idle-request-card driver-trip-card">
-                <div className="driver-idle-request-top">
-                  <span>{isEllaTrip(trip) ? 'Solicitud con preferencia' : 'Solicitud de viaje'}</span>
-                  <strong>{formatGs(trip.price)}</strong>
-                </div>
-                {isEllaTrip(trip) && (
-                  <div className="michofer-ella-request-badge">
-                    <ShieldCheck size={14} />
-                    <strong>Viaje Confianza</strong>
-                    <span>Preferencia verificada. Seguridad primero.</span>
-                  </div>
-                )}
-                <h2>{trip.destination_text || 'Destino solicitado'}</h2>
-                <p>
-                  <MapPin size={14} /> {trip.pickup_lat && trip.pickup_lng && driverProfile?.lat && driverProfile?.lng
-                    ? formatKm(distanceKm(
-                        { lat: driverProfile.lat, lng: driverProfile.lng },
-                        { lat: trip.pickup_lat, lng: trip.pickup_lng }
-                      ))
-                    : ''} · Cliente te eligió
-                </p>
-                <div className="driver-idle-request-proof">
-                  <span>Ruta segura calculada</span>
-                  <span>GPS activo</span>
-                </div>
-                <div className="driver-idle-request-actions">
-                  <button className="driver-idle-accept driver-trip-action" onClick={() => updateTrip(trip, 'accepted')}>
-                    <CheckCircle2 size={18} /> Aceptar viaje
-                  </button>
-                  <button className="driver-idle-reject driver-trip-action secondary" onClick={() => updateTrip(trip, 'cancelled')}>
-                    <XCircle size={18} /> Rechazar
-                  </button>
-                  <a href={`/chat?trip=${trip.id}`} className="driver-idle-chat-link" aria-label="Chat">
-                    <MessageCircle size={18} />
-                  </a>
-                </div>
-              </article>
-            ))}
+       {/* Pending trip request */}
+{pendingTrips.length > 0 && (
+  <div className="mc-driver-request-stack">
+    {pendingTrips.slice(0, 1).map((trip) => {
+      const pickupDistance =
+        trip.pickup_lat && trip.pickup_lng && driverProfile?.lat && driverProfile?.lng
+          ? formatKm(
+              distanceKm(
+                { lat: driverProfile.lat, lng: driverProfile.lng },
+                { lat: trip.pickup_lat, lng: trip.pickup_lng }
+              )
+            )
+          : 'Cerca'
+
+      return (
+        <article key={trip.id} className="mc-driver-request-card">
+          <div className="mc-driver-request-top">
+            <span>{isEllaTrip(trip) ? 'Solicitud Confianza' : 'Nueva solicitud'}</span>
+            <strong>{formatGs(trip.price)}</strong>
           </div>
-        )}
 
-        {/* Only show controls when no incoming trip */}
-        {pendingTrips.length === 0 && (
-          <section className="driver-idle-controls">
-            {/* Online/offline toggle */}
-            <button
-              type="button"
-              className={`driver-idle-btn ${isOnline ? 'active' : ''}`}
-              onClick={() => updateAvailability(!isOnline, !isOnline)}
-              disabled={!approved}
-            >
-              {isOnline ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-              <span>{isOnline ? 'En línea' : 'Conectarme'}</span>
-            </button>
-
-            {/* Receive trips toggle */}
-            <button
-              type="button"
-              className={`driver-idle-btn ${isReceivingTrips ? 'active accent' : ''}`}
-              onClick={() => updateAvailability(true, !isAvailable)}
-              disabled={!approved || (!isOnline && !isAvailable)}
-            >
-              <CarFront size={20} />
-              <span>{isReceivingTrips ? 'Recibiendo' : 'Recibir viajes'}</span>
-            </button>
-
-            {/* Calibrate */}
-            <button
-              type="button"
-              className="driver-idle-btn ghost"
-              onClick={() => syncDriverLocation(activeTrip, true, isAvailable)}
-            >
-              <RefreshCw size={16} />
-              <span>Calibrar</span>
-            </button>
-
-            {/* Request count badge */}
-            <div className="driver-idle-badge">
-              <Clock size={16} />
-              <span>{pendingTrips.length} solicitudes</span>
+          {isEllaTrip(trip) && (
+            <div className="mc-driver-ella-pill">
+              <ShieldCheck size={14} />
+              <strong>Viaje Confianza</strong>
+              <span>Preferencia verificada</span>
             </div>
-          </section>
-        )}
+          )}
+
+          <div className="mc-driver-request-copy">
+            <h2>{trip.destination_text || 'Destino solicitado'}</h2>
+            <p>
+              <MapPin size={14} />
+              <span>{pickupDistance} · Cliente te eligió</span>
+            </p>
+          </div>
+
+          <div className="mc-driver-request-proof">
+            <span>Ruta segura</span>
+            <span>GPS activo</span>
+            <strong className={`mc-driver-payment-pill ${String(trip?.payment_method || 'cash').toLowerCase()}`}>
+              {tripPaymentLabel(trip)}
+            </strong>
+          </div>
+
+          <div className="mc-driver-request-actions">
+            <button
+              type="button"
+              className="mc-driver-accept-btn"
+              onClick={() => updateTrip(trip, 'accepted')}
+            >
+              <CheckCircle2 size={18} />
+              <span>Aceptar viaje</span>
+            </button>
+
+            <button
+              type="button"
+              className="mc-driver-reject-btn"
+              onClick={() => updateTrip(trip, 'cancelled')}
+              aria-label="Rechazar viaje"
+            >
+              <XCircle size={18} />
+            </button>
+
+            <a
+              href={`/chat?trip=${trip.id}`}
+              className="mc-driver-chat-btn"
+              aria-label="Chat"
+            >
+              <MessageCircle size={18} />
+            </a>
+          </div>
+        </article>
+      )
+    })}
+  </div>
+)}
+
+       {/* Only show controls when no incoming trip */}
+{pendingTrips.length === 0 && (
+  <section className="mc-driver-dock" aria-label="Controles del chofer">
+    <div className="mc-driver-dock-primary">
+      <button
+        type="button"
+        className={`mc-driver-dock-btn ${isOnline ? 'active' : ''}`}
+        onClick={() => updateAvailability(!isOnline, !isOnline)}
+        disabled={!approved}
+      >
+        {isOnline ? <ToggleRight size={21} /> : <ToggleLeft size={21} />}
+        <span>{isOnline ? 'En línea' : 'Conectarme'}</span>
+      </button>
+
+      <button
+        type="button"
+        className={`mc-driver-dock-btn receive ${isReceivingTrips ? 'active' : ''}`}
+        onClick={() => updateAvailability(true, !isAvailable)}
+        disabled={!approved || (!isOnline && !isAvailable)}
+      >
+        <CarFront size={19} />
+        <span>{isReceivingTrips ? 'Recibiendo' : 'Recibir viajes'}</span>
+      </button>
+    </div>
+
+    <div className="mc-driver-dock-secondary">
+      <button
+        type="button"
+        className="mc-driver-calibrate-btn"
+        onClick={() => syncDriverLocation(activeTrip, true, isAvailable)}
+      >
+        <RefreshCw size={15} />
+        <span>Calibrar ubicación</span>
+      </button>
+
+      <div className="mc-driver-request-count">
+        <Clock size={15} />
+        <span>{pendingTrips.length} solicitudes</span>
+      </div>
+    </div>
+  </section>
+)}
 
         {/* Verification warning */}
         {!approved && (
@@ -1737,81 +2270,143 @@ const getCurrentLocation = useCallback(async () => {
           </div>
         )}
 
-        {/* Side menu */}
-        {showSideMenu && (
-          <div className="side-backdrop driver-side-backdrop" onClick={() => setShowSideMenu(false)}>
-            <aside className="side-menu driver-side-menu" onClick={(e) => e.stopPropagation()}>
-              <button className="side-menu-close" type="button" onClick={() => setShowSideMenu(false)} aria-label="Cerrar">
-                ✕
-              </button>
+       {/* Driver profile menu */}
+{showSideMenu && (
+  <div
+    className="mc-driver-profile-backdrop"
+    onClick={() => setShowSideMenu(false)}
+    role="presentation"
+  >
+    <aside
+      className="mc-driver-profile-panel"
+      onClick={(event) => event.stopPropagation()}
+      aria-label="Perfil del chofer"
+    >
+      <header className="mc-driver-profile-top">
+        <div className="mc-driver-profile-brand">
+          <span />
+          <strong>MiChofer Driver</strong>
+        </div>
 
-              <div className="driver-side-head">
-                <div className={`driver-side-avatar ${isOnline ? 'online' : 'offline'}`}>
-                  {driverAvatar ? <img src={driverAvatar} alt={driverDisplayName} /> : <UserRound size={26} />}
-                </div>
-                <div>
-                  <strong>{driverDisplayName}</strong>
-                  <small>{driverVehicleLabel(driverProfile)}</small>
-                </div>
-              </div>
+        <button
+          className="mc-driver-profile-close"
+          type="button"
+          onClick={() => setShowSideMenu(false)}
+          aria-label="Cerrar perfil"
+        >
+          ✕
+        </button>
+      </header>
 
-              {!approved && (
-                <div className="notice-card driver-side-notice">
-                  <ShieldCheck size={14} /> {verificationTitle}
-                </div>
-              )}
+      <section className="mc-driver-profile-card">
+        <div className={`mc-driver-profile-avatar ${isOnline ? 'online' : 'offline'}`}>
+          {driverAvatar ? (
+            <img src={driverAvatar} alt={driverDisplayName} />
+          ) : (
+            <UserRound size={30} />
+          )}
+        </div>
 
-              <div className="driver-side-categories">
-                <strong>Categorías</strong>
-                {DRIVER_CATEGORY_ACTIONS.map((category) => {
-                  const status = getDriverCategoryStatus(driverProfile, category.code)
-                  const disabled = !approved || status === 'approved' || status === 'requested'
-                  return (
-                    <button
-                      key={category.code}
-                      type="button"
-                      className={`driver-side-cat-btn ${status}`}
-                      onClick={() => requestCategory(category.code)}
-                      disabled={disabled}
-                    >
-                      <span>{category.title}</span>
-                      <small>{categoryStatusLabel(status)}</small>
-                    </button>
-                  )
-                })}
-              </div>
+        <div className="mc-driver-profile-copy">
+          <span>{approved ? 'Chofer verificado' : 'Perfil pendiente'}</span>
+          <h2>{driverDisplayName}</h2>
+          <p>{driverVehicleLabel(driverProfile)}</p>
+        </div>
+      </section>
 
-              <div className="driver-side-notifications">
-                <strong>Notificaciones</strong>
-                {driverNotifications.length === 0 ? (
-                  <small>No hay avisos nuevos.</small>
-                ) : (
-                  driverNotifications.map((item) => (
-                    <article key={item.id} className={`driver-side-notification ${item.tone}`}>
-                      <span>{item.time}</span>
-                      <strong>{item.title}</strong>
-                      <small>{item.body}</small>
-                    </article>
-                  ))
-                )}
-              </div>
+      <section className="mc-driver-profile-status">
+        <div>
+          <span>Estado</span>
+          <strong>{currentModeLabel}</strong>
+        </div>
 
-              <nav className="driver-side-legal-links" aria-label="Links legales">
-                <a href="/support">Soporte</a>
-                <a href="/privacy">Politica de privacidad</a>
-                <a href="/terms">Terminos</a>
-                <a href="/delete-account">Eliminar cuenta</a>
-              </nav>
+        <div>
+          <span>GPS</span>
+          <strong>{hasDriverLocation ? 'Activo' : 'Pendiente'}</strong>
+        </div>
+      </section>
 
-              <button className="driver-side-logout" type="button" onClick={async () => {
-                await supabase.auth.signOut()
-                window.location.href = '/login'
-              }}>
-                <LogOut size={18} /> Cerrar sesión
-              </button>
-            </aside>
+      {!approved && (
+        <section className="mc-driver-profile-warning">
+          <ShieldCheck size={16} />
+          <div>
+            <strong>{verificationTitle}</strong>
+            <small>Completá y enviá tus datos para recibir viajes.</small>
           </div>
-        )}
+        </section>
+      )}
+
+      <section className="mc-driver-profile-section">
+        <div className="mc-driver-profile-section-head">
+          <strong>Categorías</strong>
+          <small>Admin revisa cada habilitación</small>
+        </div>
+
+        <div className="mc-driver-category-list">
+          {(DRIVER_CATEGORY_ACTIONS || []).map((category) => {
+            const status = getDriverCategoryStatus(driverProfile, category.code)
+            const disabled = !approved || status === 'approved' || status === 'requested'
+
+            return (
+              <button
+                key={category.code}
+                type="button"
+                className={`mc-driver-category-btn ${status}`}
+                onClick={() => requestCategory(category.code)}
+                disabled={disabled}
+              >
+                <span>{category.title}</span>
+                <small>{categoryStatusLabel(status)}</small>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="mc-driver-profile-section">
+        <div className="mc-driver-profile-section-head">
+          <strong>Notificaciones</strong>
+          <small>{driverNotifications.length} aviso{driverNotifications.length === 1 ? '' : 's'}</small>
+        </div>
+
+        <div className="mc-driver-notification-list">
+          {driverNotifications.length === 0 ? (
+            <div className="mc-driver-empty-note">
+              No hay avisos nuevos.
+            </div>
+          ) : (
+            driverNotifications.map((item) => (
+              <article key={item.id} className={`mc-driver-notification ${item.tone}`}>
+                <span>{item.time}</span>
+                <strong>{item.title}</strong>
+                <small>{item.body}</small>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      <nav className="mc-driver-profile-links" aria-label="Links legales">
+        <a href="/support">Soporte</a>
+        <a href="/privacy">Política de privacidad</a>
+        <a href="/terms">Términos</a>
+        <a href="/delete-account">Eliminar cuenta</a>
+      </nav>
+
+      <button
+        className="mc-driver-profile-logout"
+        type="button"
+        onClick={async () => {
+          await supabase.auth.signOut()
+          window.location.href = '/login'
+        }}
+      >
+        <LogOut size={18} />
+        <span>Cerrar sesión</span>
+      </button>
+    </aside>
+  </div>
+)}
       </section>
     </main>
   )

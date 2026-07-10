@@ -57,6 +57,7 @@ export default function TripChatModal({
   onClose,
   currentUser,
   trip: providedTrip,
+  onUnreadCountChange,
   pageMode = false,
 }) {
   const [user, setUser] = useState(currentUser || null)
@@ -68,6 +69,7 @@ export default function TripChatModal({
   const [expanded, setExpanded] = useState(pageMode)
   const [loading, setLoading] = useState(false)
   const [otherTyping, setOtherTyping] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const messagesRef = useRef(null)
   const typingChannelRef = useRef(null)
   const typingTimeoutRef = useRef(null)
@@ -75,6 +77,8 @@ export default function TripChatModal({
   const activeTripId = tripId || providedTrip?.id || ''
   const visible = pageMode || open
   const isFinished = FINISHED_STATUSES.includes(trip?.status)
+  const unreadCountRef = useRef(0)
+  const initialLoadRef = useRef(false)
 
   const isParticipant = useMemo(() => {
     if (!trip || !user?.id) return false
@@ -90,7 +94,7 @@ export default function TripChatModal({
   }, [providedTrip?.id, providedTrip?.status, providedTrip?.driver_id, providedTrip?.client_id])
 
   useEffect(() => {
-    if (!visible || !activeTripId) return undefined
+    if (!activeTripId) return undefined
 
     let cancelled = false
 
@@ -153,10 +157,10 @@ export default function TripChatModal({
     return () => {
       cancelled = true
     }
-  }, [visible, activeTripId, currentUser?.id, providedTrip?.id])
+  }, [activeTripId, currentUser?.id, providedTrip?.id])
 
   useEffect(() => {
-    if (!visible || !activeTripId || !user?.id) return undefined
+    if (!activeTripId || !user?.id) return undefined
 
     const channel = supabase
       .channel(`trip-messages-${activeTripId}`)
@@ -164,14 +168,25 @@ export default function TripChatModal({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `trip_id=eq.${activeTripId}` },
         ({ new: nextMessage }) => {
+          if (!nextMessage) return
+
           setMessages((current) => {
             const withoutOptimistic = current.filter(
               (message) => !(message.optimistic && isSameMessage(message, nextMessage))
             )
-            return withoutOptimistic.some((message) => message.id === nextMessage.id)
-              ? withoutOptimistic
-              : [...withoutOptimistic, nextMessage]
+
+            const alreadyExists = withoutOptimistic.some((message) => message.id === nextMessage.id)
+            if (alreadyExists) return withoutOptimistic
+
+            return [...withoutOptimistic, nextMessage]
           })
+
+          if (nextMessage.sender_id !== user?.id && !open) {
+            const nextCount = Math.min(99, unreadCountRef.current + 1)
+            unreadCountRef.current = nextCount
+            setUnreadCount(nextCount)
+            onUnreadCountChange?.(nextCount)
+          }
         }
       )
       .subscribe()
@@ -182,7 +197,7 @@ export default function TripChatModal({
       window.clearInterval(interval)
       supabase.removeChannel(channel)
     }
-  }, [visible, activeTripId, user?.id])
+  }, [activeTripId, open, onUnreadCountChange, user?.id])
 
   useEffect(() => {
     if (!visible || !activeTripId || !user?.id) return undefined
@@ -234,10 +249,17 @@ export default function TripChatModal({
     setMessages((current) => {
       const optimistic = current.filter((message) => message.optimistic && message.status !== 'sent')
       const saved = data || []
-      return [
+      const nextMessages = [
         ...saved,
         ...optimistic.filter((pending) => !saved.some((item) => isSameMessage(item, pending))),
       ].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+
+      initialLoadRef.current = true
+      setUnreadCount(0)
+      unreadCountRef.current = 0
+      onUnreadCountChange?.(0)
+
+      return nextMessages
     })
   }
 
@@ -249,6 +271,20 @@ export default function TripChatModal({
       payload: { user_id: user.id, is_typing: nextValue },
     })
   }
+
+  function playMessageNotificationSound() {
+    // Sin sonido interno.
+    // Los únicos sonidos oficiales de MiChofer se reproducen desde Client.jsx y Driver.jsx
+    // usando src/assets/toonomensaje.mp3 y src/assets/tonodriver.mp3.
+  }
+
+  useEffect(() => {
+    if (!open || unreadCount === 0) return
+
+    setUnreadCount(0)
+    unreadCountRef.current = 0
+    onUnreadCountChange?.(0)
+  }, [open, unreadCount, onUnreadCountChange])
 
   function updateText(value) {
     setText(value)
@@ -330,7 +366,7 @@ export default function TripChatModal({
     window.location.href = `tel:${phone}`
   }
 
-  if (!visible) return null
+  if (!activeTripId && !pageMode) return null
 
   const panel = (
     <section
@@ -450,7 +486,7 @@ export default function TripChatModal({
   if (pageMode) return <div className="trip-chat-page-wrap">{panel}</div>
 
   return (
-    <div className="trip-chat-overlay" onClick={onClose} role="presentation">
+    <div className={`trip-chat-overlay ${open ? '' : 'hidden'}`} onClick={open ? onClose : undefined} role="presentation">
       {panel}
     </div>
   )

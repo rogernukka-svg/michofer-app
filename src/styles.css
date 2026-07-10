@@ -444,60 +444,69 @@ button {
 .home-sheet {
   position: relative;
   z-index: 7;
-  margin-top: -42px;
-  min-height: 44vh;
-  border-radius: 34px 34px 0 0;
+  margin-top: -34px;
+  min-height: 36vh;
+  border-radius: 32px 32px 0 0;
   background: var(--white);
-  padding: 34px 24px 32px;
-  box-shadow: 0 -24px 54px rgba(5, 5, 5, 0.08);
+  padding: 24px 20px 22px;
+  box-shadow: 0 -20px 42px rgba(5, 5, 5, 0.08);
+}
+
+.home-sheet.home-sheet-compact {
+  min-height: 34vh;
+  padding: 22px 18px 18px;
 }
 
 .home-sheet h1 {
-  margin: 12px 0 0;
-  max-width: 372px;
-  font-size: 49px;
-  line-height: 0.98;
+  margin: 8px 0 0;
+  max-width: 100%;
+  font-size: 38px;
+  line-height: 1.03;
   letter-spacing: 0;
   font-weight: 950;
 }
 
 .home-sheet .muted {
-  max-width: 352px;
+  max-width: 100%;
+  margin-top: 12px;
+  color: var(--gray-600);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.home-actions {
-  margin-top: 26px;
+.home-actions.home-actions-equal {
+  margin-top: 20px;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
+.home-actions .main-btn,
+.woman-mode-link {
+  min-height: 56px;
+  border-radius: 20px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .home-actions .main-btn {
-  min-height: 62px;
-  border-radius: 22px;
-  font-size: 18px;
+  padding: 0 18px;
 }
 
 .woman-mode-link {
-  min-height: 62px;
-  border-radius: 22px;
   background: #fdf2f8;
   color: #9f1239;
   border-color: rgba(244, 194, 222, 0.8);
-  padding: 0 14px;
-  white-space: nowrap;
+  padding: 0 16px;
 }
 
 .home-note {
-  margin: 18px 0 0;
-  color: var(--gray-500);
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  line-height: 1.35;
-  font-weight: 850;
+  display: none;
 }
+
 
 /* Client */
 .client-phone {
@@ -3636,24 +3645,23 @@ body.route-registro .register-photo-preview {
 .avatar-button.header-avatar {
   width: 44px;
   height: 44px;
-  border: 0;
-  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   color: #0a0a0a;
-  background: #ffffff;
-  box-shadow:
-    0 10px 26px rgba(8, 12, 20, 0.14),
-    inset 0 0 0 1px rgba(10, 10, 10, 0.06);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 10px 20px rgba(8, 12, 20, 0.12);
   cursor: pointer;
+  overflow: hidden;
 }
 
 .header-avatar img,
 .avatar-button.header-avatar img {
   width: 100%;
   height: 100%;
-  border-radius: 18px;
+  border-radius: 50%;
   object-fit: cover;
 }
 
@@ -4267,8 +4275,118 @@ body.route-client .account-panel .account-section button {
 }
 
 body.route-client .account-panel .account-section a + a,
-body.route-client .account-panel .account-section button + button {
+body.route-client .account-panel .account-section button + button,
+body.route-client .account-panel .account-section a + button,
+body.route-client .account-panel .account-section button + a {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.route-client .account-panel .account-section.account-support-section {
+  padding: 16px 0 0;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 40px rgba(0, 0, 0, 0.16);
+}
+
+body.route-client .account-panel .account-support-header {
+  display: grid;
+  gap: 4px;
+  padding: 0 18px 12px;
+}
+
+body.route-client .account-panel .account-support-subtitle {
+  margin: 0;
+  color: rgba(248, 251, 255, 0.7);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+body.route-client .account-panel .account-section.account-support-section .account-logout {
+  min-height: 50px;
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  background: rgba(227, 6, 19, 0.24);
+  color: #ffd9de;
+}
+
+body.route-client .account-panel .account-section.account-support-section a,
+body.route-client .account-panel .account-section.account-support-section button {
+  padding: 0 18px;
+}
+
+body.route-client .account-panel .account-section.account-support-section .account-logout:hover {
+  background: rgba(227, 6, 19, 0.32);
+}
+
+body.route-client .account-panel .account-payment-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  text-align: left;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--glass-text);
+  border: 0;
+}
+
+body.route-client .account-panel .account-payment-labels {
+  display: grid;
+  gap: 2px;
+  align-items: start;
+}
+
+body.route-client .account-panel .account-payment-labels span {
+  display: block;
+}
+
+body.route-client .account-panel .account-payment-labels small {
+  display: block;
+  color: rgba(248, 251, 255, 0.68);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+body.route-client .account-panel .account-payment-options {
+  display: grid;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.route-client .account-panel .account-payment-options button {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 16px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--glass-text);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  font-weight: 900;
+}
+
+body.route-client .account-panel .account-payment-options button.active {
+  background: rgba(45, 245, 168, 0.18);
+  color: #ffffff;
+}
+
+body.route-client .account-panel .account-section-label {
+  display: block;
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 body.route-client .account-panel .account-section svg {
@@ -4870,7 +4988,7 @@ body.route-client .account-overlay .account-panel {
   display: flex !important;
   flex-direction: column !important;
   gap: clamp(12px, 1.8dvh, 18px) !important;
-  overflow: hidden !important;
+  overflow: auto !important;
   background:
     radial-gradient(circle at 50% 2%, rgba(255, 255, 255, 0.1), transparent 34%),
     rgba(54, 54, 57, 0.84) !important;
@@ -4957,6 +5075,33 @@ body.route-client .account-panel .google-account-head h2 {
   font-size: clamp(26px, 5dvh, 38px);
   line-height: 1;
   font-weight: 800;
+}
+
+body.route-client .account-overlay .account-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: clamp(12px, 1.8dvh, 16px) !important;
+}
+
+body.route-client .account-overlay .account-panel .account-main-action,
+body.route-client .account-overlay .account-panel .account-logout,
+body.route-client .account-overlay .account-panel .account-section {
+  width: min(100%, 620px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+body.route-client .account-overlay .account-panel .account-main-action {
+  margin-bottom: 14px !important;
+}
+
+body.route-client .account-overlay .account-panel .account-section {
+  margin-bottom: 14px !important;
+}
+
+body.route-client .account-overlay .account-panel .account-logout {
+  margin-top: 0 !important;
 }
 
 body.route-client .avatar-preview-backdrop {
@@ -5075,7 +5220,7 @@ body.route-client .account-panel .account-section {
 
 body.route-client .account-panel .account-main-action {
   min-height: clamp(48px, 6.6dvh, 58px) !important;
-  margin-bottom: 0 !important;
+  margin-bottom: 14px !important;
   border-radius: 999px !important;
   border: 1px solid rgba(255, 255, 255, 0.34) !important;
   background: transparent !important;
@@ -5089,6 +5234,7 @@ body.route-client .account-panel .account-section {
   border-radius: 28px !important;
   background: #000000 !important;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+  margin-bottom: 14px !important;
 }
 
 body.route-client .account-panel .account-section a,
@@ -5116,7 +5262,7 @@ body.route-client .account-panel .account-section svg {
 
 body.route-client .account-panel .account-logout {
   min-height: clamp(44px, 5.8dvh, 52px) !important;
-  margin-top: auto !important;
+  margin-top: 0 !important;
   border-radius: 999px !important;
   background: #000000 !important;
   color: #ffccd3 !important;
@@ -5267,20 +5413,11 @@ body.route-home .home-map-grid {
 body.route-home .home-map-tint {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(5, 7, 10, 0.08) 0%, rgba(5, 7, 10, 0.22) 48%, rgba(5, 7, 10, 0.9) 100%),
-    radial-gradient(circle at 70% 18%, rgba(227, 6, 19, 0.18), transparent 28%);
+  background: none;
 }
 
 body.route-home .home-map::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 42%;
-  background: linear-gradient(180deg, transparent, #05070a 72%);
-  pointer-events: none;
+  content: none;
 }
 
 body.route-home .home-route {
@@ -8028,6 +8165,17 @@ body.route-registro .login-text-btn {
   text-shadow: none !important;
 }
 
+body.route-login .login-main-btn.login-create-link,
+body.route-registro .login-main-btn.login-create-link {
+  width: 100% !important;
+  background: linear-gradient(180deg, #07090c 0%, #020304 100%) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
 body.route-login .login-install-btn {
   width: auto !important;
   min-width: 0 !important;
@@ -10403,6 +10551,7 @@ body.route-driver .driver-navigation-copy span {
 body.route-driver .driver-navigation-copy strong {
   display: -webkit-box !important;
   overflow: hidden !important;
+  line-clamp: 2 !important;
   -webkit-line-clamp: 2 !important;
   -webkit-box-orient: vertical !important;
   color: #ffffff !important;
@@ -12667,13 +12816,13 @@ body.route-client .selected-map-card.driver-confirm-card {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
   z-index: 76 !important;
   margin: 0 !important;
-  padding: 14px !important;
+  padding: 18px !important;
   border-radius: 28px !important;
   display: grid !important;
   grid-template-columns: 1fr !important;
-  gap: 12px !important;
+  gap: 16px !important;
   color: #ffffff !important;
-  background: rgba(18, 36, 45, 0.97) !important;
+  background: rgba(18, 36, 45, 0.98) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   box-shadow:
     0 30px 88px rgba(0, 0, 0, 0.5),
@@ -12684,30 +12833,30 @@ body.route-client .selected-map-card.driver-confirm-card {
 
 body.route-client .driver-confirm-close {
   position: absolute !important;
-  top: 14px !important;
-  right: 14px !important;
+  top: 16px !important;
+  right: 16px !important;
   width: 40px !important;
   height: 40px !important;
   border: 0 !important;
-  border-radius: 15px !important;
+  border-radius: 14px !important;
   display: grid !important;
   place-items: center !important;
   color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.09) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
 body.route-client .driver-confirm-main {
   display: grid !important;
-  grid-template-columns: 70px minmax(0, 1fr) !important;
-  gap: 13px !important;
+  grid-template-columns: 80px minmax(0, 1fr) !important;
+  gap: 14px !important;
   align-items: center !important;
-  padding-right: 42px !important;
+  padding-right: 48px !important;
 }
 
 body.route-client .driver-confirm-avatar,
 body.route-client .driver-confirm-avatar img {
-  width: 70px !important;
-  height: 70px !important;
+  width: 80px !important;
+  height: 80px !important;
   border-radius: 22px !important;
   object-fit: cover !important;
 }
@@ -12717,14 +12866,30 @@ body.route-client .driver-confirm-avatar {
   place-items: center !important;
   overflow: hidden !important;
   color: #ffffff !important;
-  background: #d12b08 !important;
-  border: 3px solid #2df5a8 !important;
+  background: #0c1b24 !important;
+  border: 2px solid rgba(45, 245, 168, 0.55) !important;
   font-size: 30px !important;
   font-weight: 950 !important;
 }
 
 body.route-client .driver-confirm-copy {
   min-width: 0 !important;
+}
+
+body.route-client .driver-confirm-copy span {
+  color: rgba(255, 255, 255, 0.65) !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+body.route-client .driver-confirm-copy small.driver-confirm-payment {
+  margin-top: 8px !important;
+  display: block !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
 }
 
 body.route-client .driver-confirm-copy span,
@@ -12982,7 +13147,16 @@ body.route-client .driver-picker-mode-note {
 }
 
 body.route-client .driver-picker-notice {
-  margin: 10px 0 0 !important;
+  margin: 12px 0 0 !important;
+  padding: 12px 14px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f8fbff !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
 body.route-client .driver-picker-scroll {
@@ -13327,10 +13501,21 @@ body.route-client .account-close-top {
   background: rgba(13, 31, 40, 0.86) !important;
   border: 1px solid var(--mc-line) !important;
   box-shadow:
-    0 16px 42px rgba(0, 0, 0, 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
   backdrop-filter: blur(20px) saturate(1.12) !important;
   -webkit-backdrop-filter: blur(20px) saturate(1.12) !important;
+}
+
+body.route-client .header-avatar,
+body.route-client .avatar-button.header-avatar {
+  border-radius: 50% !important;
+  overflow: hidden !important;
+}
+
+body.route-client .header-avatar img,
+body.route-client .avatar-button.header-avatar img {
+  border-radius: 50% !important;
 }
 
 body.route-client .map-toolbar button.active {
@@ -13651,11 +13836,11 @@ body.route-client .michofer-live-avatar {
   border-radius: 24px !important;
   display: grid !important;
   place-items: center !important;
-  overflow: visible !important;
+  overflow: hidden !important;
   color: #ffffff !important;
-  background: #d12b08 !important;
-  border: 3px solid var(--mc-green) !important;
-  box-shadow: 0 18px 44px rgba(45, 245, 168, 0.16) !important;
+  background: #0f1e28 !important;
+  border: 3px solid rgba(45, 245, 168, 0.56) !important;
+  box-shadow: 0 18px 44px rgba(45, 245, 168, 0.18) !important;
   font-size: 30px !important;
   font-weight: 950 !important;
 }
@@ -14010,25 +14195,25 @@ body.route-client .client-decision-summary > div:last-child {
 }
 
 body.route-client .client-decision-summary > div:last-child strong {
-  color: #22e6ff !important;
+  color: #ffffff !important;
   font-size: 21px !important;
 }
 
 body.route-client .client-driver-discovery-btn {
   width: 100% !important;
   min-height: 58px !important;
-  border: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 23px !important;
   padding: 0 16px !important;
   display: grid !important;
   grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto !important;
   align-items: center !important;
   gap: 10px !important;
-  color: #031013 !important;
-  background: linear-gradient(135deg, #2df5a8, #12d8ff) !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, rgba(8, 23, 35, 0.96), rgba(12, 34, 50, 0.96)) !important;
   box-shadow:
-    0 18px 46px rgba(18, 216, 255, 0.2),
-    0 0 28px rgba(45, 245, 168, 0.12) !important;
+    0 16px 32px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 body.route-client .client-driver-discovery-btn span {
@@ -14040,8 +14225,8 @@ body.route-client .client-driver-discovery-btn span {
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
-  color: rgba(3, 16, 19, 0.78) !important;
-  background: rgba(255, 255, 255, 0.36) !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   font-size: 11px !important;
   line-height: 1 !important;
   font-weight: 950 !important;
@@ -14051,7 +14236,7 @@ body.route-client .client-driver-discovery-btn span {
 
 body.route-client .client-driver-discovery-btn strong {
   min-width: 0 !important;
-  color: #031013 !important;
+  color: #ffffff !important;
   font-size: 17px !important;
   line-height: 1 !important;
   font-weight: 950 !important;
@@ -14225,10 +14410,11 @@ body.route-client .michofer-live-handle-button span {
 }
 
 body.route-client .michofer-live-progress {
-  height: 4px !important;
+  position: relative !important;
+  height: 6px !important;
   border-radius: 999px !important;
-  overflow: hidden !important;
-  background: rgba(255, 255, 255, 0.1) !important;
+  overflow: visible !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
 body.route-client .michofer-live-progress span {
@@ -14236,6 +14422,29 @@ body.route-client .michofer-live-progress span {
   height: 100% !important;
   border-radius: inherit !important;
   background: linear-gradient(90deg, #2df5a8, #12d8ff) !important;
+  transition: width 280ms ease !important;
+}
+
+body.route-client .michofer-live-progress-car {
+  position: absolute !important;
+  top: 50% !important;
+  left: min(max(calc(var(--ride-progress, 0%) + 0.5%), 8px), calc(100% - 8px)) !important;
+  transform: translate(-50%, -50%) !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  color: #031013 !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2) !important;
+  transition: left 280ms ease !important;
+  pointer-events: none !important;
+}
+
+body.route-client .michofer-live-progress-car svg {
+  width: 18px !important;
+  height: 18px !important;
 }
 
 /* Compact row */
@@ -16805,9 +17014,43 @@ body.route-driver .driver-navigation-cancel {
 }
 
 body.route-driver .driver-navigation-chat {
+  position: relative !important;
   color: rgba(248, 251, 255, 0.92) !important;
   background: rgba(255, 255, 255, 0.09) !important;
   border: 1px solid rgba(255, 255, 255, 0.11) !important;
+}
+
+.chat-unread-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #041013;
+  background: #fef2c7;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.driver-chat-badge {
+  top: 5px !important;
+  right: 5px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  font-size: 10px !important;
+  padding: 0 5px !important;
+}
+
+.michofer-chat-action .chat-unread-badge {
+  position: absolute;
+  top: 10px;
+  right: 14px;
 }
 
 body.route-driver .driver-navigation-cancel {
@@ -17622,17 +17865,24 @@ body.route-client .driver-picker-mode-cards .mode-card-icon {
     0 10px 24px rgba(0, 0, 0, 0.18) !important;
 }
 
-body.route-client .driver-picker-pro-modes .mode-card-icon img,
-body.route-client .driver-picker-mode-cards .mode-card-icon img {
-  width: 32px !important;
-  height: 32px !important;
-  max-width: 32px !important;
-  max-height: 32px !important;
-  object-fit: contain !important;
-  display: block !important;
-  filter:
-    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.38))
-    drop-shadow(0 0 7px rgba(255, 255, 255, 0.08)) !important;
+body.route-client .driver-picker-pro-modes .mode-card-icon,
+body.route-client .driver-picker-mode-cards .mode-card-icon {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #f8fbff !important;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.12), transparent 58%),
+    rgba(0, 0, 0, 0.36) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 7px 16px rgba(0, 0, 0, 0.12) !important;
+  font-size: 18px !important;
+  font-weight: 950 !important;
 }
 
 body.route-client .driver-picker-pro-modes button.active .mode-card-icon,
@@ -19535,13 +19785,10 @@ body.route-client .driver-picker-pro-card.driver-option-card {
 
 body.route-client .driver-picker-pro-card.driver-option-card.recommended {
   padding-top: 31px !important;
-  border-color: rgba(34, 230, 197, 0.28) !important;
-  background:
-    radial-gradient(circle at 18% 0%, rgba(34, 230, 197, 0.13), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.05)) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
   box-shadow:
-    0 16px 42px rgba(0, 0, 0, 0.22),
-    0 0 24px rgba(34, 230, 197, 0.07) !important;
+    0 12px 24px rgba(0, 0, 0, 0.16) !important;
 }
 
 body.route-client .driver-recommended-badge {
@@ -19552,14 +19799,14 @@ body.route-client .driver-recommended-badge {
   align-items: center !important;
   gap: 7px !important;
   max-width: calc(100% - 26px) !important;
-  padding: 4px 9px !important;
+  padding: 5px 10px !important;
   border-radius: 999px !important;
-  color: #071316 !important;
-  background: rgba(34, 230, 197, 0.92) !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12) !important;
   font-size: 10px !important;
   line-height: 1 !important;
-  font-weight: 950 !important;
-  letter-spacing: 0.04em !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
 }
 
@@ -19576,9 +19823,9 @@ body.route-client .driver-picker-pro-avatar.driver-avatar-premium {
   height: 58px !important;
   border-radius: 22px !important;
   overflow: hidden !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18) !important;
 }
 
 body.route-client .driver-picker-pro-avatar.driver-avatar-premium img {
@@ -19619,7 +19866,7 @@ body.route-client .driver-picker-pro-name strong {
 }
 
 body.route-client .driver-picker-pro-name svg {
-  color: #22e6c5 !important;
+  color: rgba(255, 255, 255, 0.72) !important;
   flex: 0 0 auto !important;
 }
 
@@ -19702,9 +19949,10 @@ body.route-client .choose-driver-btn {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 999px !important;
-  color: #041315 !important;
-  background: linear-gradient(135deg, #22e6c5, #88fff0) !important;
-  box-shadow: 0 12px 24px rgba(34, 230, 197, 0.18) !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   font-size: 13px !important;
   font-weight: 950 !important;
 }
@@ -19837,7 +20085,7 @@ body.route-client .driver-recommended-badge small {
 body.route-client .driver-picker-safety-copy {
   display: block !important;
   margin-top: 4px !important;
-  color: rgba(185, 255, 248, 0.58) !important;
+  color: rgba(255, 255, 255, 0.52) !important;
   font-size: 10.5px !important;
   line-height: 1.2 !important;
   font-weight: 750 !important;
@@ -19861,9 +20109,9 @@ body.route-client .driver-request-btn {
 
 body.route-client .driver-picker-pro .driver-picker-pro-modes.driver-picker-mode-cards button.active,
 body.route-client .driver-picker-pro .driver-picker-pro-modes.driver-picker-mode-cards .ride-mode-pill.active {
-  background: linear-gradient(180deg, #20efd2, #10d7ce) !important;
-  color: #031013 !important;
-  border-color: rgba(20, 241, 229, 0.45) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
 body.route-client .driver-picker-care-note {
@@ -20141,12 +20389,11 @@ body.route-driver .driver-rush-notice small {
 /* ==================== Premium Mobility Polish ==================== */
 
 body.route-client .driver-chooser {
-  background:
-    linear-gradient(180deg, rgba(8, 35, 41, 0.98), rgba(3, 13, 18, 0.995)) !important;
-  border-color: rgba(36, 240, 208, 0.16) !important;
+  background: rgba(8, 12, 17, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow:
-    0 -30px 90px rgba(0, 0, 0, 0.56),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    0 -24px 68px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 body.route-client .driver-chooser-header {
@@ -20154,50 +20401,50 @@ body.route-client .driver-chooser-header {
 }
 
 body.route-client .driver-chooser-header .eyebrow {
-  color: #24f0d0 !important;
+  color: rgba(255, 255, 255, 0.62) !important;
   font-size: 10px !important;
-  letter-spacing: 0.08em !important;
+  letter-spacing: 0.12em !important;
 }
 
 body.route-client .driver-chooser-header h1 {
   margin-top: 2px !important;
-  font-size: 29px !important;
-  line-height: 0.96 !important;
-  letter-spacing: -0.045em !important;
+  font-size: 30px !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.04em !important;
+  color: #ffffff !important;
 }
 
 body.route-client .driver-chooser-header span,
 body.route-client .driver-chooser-header small {
-  color: rgba(233, 250, 250, 0.66) !important;
-  line-height: 1.24 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  line-height: 1.28 !important;
 }
 
 body.route-client .driver-chooser-summary {
   height: auto !important;
-  min-height: 58px !important;
-  margin: 11px 0 10px !important;
-  padding: 10px 12px !important;
-  border-radius: 20px !important;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(36, 240, 208, 0.055)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  min-height: 68px !important;
+  margin: 12px 0 10px !important;
+  padding: 14px 16px !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 body.route-client .driver-chooser-summary strong {
-  font-size: 17px !important;
+  font-size: 16px !important;
   color: #ffffff !important;
 }
 
 body.route-client .driver-chooser-summary > div:last-child {
-  min-width: 104px !important;
-  padding: 8px 10px !important;
-  border-radius: 16px !important;
-  background: rgba(36, 240, 208, 0.12) !important;
+  min-width: 110px !important;
+  padding: 11px 13px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.09) !important;
 }
 
 body.route-client .driver-chooser-summary > div:last-child strong {
-  color: #9efff4 !important;
-  font-size: 18px !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
 }
 
 body.route-client .ride-category-card {
@@ -20209,9 +20456,9 @@ body.route-client .ride-category-card {
 }
 
 body.route-client .ride-category-card.active {
-  background: linear-gradient(180deg, #24f0d0, #14d9c7) !important;
-  border-color: rgba(255, 255, 255, 0.28) !important;
-  box-shadow: 0 12px 30px rgba(20, 241, 229, 0.16) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14) !important;
 }
 
 body.route-client .driver-option-card {
@@ -20220,24 +20467,22 @@ body.route-client .driver-option-card {
   border-radius: 24px !important;
   grid-template-columns: 58px minmax(0, 1fr) auto !important;
   gap: 12px !important;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.072), rgba(255, 255, 255, 0.038)) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.09) !important;
 }
 
 body.route-client .driver-option-card.recommended {
-  padding-top: 40px !important;
-  border-color: rgba(36, 240, 208, 0.34) !important;
-  background:
-    linear-gradient(135deg, rgba(36, 240, 208, 0.12), rgba(255, 255, 255, 0.05)) !important;
+  padding-top: 34px !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.065) !important;
 }
 
 body.route-client .driver-avatar-premium {
   width: 58px !important;
   height: 58px !important;
   border-radius: 21px !important;
-  border: 2px solid rgba(36, 240, 208, 0.38) !important;
-  background: #071b1f !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 body.route-client .driver-avatar-premium img {
@@ -20251,7 +20496,7 @@ body.route-client .driver-picker-pro-name strong {
 
 body.route-client .driver-picker-pro-info > small:not(.driver-picker-safety-copy) {
   margin-top: 5px !important;
-  color: rgba(248, 251, 255, 0.58) !important;
+  color: rgba(248, 251, 255, 0.64) !important;
   font-size: 11.5px !important;
 }
 
@@ -20263,8 +20508,8 @@ body.route-client .driver-picker-pro-meta span {
   min-height: 25px !important;
   padding: 0 8px !important;
   border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.07) !important;
-  color: rgba(248, 251, 255, 0.78) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
 }
 
 body.route-client .driver-picker-pro-action {
@@ -20284,10 +20529,12 @@ body.route-client .choose-driver-btn {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: #031316 !important;
-  background: linear-gradient(180deg, #24f0d0, #14e1ca) !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   font-size: 13px !important;
   font-weight: 950 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 body.route-client .client-live-sheet {
@@ -20583,54 +20830,50 @@ body.route-client .floating-driver-panel.driver-picker-sheet.driver-picker-pro.d
   padding: 10px 12px 12px !important;
   gap: 12px !important;
   border-radius: 34px !important;
-  background:
-    radial-gradient(circle at 50% -12%, rgba(34, 230, 197, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(12, 31, 35, 0.96), rgba(5, 15, 18, 0.98)) !important;
-  border-color: rgba(255, 255, 255, 0.09) !important;
+  background: rgba(10, 15, 20, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 body.route-client .driver-picker-pro-trip.driver-chooser-summary {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 8px !important;
+  gap: 10px !important;
   margin: 0 !important;
-  padding: 12px !important;
-  border-radius: 26px !important;
-  background: rgba(255, 255, 255, 0.055) !important;
+  padding: 14px !important;
+  border-radius: 28px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 body.route-client .driver-picker-pro .ride-category-card.active,
 body.route-client .driver-picker-pro .driver-picker-pro-modes.driver-picker-mode-cards button.active,
 body.route-client .driver-picker-pro .driver-picker-pro-modes.driver-picker-mode-cards .ride-mode-pill.active {
   color: #ffffff !important;
-  background: rgba(34, 230, 197, 0.1) !important;
-  border-color: rgba(34, 230, 197, 0.35) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
   box-shadow: none !important;
 }
 
 body.route-client .driver-picker-pro-card.driver-option-card {
   min-height: 116px !important;
   border-radius: 26px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.045)) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 body.route-client .driver-picker-pro-card.driver-option-card.recommended {
-  padding-top: 31px !important;
-  border-color: rgba(34, 230, 197, 0.28) !important;
-  background:
-    radial-gradient(circle at 18% 0%, rgba(34, 230, 197, 0.13), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.05)) !important;
+  padding-top: 26px !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
 }
 
 body.route-client .driver-recommended-badge {
   left: 13px !important;
   top: 9px !important;
-  padding: 4px 9px !important;
+  padding: 5px 10px !important;
   border-radius: 999px !important;
-  color: #071316 !important;
-  background: rgba(34, 230, 197, 0.92) !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.14) !important;
   font-size: 10px !important;
 }
 
@@ -20641,8 +20884,10 @@ body.route-client .driver-recommended-badge::before {
 body.route-client .driver-picker-pro-action span,
 body.route-client .choose-driver-btn {
   min-height: 42px !important;
-  color: #041315 !important;
-  background: linear-gradient(135deg, #22e6c5, #88fff0) !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 /* ==================== Client Ride Action Stack ==================== */
@@ -20839,6 +21084,11 @@ body.route-client .ride-action-stack .cancel-button {
   background:
     linear-gradient(180deg, rgba(4, 8, 12, 0) 0%, rgba(4, 8, 12, 0.18) 58%, rgba(4, 8, 12, 0.34) 100%);
   pointer-events: auto;
+}
+
+.trip-chat-overlay.hidden {
+  display: none;
+  pointer-events: none;
 }
 
 .trip-chat-page-wrap {
@@ -21605,6 +21855,22 @@ body.route-login .auth-secondary-row .login-text-btn {
 
 body.route-login .auth-secondary-row .login-text-btn:hover {
   color: #26e7d2 !important;
+}
+
+body.route-login .auth-legal-links {
+  justify-content: center !important;
+  gap: 10px 14px !important;
+  margin-top: 10px !important;
+  font-size: 12px !important;
+  color: rgba(255, 255, 255, 0.56) !important;
+}
+
+body.route-login .auth-legal-links a {
+  color: rgba(255, 255, 255, 0.56) !important;
+}
+
+body.route-login .auth-legal-links a:hover {
+  color: rgba(255, 255, 255, 0.78) !important;
 }
 
 body.route-login .login-step-form .auth-back-link {
@@ -22666,4 +22932,4629 @@ body.route-client .driver-picker-pro .driver-picker-pro-modes.driver-picker-mode
   font-size: 9px !important;
   line-height: 1 !important;
   font-weight: 900 !important;
+}
+
+/* =========================================================
+   MiChofer Select Modal — Apple Premium Clean
+   Pegar al final de styles.css
+========================================================= */
+
+body.route-client .mc-select-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999 !important;
+  display: grid !important;
+  place-items: end center !important;
+  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  background: rgba(0, 0, 0, 0.46) !important;
+  backdrop-filter: blur(18px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+}
+
+body.route-client .mc-select-sheet {
+  width: min(100%, 430px) !important;
+  height: min(76svh, 680px) !important;
+  max-height: min(76svh, 680px) !important;
+  display: grid !important;
+  grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+  padding: 10px 12px 12px !important;
+  overflow: hidden !important;
+  border-radius: 34px !important;
+  color: #f8fafc !important;
+  background:
+    radial-gradient(circle at 18% -8%, rgba(255, 255, 255, 0.12), transparent 34%),
+    radial-gradient(circle at 88% 4%, rgba(45, 245, 168, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(15, 22, 29, 0.98), rgba(5, 8, 12, 0.99)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 34px 110px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(30px) saturate(1.16) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.16) !important;
+}
+
+body.route-client .mc-select-handle {
+  width: 42px !important;
+  height: 5px !important;
+  margin: 0 auto 2px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.30) !important;
+}
+
+body.route-client .mc-select-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 44px !important;
+  align-items: start !important;
+  gap: 12px !important;
+  padding: 0 2px !important;
+}
+
+body.route-client .mc-select-title-block {
+  min-width: 0 !important;
+}
+
+body.route-client .mc-select-title-block p {
+  margin: 0 !important;
+  color: rgba(248, 250, 252, 0.48) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+}
+
+body.route-client .mc-select-title-block h1 {
+  margin: 6px 0 0 !important;
+  color: #ffffff !important;
+  font-size: 31px !important;
+  line-height: 0.96 !important;
+  letter-spacing: -0.065em !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-select-title-block span {
+  display: block !important;
+  margin-top: 6px !important;
+  color: rgba(248, 250, 252, 0.62) !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-select-close {
+  width: 44px !important;
+  height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.86) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-summary {
+  min-height: 64px !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1.2fr !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-summary div {
+  min-width: 0 !important;
+  padding: 10px 10px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+body.route-client .mc-select-summary span,
+body.route-client .mc-select-summary strong {
+  display: block !important;
+  min-width: 0 !important;
+}
+
+body.route-client .mc-select-summary span {
+  color: rgba(248, 250, 252, 0.46) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-select-summary strong {
+  margin-top: 8px !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.035em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-select-summary-price strong {
+  color: #a7fff0 !important;
+}
+
+body.route-client .mc-select-modes {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+
+body.route-client .mc-mode-card {
+  min-width: 0 !important;
+  min-height: 66px !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 21px !important;
+  padding: 8px 5px !important;
+  display: grid !important;
+  place-items: center !important;
+  gap: 5px !important;
+  color: rgba(248, 250, 252, 0.78) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+body.route-client .mc-mode-card.active {
+  color: #051014 !important;
+  background: linear-gradient(135deg, #ffffff, #dffcf7) !important;
+  border-color: rgba(255, 255, 255, 0.72) !important;
+  box-shadow:
+    0 14px 36px rgba(255, 255, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+body.route-client .mc-mode-confidence {
+  border-color: rgba(255, 143, 188, 0.20) !important;
+  background: rgba(255, 143, 188, 0.10) !important;
+}
+
+body.route-client .mc-mode-confidence.active {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, rgba(255, 143, 188, 0.42), rgba(45, 245, 168, 0.16)) !important;
+  border-color: rgba(255, 143, 188, 0.46) !important;
+}
+
+body.route-client .mc-mode-icon {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  background: rgba(0, 0, 0, 0.24) !important;
+}
+
+body.route-client .mc-mode-card.active .mc-mode-icon {
+  color: #051014 !important;
+  background: rgba(5, 16, 20, 0.08) !important;
+}
+
+body.route-client .mc-mode-copy {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 2px !important;
+  text-align: center !important;
+}
+
+body.route-client .mc-mode-copy strong {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.035em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-mode-copy small {
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  opacity: 0.68 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-select-note {
+  min-height: 42px !important;
+  padding: 10px 12px !important;
+  border-radius: 18px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 9px !important;
+  color: rgba(248, 250, 252, 0.70) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-select-note svg {
+  flex: 0 0 auto !important;
+  color: #a7fff0 !important;
+}
+
+body.route-client .mc-select-note strong {
+  color: #ffffff !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-select-message {
+  padding: 11px 12px !important;
+  border-radius: 18px !important;
+  color: #fff7d6 !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.18) !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  font-weight: 850 !important;
+}
+
+body.route-client .mc-select-content {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding-right: 2px !important;
+  scrollbar-width: thin !important;
+}
+
+body.route-client .mc-driver-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+body.route-client .mc-driver-card {
+  width: 100% !important;
+  min-height: 96px !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 25px !important;
+  padding: 11px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-align: left !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.045)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 34px rgba(0, 0, 0, 0.18) !important;
+}
+
+body.route-client .mc-driver-card.recommended {
+  border-color: rgba(45, 245, 168, 0.22) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(45, 245, 168, 0.11), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.080), rgba(255, 255, 255, 0.048)) !important;
+}
+
+body.route-client .mc-driver-card.ella {
+  border-color: rgba(255, 143, 188, 0.23) !important;
+}
+
+body.route-client .mc-driver-left {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 11px !important;
+}
+
+body.route-client .mc-driver-avatar {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #17202a, #05080c) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-driver-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-client .mc-driver-info {
+  min-width: 0 !important;
+}
+
+body.route-client .mc-driver-name {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+body.route-client .mc-driver-name strong {
+  min-width: 0 !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-driver-name svg {
+  color: #2df5a8 !important;
+  flex: 0 0 auto !important;
+}
+
+body.route-client .mc-driver-name em {
+  min-height: 20px !important;
+  padding: 0 7px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #33091a !important;
+  background: linear-gradient(135deg, #fff2f7, #ff9fc6) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-driver-info small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(248, 250, 252, 0.56) !important;
+  font-size: 12px !important;
+  line-height: 1.1 !important;
+  font-weight: 800 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-driver-meta {
+  margin-top: 8px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+}
+
+body.route-client .mc-driver-meta span {
+  min-height: 24px !important;
+  padding: 0 8px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  color: rgba(248, 250, 252, 0.86) !important;
+  background: rgba(0, 0, 0, 0.24) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+}
+
+body.route-client .mc-driver-action {
+  min-width: 92px !important;
+  display: grid !important;
+  justify-items: end !important;
+  gap: 7px !important;
+}
+
+body.route-client .mc-best-badge {
+  min-height: 20px !important;
+  padding: 0 8px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #051014 !important;
+  background: linear-gradient(135deg, #2df5a8, #12d8ff) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-driver-action strong {
+  color: #ffffff !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-driver-action small {
+  min-height: 38px !important;
+  padding: 0 15px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #051014 !important;
+  background: #ffffff !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  box-shadow: 0 10px 26px rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-empty {
+  min-height: 180px !important;
+  border-radius: 26px !important;
+  display: grid !important;
+  place-content: center !important;
+  justify-items: center !important;
+  gap: 8px !important;
+  text-align: center !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-empty strong {
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-select-empty span {
+  color: rgba(248, 250, 252, 0.58) !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-select-footer {
+  margin: 0 !important;
+  padding: 0 4px 1px !important;
+  color: rgba(248, 250, 252, 0.42) !important;
+  text-align: center !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .mc-select-sheet {
+    height: min(80svh, 680px) !important;
+    max-height: min(80svh, 680px) !important;
+    border-radius: 30px !important;
+    padding: 9px 10px 10px !important;
+    gap: 10px !important;
+  }
+
+  body.route-client .mc-select-title-block h1 {
+    font-size: 28px !important;
+  }
+
+  body.route-client .mc-select-summary {
+    gap: 6px !important;
+    padding: 7px !important;
+  }
+
+  body.route-client .mc-select-summary div {
+    padding: 9px 8px !important;
+  }
+
+  body.route-client .mc-select-summary strong {
+    font-size: 14px !important;
+  }
+
+  body.route-client .mc-select-modes {
+    gap: 6px !important;
+  }
+
+  body.route-client .mc-mode-card {
+    min-height: 60px !important;
+    border-radius: 18px !important;
+    padding: 7px 4px !important;
+  }
+
+  body.route-client .mc-mode-icon {
+    width: 27px !important;
+    height: 27px !important;
+    font-size: 13px !important;
+  }
+
+  body.route-client .mc-mode-copy strong {
+    font-size: 10px !important;
+  }
+
+  body.route-client .mc-mode-copy small {
+    display: none !important;
+  }
+
+  body.route-client .mc-driver-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  body.route-client .mc-driver-action {
+    min-width: 0 !important;
+    grid-template-columns: auto 1fr auto !important;
+    align-items: center !important;
+    justify-items: stretch !important;
+  }
+
+  body.route-client .mc-driver-action strong {
+    text-align: center !important;
+  }
+
+  body.route-client .mc-driver-action small {
+    min-height: 36px !important;
+  }
+}
+/* =========================================================
+   MiChofer Select Modal — Premium Apple Clean
+   Pegar al final de styles.css
+========================================================= */
+
+body.route-client .mc-select-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: grid !important;
+  place-items: end center !important;
+  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  background: rgba(0, 0, 0, 0.48) !important;
+  backdrop-filter: blur(22px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.08) !important;
+}
+
+body.route-client .mc-select-sheet {
+  width: min(100%, 430px) !important;
+  height: min(76svh, 680px) !important;
+  max-height: min(76svh, 680px) !important;
+  display: grid !important;
+  grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+  padding: 10px 12px 12px !important;
+  overflow: hidden !important;
+  border-radius: 34px !important;
+  color: #f8fafc !important;
+  background:
+    radial-gradient(circle at 18% -8%, rgba(255, 255, 255, 0.12), transparent 34%),
+    radial-gradient(circle at 88% 4%, rgba(45, 245, 168, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(15, 22, 29, 0.98), rgba(5, 8, 12, 0.99)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 34px 110px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(30px) saturate(1.16) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.16) !important;
+}
+
+body.route-client .mc-select-handle {
+  width: 42px !important;
+  height: 5px !important;
+  margin: 0 auto 2px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.30) !important;
+}
+
+body.route-client .mc-select-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 44px !important;
+  align-items: start !important;
+  gap: 12px !important;
+  padding: 0 2px !important;
+}
+
+body.route-client .mc-select-title {
+  min-width: 0 !important;
+}
+
+body.route-client .mc-select-title p {
+  margin: 0 !important;
+  color: rgba(248, 250, 252, 0.48) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+}
+
+body.route-client .mc-select-title h1 {
+  margin: 6px 0 0 !important;
+  color: #ffffff !important;
+  font-size: 31px !important;
+  line-height: 0.96 !important;
+  letter-spacing: -0.065em !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-select-title span {
+  display: block !important;
+  margin-top: 6px !important;
+  color: rgba(248, 250, 252, 0.62) !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-select-close {
+  width: 44px !important;
+  height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.86) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-summary {
+  min-height: 64px !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1.2fr !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-summary div {
+  min-width: 0 !important;
+  padding: 10px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+body.route-client .mc-select-summary span,
+body.route-client .mc-select-summary strong {
+  display: block !important;
+  min-width: 0 !important;
+}
+
+body.route-client .mc-select-summary span {
+  color: rgba(248, 250, 252, 0.46) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-select-summary strong {
+  margin-top: 8px !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.035em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-select-summary .price strong {
+  color: #a7fff0 !important;
+}
+
+body.route-client .mc-select-modes {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+
+body.route-client .mc-mode-card {
+  min-width: 0 !important;
+  min-height: 66px !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 21px !important;
+  padding: 8px 5px !important;
+  display: grid !important;
+  place-items: center !important;
+  gap: 5px !important;
+  color: rgba(248, 250, 252, 0.78) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+body.route-client .mc-mode-card.active {
+  color: #051014 !important;
+  background: linear-gradient(135deg, #ffffff, #dffcf7) !important;
+  border-color: rgba(255, 255, 255, 0.72) !important;
+  box-shadow:
+    0 14px 36px rgba(255, 255, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+body.route-client .mc-mode-card.confidence {
+  border-color: rgba(255, 143, 188, 0.20) !important;
+  background: rgba(255, 143, 188, 0.10) !important;
+}
+
+body.route-client .mc-mode-card.confidence.active {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, rgba(255, 143, 188, 0.42), rgba(45, 245, 168, 0.16)) !important;
+  border-color: rgba(255, 143, 188, 0.46) !important;
+}
+
+body.route-client .mc-mode-icon {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  background: rgba(0, 0, 0, 0.24) !important;
+}
+
+body.route-client .mc-mode-card.active .mc-mode-icon {
+  color: #051014 !important;
+  background: rgba(5, 16, 20, 0.08) !important;
+}
+
+body.route-client .mc-mode-text {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 2px !important;
+  text-align: center !important;
+}
+
+body.route-client .mc-mode-text strong {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.035em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-mode-text small {
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  opacity: 0.68 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-select-note {
+  min-height: 42px !important;
+  padding: 10px 12px !important;
+  border-radius: 18px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 9px !important;
+  color: rgba(248, 250, 252, 0.70) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-select-note svg {
+  flex: 0 0 auto !important;
+  color: #a7fff0 !important;
+}
+
+body.route-client .mc-select-note strong {
+  color: #ffffff !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-select-content {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding-right: 2px !important;
+  scrollbar-width: thin !important;
+}
+
+body.route-client .mc-driver-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+body.route-client .mc-driver-card {
+  width: 100% !important;
+  min-height: 96px !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 25px !important;
+  padding: 11px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-align: left !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.045)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 34px rgba(0, 0, 0, 0.18) !important;
+}
+
+body.route-client .mc-driver-card.recommended {
+  border-color: rgba(45, 245, 168, 0.22) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(45, 245, 168, 0.11), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.080), rgba(255, 255, 255, 0.048)) !important;
+}
+
+body.route-client .mc-driver-card.ella {
+  border-color: rgba(255, 143, 188, 0.23) !important;
+}
+
+body.route-client .mc-driver-main {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 11px !important;
+}
+
+body.route-client .mc-driver-avatar {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #17202a, #05080c) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-driver-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-client .mc-driver-info {
+  min-width: 0 !important;
+}
+
+body.route-client .mc-driver-name {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+body.route-client .mc-driver-name strong {
+  min-width: 0 !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-driver-name svg {
+  color: #2df5a8 !important;
+  flex: 0 0 auto !important;
+}
+
+body.route-client .mc-driver-name em {
+  min-height: 20px !important;
+  padding: 0 7px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #33091a !important;
+  background: linear-gradient(135deg, #fff2f7, #ff9fc6) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-driver-info small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(248, 250, 252, 0.56) !important;
+  font-size: 12px !important;
+  line-height: 1.1 !important;
+  font-weight: 800 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-driver-meta {
+  margin-top: 8px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+}
+
+body.route-client .mc-driver-meta span {
+  min-height: 24px !important;
+  padding: 0 8px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  color: rgba(248, 250, 252, 0.86) !important;
+  background: rgba(0, 0, 0, 0.24) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+}
+
+body.route-client .mc-driver-side {
+  min-width: 92px !important;
+  display: grid !important;
+  justify-items: end !important;
+  gap: 7px !important;
+}
+
+body.route-client .mc-best {
+  min-height: 20px !important;
+  padding: 0 8px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #051014 !important;
+  background: linear-gradient(135deg, #2df5a8, #12d8ff) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-driver-side strong {
+  color: #ffffff !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-driver-side small {
+  min-height: 38px !important;
+  padding: 0 15px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #051014 !important;
+  background: #ffffff !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  box-shadow: 0 10px 26px rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-empty {
+  min-height: 180px !important;
+  border-radius: 26px !important;
+  display: grid !important;
+  place-content: center !important;
+  justify-items: center !important;
+  gap: 8px !important;
+  text-align: center !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-empty strong {
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-select-empty span {
+  color: rgba(248, 250, 252, 0.58) !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-select-footer {
+  margin: 0 !important;
+  padding: 0 4px 1px !important;
+  color: rgba(248, 250, 252, 0.42) !important;
+  text-align: center !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .mc-select-sheet {
+    height: min(80svh, 680px) !important;
+    max-height: min(80svh, 680px) !important;
+    border-radius: 30px !important;
+    padding: 9px 10px 10px !important;
+    gap: 10px !important;
+  }
+
+  body.route-client .mc-select-title h1 {
+    font-size: 28px !important;
+  }
+
+  body.route-client .mc-select-summary {
+    gap: 6px !important;
+    padding: 7px !important;
+  }
+
+  body.route-client .mc-select-summary div {
+    padding: 9px 8px !important;
+  }
+
+  body.route-client .mc-select-summary strong {
+    font-size: 14px !important;
+  }
+
+  body.route-client .mc-select-modes {
+    gap: 6px !important;
+  }
+
+  body.route-client .mc-mode-card {
+    min-height: 60px !important;
+    border-radius: 18px !important;
+    padding: 7px 4px !important;
+  }
+
+  body.route-client .mc-mode-icon {
+    width: 27px !important;
+    height: 27px !important;
+    font-size: 13px !important;
+  }
+
+  body.route-client .mc-mode-text strong {
+    font-size: 10px !important;
+  }
+
+  body.route-client .mc-mode-text small {
+    display: none !important;
+  }
+
+  body.route-client .mc-driver-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  body.route-client .mc-driver-side {
+    min-width: 0 !important;
+    grid-template-columns: auto 1fr auto !important;
+    align-items: center !important;
+    justify-items: stretch !important;
+  }
+
+  body.route-client .mc-driver-side strong {
+    text-align: center !important;
+  }
+
+  body.route-client .mc-driver-side small {
+    min-height: 36px !important;
+  }
+}
+/* =========================================================
+   MiChofer - Modes Command Center
+   Neuromarketing + poder + tecnología
+========================================================= */
+
+body.route-client .mc-command-zone {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+body.route-client .mc-command-head {
+  display: flex !important;
+  align-items: end !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 0 2px !important;
+}
+
+body.route-client .mc-command-head span {
+  color: rgba(255, 255, 255, 0.44) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-command-head strong {
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+}
+
+body.route-client .mc-command-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.route-client .mc-command-tile {
+  position: relative !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
+  min-height: 96px !important;
+  padding: 8px 6px 7px !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 22px !important;
+  display: grid !important;
+  grid-template-rows: auto 1fr auto !important;
+  gap: 6px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 28px rgba(0, 0, 0, 0.18) !important;
+  backdrop-filter: blur(18px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease !important;
+}
+
+body.route-client .mc-command-tile::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 10px !important;
+  right: 10px !important;
+  height: 2px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(83, 255, 215, 0.9), rgba(255,255,255,0)) !important;
+  opacity: 0.24 !important;
+}
+
+body.route-client .mc-command-tile:hover {
+  transform: translateY(-1px) !important;
+}
+
+body.route-client .mc-command-tile.active {
+  border-color: rgba(114, 255, 224, 0.44) !important;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(70, 255, 230, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04)) !important;
+  box-shadow:
+    0 0 0 1px rgba(114, 255, 224, 0.08),
+    0 14px 34px rgba(0, 0, 0, 0.24),
+    0 0 28px rgba(0, 247, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-command-tile.active::before {
+  opacity: 1 !important;
+}
+
+body.route-client .mc-command-tile.confidence {
+  border-color: rgba(255, 143, 188, 0.16) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 143, 188, 0.08), rgba(255, 255, 255, 0.03)) !important;
+}
+
+body.route-client .mc-command-tile.confidence::before {
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255, 143, 188, 0.92), rgba(255,255,255,0)) !important;
+}
+
+body.route-client .mc-command-tile.confidence.active {
+  border-color: rgba(255, 143, 188, 0.38) !important;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255, 143, 188, 0.16), transparent 42%),
+    linear-gradient(180deg, rgba(255, 143, 188, 0.14), rgba(255, 255, 255, 0.04)) !important;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.24),
+    0 0 30px rgba(255, 143, 188, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-command-glow {
+  position: absolute !important;
+  inset: auto 14px 10px 14px !important;
+  height: 26px !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle, rgba(0, 245, 255, 0.22), rgba(0, 245, 255, 0)) !important;
+  opacity: 0 !important;
+  filter: blur(10px) !important;
+  pointer-events: none !important;
+}
+
+body.route-client .mc-command-tile.active .mc-command-glow {
+  opacity: 1 !important;
+}
+
+body.route-client .mc-command-tile.confidence .mc-command-glow {
+  background: radial-gradient(circle, rgba(255, 143, 188, 0.22), rgba(255, 143, 188, 0)) !important;
+}
+
+body.route-client .mc-command-top {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+body.route-client .mc-command-pill {
+  min-height: 18px !important;
+  padding: 0 7px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-command-pill.pink {
+  color: #ffdce9 !important;
+  background: rgba(255, 143, 188, 0.12) !important;
+  border-color: rgba(255, 143, 188, 0.14) !important;
+}
+
+body.route-client .mc-command-core {
+  display: grid !important;
+  justify-items: center !important;
+  align-content: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+body.route-client .mc-command-iconwrap {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.04)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 8px 18px rgba(0,0,0,0.12) !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-command-tile.active .mc-command-iconwrap {
+  color: #06141a !important;
+  background: linear-gradient(180deg, #ffffff, #d9fffb) !important;
+  border-color: rgba(255,255,255,0.62) !important;
+}
+
+body.route-client .mc-command-tile.confidence.active .mc-command-iconwrap {
+  color: #3a0718 !important;
+  background: linear-gradient(180deg, #fff7fb, #ffc5dd) !important;
+}
+
+body.route-client .mc-command-copy {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 2px !important;
+  text-align: center !important;
+}
+
+body.route-client .mc-command-copy strong {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-command-copy small {
+  min-width: 0 !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-command-tile.active .mc-command-copy strong,
+body.route-client .mc-command-tile.active .mc-command-copy small {
+  color: #ffffff !important;
+}
+
+body.route-client .mc-command-state {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 20px !important;
+  border-radius: 999px !important;
+  color: rgba(255, 255, 255, 0.64) !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-command-tile.active .mc-command-state {
+  color: #9af9e8 !important;
+  background: rgba(6, 20, 26, 0.42) !important;
+}
+
+body.route-client .mc-command-tile.confidence.active .mc-command-state {
+  color: #ffd5e5 !important;
+  background: rgba(58, 7, 24, 0.32) !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .mc-command-grid {
+    gap: 6px !important;
+  }
+
+  body.route-client .mc-command-tile {
+    min-height: 88px !important;
+    padding: 7px 4px 6px !important;
+    border-radius: 19px !important;
+  }
+
+  body.route-client .mc-command-iconwrap {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 13px !important;
+  }
+
+  body.route-client .mc-command-copy strong {
+    font-size: 10px !important;
+  }
+
+  body.route-client .mc-command-copy small {
+    font-size: 9px !important;
+  }
+
+  body.route-client .mc-command-state {
+    font-size: 8px !important;
+  }
+}
+
+/* =========================================================
+   MiChofer Apple Modes — Minimal Premium
+   Reemplaza visualmente el modo "Power Modes"
+   Pegar AL FINAL de styles.css
+========================================================= */
+
+/* Ocultar por completo el diseño anterior si todavía queda renderizado */
+body.route-client .mc-command-zone {
+  display: none !important;
+}
+
+/* Ajuste general del modal para que respire más */
+body.route-client .mc-select-sheet {
+  gap: 11px !important;
+  background:
+    linear-gradient(180deg, rgba(17, 23, 29, 0.98), rgba(5, 7, 10, 0.99)) !important;
+  border-radius: 32px !important;
+}
+
+/* Header de la sección */
+body.route-client .mc-apple-modes {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+body.route-client .mc-apple-modes-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 0 2px !important;
+}
+
+body.route-client .mc-apple-modes-head span {
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.02em !important;
+}
+
+body.route-client .mc-apple-modes-head small {
+  max-width: 180px !important;
+  color: rgba(255, 255, 255, 0.70) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Barra tipo Apple segmented control */
+body.route-client .mc-apple-mode-strip {
+  min-height: 58px !important;
+  padding: 5px !important;
+  border-radius: 24px !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 12px 30px rgba(0, 0, 0, 0.16) !important;
+}
+
+/* Botón base */
+body.route-client .mc-apple-mode {
+  min-width: 0 !important;
+  min-height: 48px !important;
+  border: 0 !important;
+  border-radius: 19px !important;
+  padding: 6px 4px !important;
+  display: grid !important;
+  grid-template-rows: 20px auto !important;
+  place-items: center !important;
+  gap: 3px !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+/* Activo: minimalista, blanco, Apple */
+body.route-client .mc-apple-mode.active {
+  color: #05080c !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Confianza: elegante, no rosado exagerado */
+body.route-client .mc-apple-mode.confidence.active {
+  color: #1a0710 !important;
+  background: linear-gradient(180deg, #ffffff, #ffe8f1) !important;
+}
+
+/* Icono */
+body.route-client .mc-apple-mode-icon {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: currentColor !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-apple-mode.active .mc-apple-mode-icon {
+  background: rgba(5, 8, 12, 0.06) !important;
+}
+
+/* Texto */
+body.route-client .mc-apple-mode-copy {
+  min-width: 0 !important;
+  display: grid !important;
+  justify-items: center !important;
+  gap: 2px !important;
+  text-align: center !important;
+}
+
+body.route-client .mc-apple-mode-copy strong {
+  max-width: 100% !important;
+  color: currentColor !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-apple-mode-copy small {
+  max-width: 100% !important;
+  color: currentColor !important;
+  opacity: 0.62 !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.02em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Microinteracción premium */
+body.route-client .mc-apple-mode:active {
+  transform: scale(0.97) !important;
+}
+
+/* Limpieza de estilos anteriores que puedan molestar */
+body.route-client .mc-command-grid,
+body.route-client .mc-command-tile,
+body.route-client .mc-command-head,
+body.route-client .mc-command-pill,
+body.route-client .mc-command-state,
+body.route-client .mc-command-glow {
+  all: unset;
+  display: none !important;
+}
+
+/* Responsive */
+@media (max-width: 390px) {
+  body.route-client .mc-select-sheet {
+    gap: 10px !important;
+  }
+
+  body.route-client .mc-apple-mode-strip {
+    min-height: 54px !important;
+    border-radius: 22px !important;
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+
+  body.route-client .mc-apple-mode {
+    min-height: 46px !important;
+    border-radius: 17px !important;
+    padding: 5px 3px !important;
+  }
+
+  body.route-client .mc-apple-mode-icon {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 11px !important;
+  }
+
+  body.route-client .mc-apple-mode-copy strong {
+    font-size: 10px !important;
+  }
+
+  body.route-client .mc-apple-mode-copy small {
+    font-size: 8px !important;
+  }
+
+  body.route-client .mc-apple-modes-head small {
+    max-width: 150px !important;
+  }
+}
+/* =========================================================
+   MiChofer Live Ride Sheet — Apple Minimal Premium
+   Corrige imagen fuera del cuadro + jerarquía profesional
+   Pegar AL FINAL de styles.css
+========================================================= */
+
+body.route-client .mc-ride-live-sheet {
+  position: fixed !important;
+  left: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  right: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  z-index: 140 !important;
+
+  max-width: 406px !important;
+  margin: 0 auto !important;
+  padding: 10px 12px 12px !important;
+  display: grid !important;
+  gap: 10px !important;
+
+  color: #ffffff !important;
+  border-radius: 30px !important;
+  background:
+    linear-gradient(180deg, rgba(16, 24, 32, 0.96), rgba(7, 10, 14, 0.98)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 26px 80px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(28px) saturate(1.14) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.14) !important;
+
+  overflow: hidden !important;
+  isolation: isolate !important;
+}
+
+body.route-client .mc-ride-live-sheet.is-minimized {
+  padding-bottom: 12px !important;
+}
+
+body.route-client .mc-ride-handle {
+  width: 100% !important;
+  height: 14px !important;
+  border: 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  background: transparent !important;
+}
+
+body.route-client .mc-ride-handle span {
+  width: 46px !important;
+  height: 5px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.32) !important;
+}
+
+body.route-client .mc-ride-progress {
+  position: relative !important;
+  height: 5px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.10) !important;
+  overflow: visible !important;
+}
+
+body.route-client .mc-ride-progress > span {
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  min-width: 8% !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, #1f7aff, #20e6ff) !important;
+  box-shadow: 0 0 22px rgba(32, 230, 255, 0.35) !important;
+}
+
+body.route-client .mc-ride-progress > em {
+  position: absolute !important;
+  top: 50% !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #07111c !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32) !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+/* Compacto */
+body.route-client .mc-ride-compact {
+  display: grid !important;
+  grid-template-columns: 54px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 11px !important;
+  min-height: 74px !important;
+}
+
+body.route-client .mc-ride-compact-avatar {
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 19px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background: #111827 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-ride-compact-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-client .mc-ride-compact-copy {
+  min-width: 0 !important;
+}
+
+body.route-client .mc-ride-compact-copy span {
+  display: inline-flex !important;
+  min-height: 22px !important;
+  align-items: center !important;
+  padding: 0 9px !important;
+  border-radius: 999px !important;
+  color: #06120f !important;
+  background: #33f0b0 !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-ride-compact-copy strong {
+  display: block !important;
+  margin-top: 6px !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.05em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-ride-compact-copy small {
+  display: block !important;
+  margin-top: 4px !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-ride-compact-action {
+  min-height: 38px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  padding: 0 11px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  color: #07111c !important;
+  background: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+}
+
+/* Header expandido */
+body.route-client .mc-ride-status-head {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+body.route-client .mc-ride-status-pill {
+  width: max-content !important;
+  min-height: 25px !important;
+  padding: 0 11px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #06120f !important;
+  background: linear-gradient(135deg, #33f0b0, #20e6ff) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-ride-status-copy h2 {
+  margin: 8px 0 0 !important;
+  color: #ffffff !important;
+  font-size: 25px !important;
+  line-height: 0.98 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.065em !important;
+}
+
+body.route-client .mc-ride-status-copy p {
+  margin: 7px 0 0 !important;
+  max-width: 360px !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  font-size: 13px !important;
+  line-height: 1.28 !important;
+  font-weight: 800 !important;
+}
+
+/* Card del chofer */
+body.route-client .mc-ride-driver-card {
+  display: grid !important;
+  grid-template-columns: 76px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  min-height: 116px !important;
+  padding: 10px !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  overflow: hidden !important;
+}
+
+body.route-client .mc-ride-driver-photo {
+  position: relative !important;
+  width: 76px !important;
+  height: 96px !important;
+  border-radius: 21px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  align-self: center !important;
+  color: #ffffff !important;
+  background: #111827 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  font-size: 20px !important;
+  font-weight: 950 !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24) !important;
+}
+
+body.route-client .mc-ride-driver-photo img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+body.route-client .mc-ride-driver-photo em {
+  position: absolute !important;
+  top: 7px !important;
+  right: 7px !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #051014 !important;
+  background: #33f0b0 !important;
+  border: 2px solid rgba(5, 8, 12, 0.88) !important;
+  font-style: normal !important;
+}
+
+body.route-client .mc-ride-driver-info {
+  min-width: 0 !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 10px !important;
+}
+
+body.route-client .mc-ride-driver-name span,
+body.route-client .mc-ride-driver-meta span,
+body.route-client .mc-ride-pickup-card span {
+  display: block !important;
+  color: rgba(255, 255, 255, 0.42) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+body.route-client .mc-ride-driver-name strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-ride-driver-meta {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.1fr) minmax(78px, 0.6fr) !important;
+  gap: 8px !important;
+}
+
+body.route-client .mc-ride-driver-meta div {
+  min-width: 0 !important;
+  padding: 10px !important;
+  border-radius: 17px !important;
+  background: rgba(0, 0, 0, 0.20) !important;
+}
+
+body.route-client .mc-ride-driver-meta strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  line-height: 1.1 !important;
+  font-weight: 950 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Recogida */
+body.route-client .mc-ride-pickup-card {
+  display: grid !important;
+  grid-template-columns: 40px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 58px !important;
+  padding: 10px 12px !important;
+  border-radius: 21px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-ride-pickup-icon {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 16px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #33f0b0 !important;
+  background: rgba(51, 240, 176, 0.10) !important;
+}
+
+body.route-client .mc-ride-pickup-card strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-ride-microcopy {
+  margin: -2px 2px 0 !important;
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+}
+
+/* Acciones */
+body.route-client .mc-ride-actions {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+body.route-client .mc-ride-chat-action,
+body.route-client .mc-ride-rush-action,
+body.route-client .mc-ride-cancel-action {
+  width: 100% !important;
+  min-height: 54px !important;
+  border: 0 !important;
+  border-radius: 19px !important;
+  padding: 0 15px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  text-decoration: none !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+}
+
+body.route-client .mc-ride-chat-action {
+  position: relative !important;
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+  box-shadow: 0 14px 34px rgba(32, 215, 255, 0.16) !important;
+}
+
+body.route-client .mc-ride-chat-action.disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+body.route-client .mc-ride-chat-action .chat-unread-badge {
+  position: absolute !important;
+  top: 8px !important;
+  right: 10px !important;
+  min-width: 20px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background: #e30613 !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-ride-rush-action {
+  justify-content: flex-start !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #ffb547, #ff654d) !important;
+  box-shadow: 0 14px 34px rgba(255, 101, 77, 0.16) !important;
+}
+
+body.route-client .mc-ride-rush-action:disabled {
+  opacity: 0.62 !important;
+  cursor: not-allowed !important;
+}
+
+body.route-client .mc-ride-rush-action.sent {
+  background: linear-gradient(135deg, #1fbd77, #17d6a1) !important;
+}
+
+body.route-client .mc-ride-rush-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  flex: 0 0 auto !important;
+}
+
+body.route-client .mc-ride-rush-action span:last-child {
+  display: grid !important;
+  gap: 3px !important;
+  text-align: left !important;
+}
+
+body.route-client .mc-ride-rush-action strong {
+  color: #ffffff !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-ride-rush-action small {
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-ride-rush-note {
+  margin-top: -2px !important;
+  padding: 10px 12px !important;
+  border-radius: 16px !important;
+  color: rgba(255, 255, 255, 0.70) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-ride-cancel-action {
+  color: rgba(255, 255, 255, 0.92) !important;
+  background: linear-gradient(135deg, rgba(94, 18, 31, 0.95), rgba(65, 11, 20, 0.96)) !important;
+}
+
+/* Neutralizar estilos viejos del panel anterior */
+body.route-client .michofer-live-sheet,
+body.route-client .client-live-sheet,
+body.route-client .client-trip-panel {
+  max-width: none;
+}
+
+/* Responsive */
+@media (max-width: 390px) {
+  body.route-client .mc-ride-live-sheet {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    border-radius: 27px !important;
+    padding: 9px 10px 10px !important;
+    gap: 8px !important;
+  }
+
+  body.route-client .mc-ride-status-copy h2 {
+    font-size: 22px !important;
+  }
+
+  body.route-client .mc-ride-driver-card {
+    grid-template-columns: 70px minmax(0, 1fr) !important;
+    min-height: 106px !important;
+    gap: 10px !important;
+  }
+
+  body.route-client .mc-ride-driver-photo {
+    width: 70px !important;
+    height: 88px !important;
+    border-radius: 19px !important;
+  }
+
+  body.route-client .mc-ride-driver-meta {
+    grid-template-columns: 1fr 72px !important;
+    gap: 7px !important;
+  }
+
+  body.route-client .mc-ride-driver-meta div {
+    padding: 9px 8px !important;
+  }
+
+  body.route-client .mc-ride-chat-action,
+  body.route-client .mc-ride-rush-action,
+  body.route-client .mc-ride-cancel-action {
+    min-height: 51px !important;
+    border-radius: 18px !important;
+  }
+}
+/* =========================================================
+   MiChofer Account Panel — Apple Clean Header
+   Corrige superposición Editar perfil + X
+   Pegar AL FINAL de styles.css
+========================================================= */
+
+body.route-client .account-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 180 !important;
+  display: grid !important;
+  place-items: start center !important;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
+  background: rgba(0, 0, 0, 0.46) !important;
+  backdrop-filter: blur(18px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+}
+
+body.route-client .account-overlay .account-panel {
+  position: relative !important;
+  width: min(100%, 430px) !important;
+  height: auto !important;
+  max-height: calc(100dvh - 28px) !important;
+  margin: 0 !important;
+  padding: 14px !important;
+  display: grid !important;
+  gap: 12px !important;
+  overflow-y: auto !important;
+  border-radius: 32px !important;
+  color: #ffffff !important;
+  background:
+    radial-gradient(circle at 18% -12%, rgba(255, 255, 255, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(20, 22, 27, 0.94), rgba(8, 9, 12, 0.98)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: blur(28px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.12) !important;
+}
+
+/* Mata el cierre viejo para que no quede flotando encima */
+body.route-client .account-panel > .account-close-top,
+body.route-client .account-panel > .account-system-mark,
+body.route-client .account-panel > .account-hero,
+body.route-client .account-panel > .account-main-action {
+  display: none !important;
+}
+
+/* Topbar nuevo */
+body.route-client .mc-account-topbar {
+  min-height: 48px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 44px !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+body.route-client .mc-account-brand {
+  min-width: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: rgba(255, 255, 255, 0.54) !important;
+}
+
+body.route-client .mc-account-brand span {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: #33f0b0 !important;
+  box-shadow: 0 0 18px rgba(51, 240, 176, 0.42) !important;
+}
+
+body.route-client .mc-account-brand strong {
+  min-width: 0 !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-account-close {
+  width: 44px !important;
+  height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 26px rgba(0, 0, 0, 0.16) !important;
+}
+
+/* Perfil */
+body.route-client .mc-account-profile {
+  min-height: 112px !important;
+  padding: 12px !important;
+  border-radius: 27px !important;
+  display: grid !important;
+  grid-template-columns: 78px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 13px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-account-avatar {
+  width: 78px !important;
+  height: 78px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 26px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.86) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04)) !important;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-account-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-client .mc-account-profile-copy {
+  min-width: 0 !important;
+}
+
+body.route-client .mc-account-profile-copy span {
+  display: block !important;
+  color: rgba(255, 255, 255, 0.46) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+}
+
+body.route-client .mc-account-profile-copy h2 {
+  margin: 7px 0 0 !important;
+  color: #ffffff !important;
+  font-size: 28px !important;
+  line-height: 0.96 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.06em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-account-profile-copy small {
+  display: block !important;
+  margin-top: 7px !important;
+  color: rgba(255, 255, 255, 0.50) !important;
+  font-size: 12px !important;
+  line-height: 1.1 !important;
+  font-weight: 800 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Editar perfil nuevo, separado del cierre */
+body.route-client .mc-account-edit-btn {
+  width: 100% !important;
+  min-height: 50px !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 999px !important;
+  padding: 0 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  color: #061014 !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-account-edit-btn svg {
+  color: #061014 !important;
+}
+
+/* Secciones existentes más limpias */
+body.route-client .account-panel .account-section {
+  margin: 0 !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  background: rgba(0, 0, 0, 0.42) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+body.route-client .account-panel .account-section > button,
+body.route-client .account-panel .account-section > a,
+body.route-client .account-panel .account-payment-toggle {
+  width: 100% !important;
+  min-height: 56px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 16px !important;
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr) 18px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  color: #ffffff !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-align: left !important;
+}
+
+body.route-client .account-panel .account-section > button span,
+body.route-client .account-panel .account-section > a span,
+body.route-client .account-payment-labels span {
+  min-width: 0 !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .account-payment-labels {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 4px !important;
+}
+
+body.route-client .account-payment-labels small {
+  color: rgba(255, 255, 255, 0.50) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .account-support-header {
+  padding: 15px 16px 8px !important;
+}
+
+body.route-client .account-section-label {
+  color: rgba(255, 255, 255, 0.50) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .account-support-subtitle {
+  margin: 8px 0 0 !important;
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  font-weight: 750 !important;
+}
+
+body.route-client .account-panel .account-section a + a,
+body.route-client .account-panel .account-section button + button,
+body.route-client .account-support-section a {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .account-panel .account-section svg {
+  width: 19px !important;
+  height: 19px !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body.route-client .account-panel .account-logout {
+  width: calc(100% - 20px) !important;
+  min-height: 48px !important;
+  margin: 10px !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  justify-content: center !important;
+  color: #ffccd3 !important;
+  background: rgba(227, 6, 19, 0.16) !important;
+  border: 1px solid rgba(227, 6, 19, 0.20) !important;
+}
+
+/* Opciones de pago */
+body.route-client .account-payment-options {
+  padding: 8px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .account-payment-options button {
+  min-height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 17px !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+}
+
+body.route-client .account-payment-options button.active {
+  color: #061014 !important;
+  background: #ffffff !important;
+}
+
+/* Responsive */
+@media (max-width: 390px) {
+  body.route-client .account-overlay {
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 10px calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+  }
+
+  body.route-client .account-overlay .account-panel {
+    border-radius: 28px !important;
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+
+  body.route-client .mc-account-profile {
+    grid-template-columns: 68px minmax(0, 1fr) !important;
+    min-height: 98px !important;
+    border-radius: 24px !important;
+  }
+
+  body.route-client .mc-account-avatar {
+    width: 68px !important;
+    height: 68px !important;
+    border-radius: 23px !important;
+  }
+
+  body.route-client .mc-account-profile-copy h2 {
+    font-size: 24px !important;
+  }
+
+  body.route-client .mc-account-edit-btn {
+    min-height: 48px !important;
+  }
+
+  body.route-client .account-panel .account-section > button,
+  body.route-client .account-panel .account-section > a,
+  body.route-client .account-panel .account-payment-toggle {
+    min-height: 52px !important;
+  }
+}
+/* =========================================================
+   MiChofer Account Logout — Apple Clear Action
+   Corrige "Cerrar sesión" partido y lo vuelve entendible
+   Pegar AL FINAL de styles.css
+========================================================= */
+
+body.route-client .account-panel .mc-account-legal-card {
+  overflow: hidden !important;
+}
+
+body.route-client .account-panel .mc-account-legal-card .account-support-header {
+  padding: 16px 16px 10px !important;
+}
+
+body.route-client .account-panel .mc-account-legal-card .account-support-subtitle {
+  max-width: 280px !important;
+}
+
+body.route-client .account-panel .mc-account-logout-zone {
+  padding: 12px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background:
+    linear-gradient(180deg, rgba(227, 6, 19, 0.035), rgba(227, 6, 19, 0.075)) !important;
+}
+
+body.route-client .account-panel .mc-account-logout-btn {
+  width: 100% !important;
+  min-height: 62px !important;
+  margin: 0 !important;
+  border: 1px solid rgba(255, 87, 105, 0.24) !important;
+  border-radius: 21px !important;
+  padding: 10px 13px !important;
+
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) 18px !important;
+  align-items: center !important;
+  gap: 11px !important;
+
+  color: #ffe8ec !important;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255, 255, 255, 0.10), transparent 32%),
+    linear-gradient(135deg, rgba(227, 6, 19, 0.28), rgba(90, 12, 26, 0.42)) !important;
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+
+  text-align: left !important;
+}
+
+body.route-client .account-panel .mc-account-logout-btn:hover {
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255, 255, 255, 0.13), transparent 32%),
+    linear-gradient(135deg, rgba(227, 6, 19, 0.36), rgba(105, 14, 30, 0.50)) !important;
+}
+
+body.route-client .account-panel .mc-account-logout-icon {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 16px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.13) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+body.route-client .account-panel .mc-account-logout-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: #ffffff !important;
+}
+
+body.route-client .account-panel .mc-account-logout-copy {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 5px !important;
+}
+
+body.route-client .account-panel .mc-account-logout-copy strong {
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.025em !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .account-panel .mc-account-logout-copy small {
+  color: rgba(255, 232, 236, 0.68) !important;
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .account-panel .mc-account-logout-btn > svg {
+  width: 17px !important;
+  height: 17px !important;
+  color: rgba(255, 232, 236, 0.72) !important;
+  justify-self: end !important;
+}
+
+/* Anula el estilo viejo que partía "Cerrar sesión" */
+body.route-client .account-panel .account-logout {
+  display: none !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .account-panel .mc-account-logout-zone {
+    padding: 10px !important;
+  }
+
+  body.route-client .account-panel .mc-account-logout-btn {
+    min-height: 58px !important;
+    border-radius: 19px !important;
+    grid-template-columns: 40px minmax(0, 1fr) 16px !important;
+    gap: 10px !important;
+  }
+
+  body.route-client .account-panel .mc-account-logout-icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 15px !important;
+  }
+
+  body.route-client .account-panel .mc-account-logout-copy strong {
+    font-size: 14px !important;
+  }
+
+  body.route-client .account-panel .mc-account-logout-copy small {
+    font-size: 10px !important;
+  }
+}
+/* =========================================================
+   MiChofer Confirm Ride Card — Apple Premium
+   Chofer elegido + pago visible + CTA profesional
+   Pegar AL FINAL de styles.css
+========================================================= */
+
+body.route-client .selected-map-card.driver-confirm-card {
+  display: none !important;
+}
+
+body.route-client .mc-confirm-ride-card {
+  position: absolute !important;
+  left: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  right: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  z-index: 95 !important;
+
+  max-width: 406px !important;
+  margin: 0 auto !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 11px !important;
+
+  color: #ffffff !important;
+  border-radius: 30px !important;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(45, 245, 168, 0.16), transparent 34%),
+    radial-gradient(circle at 88% 0%, rgba(32, 215, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(16, 25, 32, 0.97), rgba(6, 9, 13, 0.99)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow:
+    0 28px 86px rgba(0, 0, 0, 0.54),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: blur(28px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.12) !important;
+  overflow: hidden !important;
+}
+
+body.route-client .mc-confirm-ride-card::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 18px !important;
+  right: 18px !important;
+  top: 0 !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, rgba(45, 245, 168, 0), rgba(45, 245, 168, 0.95), rgba(32, 215, 255, 0)) !important;
+  opacity: 0.88 !important;
+}
+
+body.route-client .mc-confirm-close {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  z-index: 2 !important;
+  width: 42px !important;
+  height: 42px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.84) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-confirm-driver {
+  min-width: 0 !important;
+  padding-right: 48px !important;
+  display: grid !important;
+  grid-template-columns: 74px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 13px !important;
+}
+
+body.route-client .mc-confirm-avatar {
+  position: relative !important;
+  width: 74px !important;
+  height: 74px !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04)) !important;
+  border: 1px solid rgba(45, 245, 168, 0.32) !important;
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.28),
+    0 0 26px rgba(45, 245, 168, 0.14) !important;
+  font-size: 19px !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-confirm-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-client .mc-confirm-avatar em {
+  position: absolute !important;
+  top: 6px !important;
+  right: 6px !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #041014 !important;
+  background: #33f0b0 !important;
+  border: 2px solid rgba(6, 9, 13, 0.92) !important;
+  font-style: normal !important;
+}
+
+body.route-client .mc-confirm-copy {
+  min-width: 0 !important;
+}
+
+body.route-client .mc-confirm-copy span {
+  display: block !important;
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-confirm-copy h2 {
+  margin: 7px 0 0 !important;
+  color: #ffffff !important;
+  font-size: 26px !important;
+  line-height: 0.96 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.065em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-confirm-copy p {
+  margin: 7px 0 0 !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  font-weight: 850 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-confirm-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+
+body.route-client .mc-confirm-metrics div {
+  min-width: 0 !important;
+  min-height: 58px !important;
+  padding: 9px 8px !important;
+  border-radius: 19px !important;
+  display: grid !important;
+  align-content: center !important;
+  justify-items: center !important;
+  gap: 4px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+}
+
+body.route-client .mc-confirm-metrics div svg {
+  color: #33f0b0 !important;
+}
+
+body.route-client .mc-confirm-metrics strong {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-confirm-metrics span {
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-confirm-payment {
+  padding: 10px !important;
+  border-radius: 24px !important;
+  display: grid !important;
+  gap: 10px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-confirm-payment-head {
+  display: flex !important;
+  align-items: end !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+
+body.route-client .mc-confirm-payment-head span,
+body.route-client .mc-confirm-price span {
+  display: block !important;
+  color: rgba(255, 255, 255, 0.44) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+body.route-client .mc-confirm-payment-head strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-confirm-payment-head small {
+  max-width: 142px !important;
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+}
+
+body.route-client .mc-confirm-payment-options {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.route-client .mc-confirm-payment-options button {
+  min-height: 47px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 18px !important;
+  padding: 0 11px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+  background: rgba(0, 0, 0, 0.22) !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-confirm-payment-options button.active {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #ffffff, #dffcf7) !important;
+  border-color: rgba(255, 255, 255, 0.58) !important;
+  box-shadow:
+    0 12px 26px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+body.route-client .mc-confirm-price {
+  min-height: 66px !important;
+  padding: 12px 13px !important;
+  border-radius: 23px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  background:
+    linear-gradient(135deg, rgba(45, 245, 168, 0.14), rgba(32, 215, 255, 0.08)) !important;
+  border: 1px solid rgba(45, 245, 168, 0.14) !important;
+}
+
+body.route-client .mc-confirm-price strong {
+  display: block !important;
+  margin-top: 6px !important;
+  color: #a7fff0 !important;
+  font-size: 19px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+}
+
+body.route-client .mc-confirm-price small {
+  max-width: 116px !important;
+  color: rgba(255, 255, 255, 0.50) !important;
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+}
+
+body.route-client .mc-confirm-actions {
+  display: grid !important;
+  grid-template-columns: 0.8fr 1.45fr !important;
+  gap: 9px !important;
+}
+
+body.route-client .mc-confirm-secondary,
+body.route-client .mc-confirm-primary {
+  min-height: 56px !important;
+  border-radius: 21px !important;
+  padding: 0 14px !important;
+  border: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-confirm-secondary {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+}
+
+body.route-client .mc-confirm-primary {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+  box-shadow: 0 16px 38px rgba(32, 215, 255, 0.18) !important;
+}
+
+body.route-client .mc-confirm-primary:disabled {
+  opacity: 0.58 !important;
+  cursor: not-allowed !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .mc-confirm-ride-card {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    border-radius: 27px !important;
+    padding: 11px !important;
+    gap: 9px !important;
+  }
+
+  body.route-client .mc-confirm-driver {
+    grid-template-columns: 66px minmax(0, 1fr) !important;
+    gap: 11px !important;
+  }
+
+  body.route-client .mc-confirm-avatar {
+    width: 66px !important;
+    height: 66px !important;
+    border-radius: 22px !important;
+  }
+
+  body.route-client .mc-confirm-copy h2 {
+    font-size: 23px !important;
+  }
+
+  body.route-client .mc-confirm-price strong {
+    font-size: 17px !important;
+  }
+
+  body.route-client .mc-confirm-actions {
+    grid-template-columns: 0.75fr 1.35fr !important;
+  }
+
+  body.route-client .mc-confirm-secondary,
+  body.route-client .mc-confirm-primary {
+    min-height: 52px !important;
+    border-radius: 19px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* =========================================================
+   MiChofer Driver Request Payment Pill
+   Muestra al chofer si el cliente paga efectivo o tarjeta
+   Pegar AL FINAL de styles.css
+========================================================= */
+
+body.route-driver .mc-driver-request-proof {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+body.route-driver .mc-driver-payment-pill {
+  min-height: 28px !important;
+  padding: 0 11px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 10px 24px rgba(32, 215, 255, 0.14) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+
+body.route-driver .mc-driver-payment-pill.card {
+  color: #061014 !important;
+  background: linear-gradient(135deg, #ffffff, #dffcf7) !important;
+}
+
+body.route-driver .mc-driver-payment-pill.cash {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+}
+/* =========================================================
+   FIX PRECIO CONFIRMACION - Siempre blanco visible
+========================================================= */
+
+body.route-client .mc-confirm-price strong {
+  color: #ffffff !important;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.22),
+    0 0 18px rgba(255, 255, 255, 0.16) !important;
+}
+
+body.route-client .mc-confirm-price {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.045)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+body.route-client .mc-confirm-price span {
+  color: rgba(255, 255, 255, 0.48) !important;
+}
+
+body.route-client .mc-confirm-price small {
+  color: rgba(255, 255, 255, 0.58) !important;
+}
+  /* =========================================================
+     MiChofer Admin Ratings — Reputación y reportes
+  ========================================================= */
+
+  .admin-ratings-panel {
+    margin-bottom: 4px;
+  }
+
+  .admin-rating-card {
+    border-color: rgba(255, 209, 102, 0.18);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255, 209, 102, 0.10), transparent 32%),
+      linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.006));
+  }
+
+  .admin-rating-card.status-new {
+    border-color: rgba(34, 240, 189, 0.24);
+    box-shadow:
+      0 12px 38px rgba(0,0,0,0.48),
+      0 0 34px rgba(34,240,189,0.06);
+  }
+
+  .admin-rating-card.status-reviewed {
+    opacity: 0.88;
+  }
+
+  .admin-rating-card.status-archived {
+    opacity: 0.58;
+  }
+
+  .admin-rating-stars {
+    min-width: 116px;
+    min-height: 42px;
+    border-radius: 999px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: #ffd166;
+    background: rgba(255, 209, 102, 0.10);
+    border: 1px solid rgba(255, 209, 102, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .admin-rating-ids {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-rating-ids span {
+    min-height: 30px;
+    border-radius: 999px;
+    padding: 7px 10px;
+    display: inline-flex;
+    align-items: center;
+    color: rgba(255,255,255,0.54);
+    background: rgba(255,255,255,0.018);
+    border: 1px solid rgba(255,255,255,0.025);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .admin-rating-card .admin-actions button:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 560px) {
+    .admin-rating-stars {
+      min-width: 100%;
+      justify-content: flex-start;
+      padding: 0 12px;
+    }
+
+    .admin-rating-card .admin-driver-head {
+      display: grid;
+    }
+  }
+  /* =========================================================
+   MiChofer Ratings Modal — Apple Premium
+   Cliente califica chofer / Chofer califica pasajero
+========================================================= */
+
+body.route-client .mc-rating-backdrop,
+body.route-driver .mc-rating-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  display: grid !important;
+  place-items: end center !important;
+  padding: 14px !important;
+  background: rgba(0, 0, 0, 0.56) !important;
+  backdrop-filter: blur(22px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.12) !important;
+}
+
+body.route-client .mc-rating-sheet,
+body.route-driver .mc-rating-sheet {
+  width: min(100%, 430px) !important;
+  max-height: calc(100dvh - 28px) !important;
+  overflow-y: auto !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 12px !important;
+  color: #ffffff !important;
+  border-radius: 32px !important;
+  background:
+    radial-gradient(circle at 16% -8%, rgba(51, 240, 176, 0.16), transparent 34%),
+    radial-gradient(circle at 90% 0%, rgba(32, 215, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(17, 25, 33, 0.98), rgba(5, 8, 12, 0.99)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+body.route-client .mc-rating-handle,
+body.route-driver .mc-rating-handle {
+  width: 46px !important;
+  height: 5px !important;
+  margin: 0 auto !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.30) !important;
+}
+
+body.route-client .mc-rating-head,
+body.route-driver .mc-rating-head {
+  padding: 2px 4px 0 !important;
+}
+
+body.route-client .mc-rating-head span,
+body.route-driver .mc-rating-head span {
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-rating-head h2,
+body.route-driver .mc-rating-head h2 {
+  margin: 7px 0 0 !important;
+  color: #ffffff !important;
+  font-size: 28px !important;
+  line-height: 0.98 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.065em !important;
+}
+
+body.route-client .mc-rating-head p,
+body.route-driver .mc-rating-head p {
+  margin: 8px 0 0 !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-rating-profile,
+body.route-driver .mc-rating-profile {
+  min-height: 86px !important;
+  padding: 10px !important;
+  border-radius: 24px !important;
+  display: grid !important;
+  grid-template-columns: 66px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-rating-avatar,
+body.route-driver .mc-rating-avatar {
+  width: 66px !important;
+  height: 66px !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(51, 240, 176, 0.22) !important;
+}
+
+body.route-client .mc-rating-avatar img,
+body.route-driver .mc-rating-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-client .mc-rating-profile span,
+body.route-driver .mc-rating-profile span {
+  display: block !important;
+  color: rgba(255, 255, 255, 0.44) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-rating-profile strong,
+body.route-driver .mc-rating-profile strong {
+  display: block !important;
+  margin-top: 6px !important;
+  color: #ffffff !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+}
+
+body.route-client .mc-rating-profile small,
+body.route-driver .mc-rating-profile small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(255, 255, 255, 0.52) !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-rating-stars,
+body.route-driver .mc-rating-stars {
+  min-height: 72px !important;
+  padding: 8px !important;
+  border-radius: 24px !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-rating-stars button,
+body.route-driver .mc-rating-stars button {
+  border: 0 !important;
+  border-radius: 19px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.30) !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+}
+
+body.route-client .mc-rating-stars button.active,
+body.route-driver .mc-rating-stars button.active {
+  color: #ffd166 !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 209, 102, 0.18), transparent 46%),
+    rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-rating-textarea,
+body.route-driver .mc-rating-textarea {
+  width: 100% !important;
+  min-height: 112px !important;
+  resize: none !important;
+  outline: 0 !important;
+  border-radius: 23px !important;
+  padding: 14px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-rating-textarea::placeholder,
+body.route-driver .mc-rating-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.36) !important;
+}
+
+body.route-client .mc-rating-actions,
+body.route-driver .mc-rating-actions {
+  display: grid !important;
+  grid-template-columns: 0.75fr 1.35fr !important;
+  gap: 9px !important;
+}
+
+body.route-client .mc-rating-secondary,
+body.route-client .mc-rating-primary,
+body.route-driver .mc-rating-secondary,
+body.route-driver .mc-rating-primary {
+  min-height: 54px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-rating-secondary,
+body.route-driver .mc-rating-secondary {
+  color: rgba(255, 255, 255, 0.82) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+body.route-client .mc-rating-primary,
+body.route-driver .mc-rating-primary {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+  box-shadow: 0 16px 38px rgba(32, 215, 255, 0.18) !important;
+}
+
+body.route-client .mc-rating-primary:disabled,
+body.route-client .mc-rating-secondary:disabled,
+body.route-driver .mc-rating-primary:disabled,
+body.route-driver .mc-rating-secondary:disabled {
+  opacity: 0.58 !important;
+  cursor: not-allowed !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .mc-rating-backdrop,
+  body.route-driver .mc-rating-backdrop {
+    padding: 10px !important;
+  }
+
+  body.route-client .mc-rating-sheet,
+  body.route-driver .mc-rating-sheet {
+    border-radius: 28px !important;
+  }
+
+  body.route-client .mc-rating-head h2,
+  body.route-driver .mc-rating-head h2 {
+    font-size: 25px !important;
+  }
+
+  body.route-client .mc-rating-actions,
+  body.route-driver .mc-rating-actions {
+    grid-template-columns: 0.7fr 1.3fr !important;
+  }
+}
+/* =========================================================
+   MiChofer Ratings Modal — Apple Premium
+   Cliente califica chofer / Chofer califica pasajero
+========================================================= */
+
+body.route-client .mc-rating-backdrop,
+body.route-driver .mc-rating-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  display: grid !important;
+  place-items: end center !important;
+  padding: 14px !important;
+  background: rgba(0, 0, 0, 0.56) !important;
+  backdrop-filter: blur(22px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.12) !important;
+}
+
+body.route-client .mc-rating-sheet,
+body.route-driver .mc-rating-sheet {
+  width: min(100%, 430px) !important;
+  max-height: calc(100dvh - 28px) !important;
+  overflow-y: auto !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 12px !important;
+  color: #ffffff !important;
+  border-radius: 32px !important;
+  background:
+    radial-gradient(circle at 16% -8%, rgba(51, 240, 176, 0.16), transparent 34%),
+    radial-gradient(circle at 90% 0%, rgba(32, 215, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(17, 25, 33, 0.98), rgba(5, 8, 12, 0.99)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+body.route-client .mc-rating-handle,
+body.route-driver .mc-rating-handle {
+  width: 46px !important;
+  height: 5px !important;
+  margin: 0 auto !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.30) !important;
+}
+
+body.route-client .mc-rating-head,
+body.route-driver .mc-rating-head {
+  padding: 2px 4px 0 !important;
+}
+
+body.route-client .mc-rating-head span,
+body.route-driver .mc-rating-head span {
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-rating-head h2,
+body.route-driver .mc-rating-head h2 {
+  margin: 7px 0 0 !important;
+  color: #ffffff !important;
+  font-size: 28px !important;
+  line-height: 0.98 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.065em !important;
+}
+
+body.route-client .mc-rating-head p,
+body.route-driver .mc-rating-head p {
+  margin: 8px 0 0 !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-rating-profile,
+body.route-driver .mc-rating-profile {
+  min-height: 86px !important;
+  padding: 10px !important;
+  border-radius: 24px !important;
+  display: grid !important;
+  grid-template-columns: 66px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-rating-avatar,
+body.route-driver .mc-rating-avatar {
+  width: 66px !important;
+  height: 66px !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(51, 240, 176, 0.22) !important;
+}
+
+body.route-client .mc-rating-avatar img,
+body.route-driver .mc-rating-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-client .mc-rating-profile span,
+body.route-driver .mc-rating-profile span {
+  display: block !important;
+  color: rgba(255, 255, 255, 0.44) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .mc-rating-profile strong,
+body.route-driver .mc-rating-profile strong {
+  display: block !important;
+  margin-top: 6px !important;
+  color: #ffffff !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+}
+
+body.route-client .mc-rating-profile small,
+body.route-driver .mc-rating-profile small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(255, 255, 255, 0.52) !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-client .mc-rating-stars,
+body.route-driver .mc-rating-stars {
+  min-height: 72px !important;
+  padding: 8px !important;
+  border-radius: 24px !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-rating-stars button,
+body.route-driver .mc-rating-stars button {
+  border: 0 !important;
+  border-radius: 19px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(255, 255, 255, 0.30) !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+}
+
+body.route-client .mc-rating-stars button.active,
+body.route-driver .mc-rating-stars button.active {
+  color: #ffd166 !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 209, 102, 0.18), transparent 46%),
+    rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-rating-textarea,
+body.route-driver .mc-rating-textarea {
+  width: 100% !important;
+  min-height: 112px !important;
+  resize: none !important;
+  outline: 0 !important;
+  border-radius: 23px !important;
+  padding: 14px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  font-weight: 800 !important;
+}
+
+body.route-client .mc-rating-textarea::placeholder,
+body.route-driver .mc-rating-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.36) !important;
+}
+
+body.route-client .mc-rating-actions,
+body.route-driver .mc-rating-actions {
+  display: grid !important;
+  grid-template-columns: 0.75fr 1.35fr !important;
+  gap: 9px !important;
+}
+
+body.route-client .mc-rating-secondary,
+body.route-client .mc-rating-primary,
+body.route-driver .mc-rating-secondary,
+body.route-driver .mc-rating-primary {
+  min-height: 54px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .mc-rating-secondary,
+body.route-driver .mc-rating-secondary {
+  color: rgba(255, 255, 255, 0.82) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+body.route-client .mc-rating-primary,
+body.route-driver .mc-rating-primary {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+  box-shadow: 0 16px 38px rgba(32, 215, 255, 0.18) !important;
+}
+
+body.route-client .mc-rating-primary:disabled,
+body.route-client .mc-rating-secondary:disabled,
+body.route-driver .mc-rating-primary:disabled,
+body.route-driver .mc-rating-secondary:disabled {
+  opacity: 0.58 !important;
+  cursor: not-allowed !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .mc-rating-backdrop,
+  body.route-driver .mc-rating-backdrop {
+    padding: 10px !important;
+  }
+
+  body.route-client .mc-rating-sheet,
+  body.route-driver .mc-rating-sheet {
+    border-radius: 28px !important;
+  }
+
+  body.route-client .mc-rating-head h2,
+  body.route-driver .mc-rating-head h2 {
+    font-size: 25px !important;
+  }
+
+  body.route-client .mc-rating-actions,
+  body.route-driver .mc-rating-actions {
+    grid-template-columns: 0.7fr 1.3fr !important;
+  }
+}
+/* =========================================================
+   FIX DRIVER PROFILE MENU — NO MÁS PANTALLA AZUL
+   Menú perfil chofer premium, visible y sin pisarse
+========================================================= */
+
+body.route-driver .mc-driver-profile-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999999 !important;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
+  display: grid !important;
+  place-items: start center !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(45, 245, 168, 0.12), transparent 34%),
+    rgba(1, 8, 14, 0.72) !important;
+  backdrop-filter: blur(18px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+}
+
+body.route-driver .mc-driver-profile-panel {
+  width: min(100%, 420px) !important;
+  max-height: calc(100dvh - 28px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 14px !important;
+  display: grid !important;
+  gap: 12px !important;
+  color: #f8fbff !important;
+  border-radius: 30px !important;
+  background:
+    radial-gradient(circle at 18% -8%, rgba(45, 245, 168, 0.14), transparent 34%),
+    radial-gradient(circle at 88% 0%, rgba(32, 215, 255, 0.10), transparent 30%),
+    linear-gradient(180deg, rgba(17, 27, 35, 0.98), rgba(5, 9, 14, 0.99)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow:
+    0 32px 90px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+body.route-driver .mc-driver-profile-top {
+  min-height: 46px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 44px !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+body.route-driver .mc-driver-profile-brand {
+  min-width: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  color: rgba(248, 251, 255, 0.58) !important;
+}
+
+body.route-driver .mc-driver-profile-brand span {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: #33f0b0 !important;
+  box-shadow: 0 0 18px rgba(51, 240, 176, 0.48) !important;
+}
+
+body.route-driver .mc-driver-profile-brand strong {
+  min-width: 0 !important;
+  color: rgba(248, 251, 255, 0.66) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .mc-driver-profile-close {
+  width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 17px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(248, 251, 255, 0.86) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+}
+
+body.route-driver .mc-driver-profile-card {
+  min-height: 104px !important;
+  padding: 12px !important;
+  border-radius: 25px !important;
+  display: grid !important;
+  grid-template-columns: 74px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 13px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-driver .mc-driver-profile-avatar {
+  position: relative !important;
+  width: 74px !important;
+  height: 74px !important;
+  border-radius: 25px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(248, 251, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.route-driver .mc-driver-profile-avatar.online {
+  border-color: rgba(51, 240, 176, 0.42) !important;
+  box-shadow: 0 0 26px rgba(51, 240, 176, 0.10) !important;
+}
+
+body.route-driver .mc-driver-profile-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-driver .mc-driver-profile-copy {
+  min-width: 0 !important;
+}
+
+body.route-driver .mc-driver-profile-copy span {
+  display: block !important;
+  color: rgba(51, 240, 176, 0.82) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-driver .mc-driver-profile-copy h2 {
+  margin: 7px 0 0 !important;
+  color: #ffffff !important;
+  font-size: 25px !important;
+  line-height: 0.96 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.06em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .mc-driver-profile-copy p {
+  margin: 7px 0 0 !important;
+  color: rgba(248, 251, 255, 0.56) !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  font-weight: 850 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .mc-driver-profile-status {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.route-driver .mc-driver-profile-status div {
+  min-height: 64px !important;
+  padding: 12px !important;
+  border-radius: 21px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+}
+
+body.route-driver .mc-driver-profile-status span,
+body.route-driver .mc-driver-profile-section-head small {
+  display: block !important;
+  color: rgba(248, 251, 255, 0.42) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+}
+
+body.route-driver .mc-driver-profile-status strong {
+  display: block !important;
+  margin-top: 7px !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .mc-driver-profile-warning {
+  min-height: 60px !important;
+  padding: 12px !important;
+  border-radius: 21px !important;
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #ffd5df !important;
+  background: rgba(227, 6, 19, 0.14) !important;
+  border: 1px solid rgba(227, 6, 19, 0.22) !important;
+}
+
+body.route-driver .mc-driver-profile-warning strong,
+body.route-driver .mc-driver-profile-warning small {
+  display: block !important;
+}
+
+body.route-driver .mc-driver-profile-warning strong {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .mc-driver-profile-warning small {
+  margin-top: 4px !important;
+  color: rgba(255, 213, 223, 0.72) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+body.route-driver .mc-driver-profile-section {
+  padding: 12px !important;
+  border-radius: 25px !important;
+  display: grid !important;
+  gap: 11px !important;
+  background: rgba(0, 0, 0, 0.22) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+}
+
+body.route-driver .mc-driver-profile-section-head {
+  display: flex !important;
+  align-items: end !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+
+body.route-driver .mc-driver-profile-section-head strong {
+  color: #ffffff !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .mc-driver-category-list {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+body.route-driver .mc-driver-category-btn {
+  width: 100% !important;
+  min-height: 50px !important;
+  border: 1px solid rgba(255, 255, 255, 0.085) !important;
+  border-radius: 18px !important;
+  padding: 0 12px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  text-align: left !important;
+}
+
+body.route-driver .mc-driver-category-btn span {
+  min-width: 0 !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .mc-driver-category-btn small {
+  color: rgba(248, 251, 255, 0.58) !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .mc-driver-category-btn.approved {
+  border-color: rgba(51, 240, 176, 0.24) !important;
+  background: rgba(51, 240, 176, 0.09) !important;
+}
+
+body.route-driver .mc-driver-category-btn.requested {
+  border-color: rgba(255, 209, 102, 0.22) !important;
+  background: rgba(255, 209, 102, 0.08) !important;
+}
+
+body.route-driver .mc-driver-category-btn:disabled {
+  opacity: 0.68 !important;
+  cursor: not-allowed !important;
+}
+
+body.route-driver .mc-driver-notification-list {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+body.route-driver .mc-driver-empty-note {
+  min-height: 46px !important;
+  border-radius: 17px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: rgba(248, 251, 255, 0.52) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+body.route-driver .mc-driver-notification {
+  padding: 10px 11px !important;
+  border-radius: 17px !important;
+  display: grid !important;
+  gap: 4px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+}
+
+body.route-driver .mc-driver-notification span {
+  color: rgba(51, 240, 176, 0.76) !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .mc-driver-notification strong {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .mc-driver-notification small {
+  color: rgba(248, 251, 255, 0.56) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+body.route-driver .mc-driver-profile-links {
+  display: grid !important;
+  overflow: hidden !important;
+  border-radius: 23px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+body.route-driver .mc-driver-profile-links a {
+  min-height: 48px !important;
+  padding: 0 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  color: rgba(248, 251, 255, 0.86) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+}
+
+body.route-driver .mc-driver-profile-links a + a {
+  border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+body.route-driver .mc-driver-profile-logout {
+  width: 100% !important;
+  min-height: 56px !important;
+  border: 1px solid rgba(255, 87, 105, 0.26) !important;
+  border-radius: 21px !important;
+  padding: 0 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, rgba(227, 6, 19, 0.32), rgba(100, 12, 28, 0.42)) !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+@media (max-width: 390px) {
+  body.route-driver .mc-driver-profile-backdrop {
+    padding: 10px !important;
+  }
+
+  body.route-driver .mc-driver-profile-panel {
+    border-radius: 27px !important;
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+
+  body.route-driver .mc-driver-profile-card {
+    grid-template-columns: 66px minmax(0, 1fr) !important;
+  }
+
+  body.route-driver .mc-driver-profile-avatar {
+    width: 66px !important;
+    height: 66px !important;
+    border-radius: 22px !important;
+  }
+
+  body.route-driver .mc-driver-profile-copy h2 {
+    font-size: 22px !important;
+  }
+}
+/* =========================================================
+   MiChofer Driver Dashboard — Apple Premium Visual
+   Solo UI. No toca GPS, Supabase, rutas ni lógica.
+========================================================= */
+
+body.route-driver .app-shell {
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  background:
+    radial-gradient(circle at 50% 110%, rgba(51, 240, 176, 0.30), transparent 32%),
+    #05080c !important;
+  overflow: hidden !important;
+}
+
+body.route-driver .driver-phone.driver-idle {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: #05080c !important;
+  color: #ffffff !important;
+  overflow: hidden !important;
+}
+
+/* Mapa a pantalla completa */
+body.route-driver .driver-idle-map {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+}
+
+body.route-driver .driver-idle-map .mobility-map,
+body.route-driver .driver-idle-map .interactive-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+body.route-driver .driver-idle-map::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 10 !important;
+  pointer-events: none !important;
+  background:
+    linear-gradient(180deg, rgba(5, 8, 12, 0.18) 0%, rgba(5, 8, 12, 0.00) 26%, rgba(5, 8, 12, 0.26) 100%),
+    radial-gradient(circle at 50% 82%, rgba(51, 240, 176, 0.12), transparent 32%) !important;
+}
+
+/* Header superior nuevo */
+body.route-driver .mc-driver-hud {
+  position: absolute !important;
+  top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+  left: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  right: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  z-index: 80 !important;
+
+  min-height: 64px !important;
+  padding: 8px !important;
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) 48px !important;
+  align-items: center !important;
+  gap: 10px !important;
+
+  border-radius: 25px !important;
+  color: #ffffff !important;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(51, 240, 176, 0.14), transparent 34%),
+    linear-gradient(135deg, rgba(9, 22, 29, 0.92), rgba(5, 8, 12, 0.88)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 22px 58px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: blur(22px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.12) !important;
+}
+
+body.route-driver .mc-driver-hud-avatar,
+body.route-driver .mc-driver-hud-refresh {
+  width: 48px !important;
+  height: 48px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 18px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  overflow: hidden !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+body.route-driver .mc-driver-hud-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body.route-driver .mc-driver-hud-main {
+  min-width: 0 !important;
+}
+
+body.route-driver .mc-driver-hud-status {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+body.route-driver .mc-driver-status-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.34) !important;
+  flex: 0 0 auto !important;
+}
+
+body.route-driver .mc-driver-status-dot.online {
+  background: #33f0b0 !important;
+  box-shadow: 0 0 18px rgba(51, 240, 176, 0.65) !important;
+}
+
+body.route-driver .mc-driver-status-dot.standby {
+  background: #ffd166 !important;
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.45) !important;
+}
+
+body.route-driver .mc-driver-status-dot.offline {
+  background: rgba(255, 255, 255, 0.30) !important;
+}
+
+body.route-driver .mc-driver-hud-main strong {
+  min-width: 0 !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.route-driver .mc-driver-hud-main small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Mensaje flotante */
+body.route-driver .driver-idle-notice {
+  position: absolute !important;
+  top: calc(env(safe-area-inset-top, 0px) + 88px) !important;
+  left: 50% !important;
+  z-index: 82 !important;
+  max-width: min(330px, calc(100vw - 32px)) !important;
+  transform: translateX(-50%) !important;
+
+  margin: 0 !important;
+  padding: 9px 13px !important;
+  border-radius: 999px !important;
+  color: rgba(255, 255, 255, 0.86) !important;
+  background: rgba(5, 8, 12, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  font-weight: 850 !important;
+  text-align: center !important;
+}
+
+/* Dock inferior nuevo */
+body.route-driver .mc-driver-dock {
+  position: absolute !important;
+  left: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  right: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  z-index: 80 !important;
+
+  padding: 10px !important;
+  display: grid !important;
+  gap: 9px !important;
+  border-radius: 28px !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(51, 240, 176, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(12, 21, 28, 0.94), rgba(5, 8, 12, 0.96)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 28px 76px rgba(0, 0, 0, 0.50),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(24px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.12) !important;
+}
+
+body.route-driver .mc-driver-dock-primary {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.route-driver .mc-driver-dock-btn {
+  min-width: 0 !important;
+  min-height: 50px !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 19px !important;
+  padding: 0 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
+}
+
+body.route-driver .mc-driver-dock-btn.active {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  box-shadow:
+    0 14px 34px rgba(32, 215, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+body.route-driver .mc-driver-dock-btn.receive.active {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+}
+
+body.route-driver .mc-driver-dock-btn:disabled {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+}
+
+body.route-driver .mc-driver-dock-secondary {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+body.route-driver .mc-driver-calibrate-btn,
+body.route-driver .mc-driver-request-count {
+  min-height: 40px !important;
+  border-radius: 999px !important;
+  padding: 0 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  color: rgba(255, 255, 255, 0.56) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+}
+
+body.route-driver .mc-driver-calibrate-btn {
+  justify-content: center !important;
+  color: rgba(255, 255, 255, 0.70) !important;
+}
+
+body.route-driver .mc-driver-request-count {
+  white-space: nowrap !important;
+}
+
+/* Ocultar estilos viejos si quedan renderizados accidentalmente */
+body.route-driver .driver-idle-controls {
+  display: none !important;
+}
+
+body.route-driver .driver-idle-bar {
+  display: none !important;
+}
+
+/* Solicitud entrante premium */
+body.route-driver .mc-driver-request-stack {
+  position: absolute !important;
+  left: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  right: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  z-index: 90 !important;
+}
+
+body.route-driver .mc-driver-request-card {
+  padding: 13px !important;
+  display: grid !important;
+  gap: 11px !important;
+  color: #ffffff !important;
+  border-radius: 30px !important;
+  background:
+    radial-gradient(circle at 12% -4%, rgba(51, 240, 176, 0.18), transparent 34%),
+    radial-gradient(circle at 88% 0%, rgba(32, 215, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(15, 25, 33, 0.97), rgba(5, 8, 12, 0.99)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow:
+    0 30px 84px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: blur(26px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(1.12) !important;
+}
+
+body.route-driver .mc-driver-request-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+body.route-driver .mc-driver-request-top span {
+  color: rgba(255, 255, 255, 0.50) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-driver .mc-driver-request-top strong {
+  color: #ffffff !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.045em !important;
+}
+
+body.route-driver .mc-driver-request-copy h2 {
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-size: 24px !important;
+  line-height: 1.02 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.06em !important;
+}
+
+body.route-driver .mc-driver-request-copy p {
+  margin: 8px 0 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: rgba(255, 255, 255, 0.60) !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 850 !important;
+}
+
+body.route-driver .mc-driver-ella-pill,
+body.route-driver .mc-driver-request-proof {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+body.route-driver .mc-driver-ella-pill {
+  width: max-content !important;
+  max-width: 100% !important;
+  min-height: 32px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  color: #ffe7f1 !important;
+  background: rgba(219, 39, 119, 0.16) !important;
+  border: 1px solid rgba(244, 114, 182, 0.20) !important;
+}
+
+body.route-driver .mc-driver-ella-pill strong,
+body.route-driver .mc-driver-ella-pill span {
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+body.route-driver .mc-driver-request-proof > span,
+body.route-driver .mc-driver-payment-pill {
+  min-height: 30px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: rgba(255, 255, 255, 0.70) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+}
+
+body.route-driver .mc-driver-payment-pill {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #ffffff, #dffcf7) !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .mc-driver-payment-pill.cash {
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+}
+
+body.route-driver .mc-driver-request-actions {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 48px 48px !important;
+  gap: 8px !important;
+}
+
+body.route-driver .mc-driver-accept-btn,
+body.route-driver .mc-driver-reject-btn,
+body.route-driver .mc-driver-chat-btn {
+  min-height: 52px !important;
+  border: 0 !important;
+  border-radius: 19px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  text-decoration: none !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+body.route-driver .mc-driver-accept-btn {
+  color: #041014 !important;
+  background: linear-gradient(135deg, #33f0b0, #20d7ff) !important;
+  box-shadow: 0 16px 36px rgba(32, 215, 255, 0.18) !important;
+}
+
+body.route-driver .mc-driver-reject-btn {
+  color: #ffd7de !important;
+  background: rgba(227, 6, 19, 0.16) !important;
+  border: 1px solid rgba(227, 6, 19, 0.20) !important;
+}
+
+body.route-driver .mc-driver-chat-btn {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.085) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Ocultar request viejo si quedara duplicado */
+body.route-driver .driver-idle-request {
+  display: none !important;
+}
+
+/* Modo confianza card, más prolijo */
+body.route-driver .driver-ella-status-card {
+  position: absolute !important;
+  left: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  right: max(12px, calc((100vw - 430px) / 2 + 12px)) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 134px) !important;
+  z-index: 72 !important;
+  margin: 0 !important;
+  border-radius: 24px !important;
+  background: rgba(5, 8, 12, 0.76) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.30) !important;
+  backdrop-filter: blur(20px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.08) !important;
+}
+
+/* Responsive */
+@media (max-width: 390px) {
+  body.route-driver .mc-driver-hud {
+    left: 10px !important;
+    right: 10px !important;
+    top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+    border-radius: 23px !important;
+  }
+
+  body.route-driver .mc-driver-dock,
+  body.route-driver .mc-driver-request-stack {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+  }
+
+  body.route-driver .mc-driver-dock {
+    border-radius: 25px !important;
+    padding: 9px !important;
+  }
+
+  body.route-driver .mc-driver-dock-btn {
+    min-height: 48px !important;
+    border-radius: 18px !important;
+    font-size: 12px !important;
+  }
+
+  body.route-driver .mc-driver-calibrate-btn,
+  body.route-driver .mc-driver-request-count {
+    min-height: 38px !important;
+    font-size: 10px !important;
+  }
+
+  body.route-driver .mc-driver-request-card {
+    border-radius: 27px !important;
+    padding: 12px !important;
+  }
+
+  body.route-driver .mc-driver-request-copy h2 {
+    font-size: 22px !important;
+  }
+
+  body.route-driver .driver-ella-status-card {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 124px) !important;
+  }
 }

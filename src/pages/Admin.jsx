@@ -11,6 +11,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Square,
+  Star,
   UserCheck,
   X,
   XCircle,
@@ -1092,6 +1093,7 @@ export default function Admin() {
   const [expandedDocs, setExpandedDocs] = useState({})
   const [categoryRequests, setCategoryRequests] = useState([])
   const [womenRequests, setWomenRequests] = useState([])
+  const [ratingReports, setRatingReports] = useState([])
 
   useEffect(() => {
     loadDrivers()
@@ -1172,10 +1174,11 @@ export default function Admin() {
     setAdminUser(currentUser)
 
     if (!currentUser) {
-      setDrivers([])
-      setCategoryRequests([])
-      setWomenRequests([])
-      setAdminProfile(null)
+     setDrivers([])
+setCategoryRequests([])
+setWomenRequests([])
+setRatingReports([])
+setAdminProfile(null)
       setMessage('No hay sesión activa. Iniciá sesión con robycho@gmail.com o rogercho@gmail.com y volvé a /admin.')
       setLoading(false)
       return
@@ -1202,10 +1205,11 @@ export default function Admin() {
     setAdminProfile(finalProfile)
 
     if (!isAdminAccount(currentUser, finalProfile)) {
-      setDrivers([])
-      setCategoryRequests([])
-      setWomenRequests([])
-      setMessage(`Estás logueado como ${currentUser.email}, pero su rol no es admin.`)
+    setDrivers([])
+setCategoryRequests([])
+setWomenRequests([])
+setRatingReports([])
+setMessage(`Estás logueado como ${currentUser.email}, pero su rol no es admin.`)
       setLoading(false)
       return
     }
@@ -1246,6 +1250,19 @@ export default function Admin() {
       setWomenRequests([])
     } else {
       setWomenRequests(womenData || [])
+    }
+
+       const { data: ratingsData, error: ratingsError } = await supabase
+      .from('ratings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(80)
+
+    if (ratingsError) {
+      console.warn('ADMIN RATINGS LOAD ERROR:', ratingsError)
+      setRatingReports([])
+    } else {
+      setRatingReports(ratingsData || [])
     }
 
     if (!data?.length) {
@@ -1391,7 +1408,35 @@ export default function Admin() {
     setMessage(decision === 'approved' ? 'Preferencia de confianza aprobada.' : 'Preferencia de confianza rechazada.')
     await loadDrivers()
   }
+  async function markRatingReviewed(ratingId, nextStatus = 'reviewed') {
+    const { error } = await supabase
+      .from('ratings')
+      .update({
+        admin_status: nextStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', ratingId)
 
+    if (error) {
+      console.error('ADMIN RATING UPDATE ERROR:', error)
+      setMessage('No pude actualizar la calificación. Revisá permisos RLS de ratings.')
+      return
+    }
+
+    setRatingReports((current) =>
+      current.map((item) =>
+        item.id === ratingId
+          ? {
+              ...item,
+              admin_status: nextStatus,
+              updated_at: new Date().toISOString(),
+            }
+          : item
+      )
+    )
+
+    setMessage(nextStatus === 'archived' ? 'Calificación archivada.' : 'Calificación marcada como revisada.')
+  }
   function filterTitle() {
     if (filterStatus === 'approved') return 'Aprobados'
     if (filterStatus === 'rejected') return 'Rechazados'
@@ -1484,7 +1529,83 @@ export default function Admin() {
             onMessage={setMessage}
           />
         )}
+        {ratingReports.length > 0 && (
+          <section className="admin-list admin-ratings-panel">
+            <div className="admin-list-title">
+              <strong>Reputación y reportes</strong>
+              <span>
+                {ratingReports.filter((item) => item.admin_status === 'new').length} nuevo
+                {ratingReports.filter((item) => item.admin_status === 'new').length === 1 ? '' : 's'}
+              </span>
+            </div>
 
+            {ratingReports.slice(0, 8).map((rating) => {
+              const isClientToDriver = rating.type === 'client_to_driver'
+              const isNew = rating.admin_status === 'new'
+              const stars = Number(rating.stars || 0)
+
+              return (
+                <article
+                  key={rating.id}
+                  className={`admin-driver-card admin-rating-card status-${rating.admin_status}`}
+                >
+                  <div className="admin-driver-head">
+                    <div>
+                      <span className={`admin-status ${isNew ? 'submitted' : 'approved'}`}>
+                        {isClientToDriver ? 'Cliente calificó chofer' : 'Chofer calificó pasajero'}
+                      </span>
+
+                      <h2>{stars.toFixed(1)} / 5.0</h2>
+
+                      <p>{rating.comment || 'Sin comentario escrito.'}</p>
+                    </div>
+
+                    <div className="admin-rating-stars" aria-label={`${stars} estrellas`}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={16}
+                          fill={stars >= star ? 'currentColor' : 'none'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="admin-driver-meta">
+                    <span>Viaje: {String(rating.trip_id || '').slice(0, 8)}</span>
+                    <span>Estado: {rating.admin_status || 'new'}</span>
+                    <span>{rating.created_at ? new Date(rating.created_at).toLocaleString('es-PY') : 'Sin fecha'}</span>
+                  </div>
+
+                  <div className="admin-rating-ids">
+                    <span>Evalúa: {String(rating.rater_id || '').slice(0, 8)}</span>
+                    <span>Recibe: {String(rating.ratee_id || '').slice(0, 8)}</span>
+                  </div>
+
+                  <div className="admin-actions">
+                    <button
+                      type="button"
+                      className="approve"
+                      onClick={() => markRatingReviewed(rating.id, 'reviewed')}
+                      disabled={rating.admin_status === 'reviewed'}
+                    >
+                      {rating.admin_status === 'reviewed' ? 'Ya revisado' : 'Marcar revisado'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="reject"
+                      onClick={() => markRatingReviewed(rating.id, 'archived')}
+                      disabled={rating.admin_status === 'archived'}
+                    >
+                      {rating.admin_status === 'archived' ? 'Archivado' : 'Archivar'}
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </section>
+        )}
         {womenRequests.length > 0 && (
           <section className="admin-list">
             <div className="admin-list-title">

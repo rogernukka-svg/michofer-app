@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import InstallMiChoferButton from '../components/InstallMiChoferButton.jsx'
 import {
   getOwnProfile,
   signInWithGoogle,
@@ -388,7 +387,7 @@ export default function Login() {
 
   const polishedSubtitle = useMemo(() => {
     if (knownUser?.email && step === 'password') return 'Cuenta reconocida en este dispositivo.'
-    if (step === 'welcome') return 'Segui tu viaje o volve al volante.'
+    if (step === 'welcome') return 'Accede rápido con Google o crea tu cuenta.'
     if (step === 'email') return 'Usalo solo si ya tenes cuenta con clave.'
     if (step === 'password') return 'Ultimo paso para continuar.'
     if (step === 'role') return 'Confirmamos como vas a usar la app.'
@@ -861,19 +860,9 @@ export default function Login() {
                 {busy ? 'Conectando...' : 'Continuar con Google'}
               </button>
 
-              <button
-                type="button"
-                className="login-main-btn auth-mail-btn"
-                onClick={() => setStep('email')}
-              >
-                Usar correo
-              </button>
-
-              <a className="login-create-link" href="/registro">
+              <a className="login-main-btn login-create-link" href="/registro">
                 Crear cuenta
               </a>
-
-              <InstallMiChoferButton className="login-install-btn" />
             </div>
           )}
 

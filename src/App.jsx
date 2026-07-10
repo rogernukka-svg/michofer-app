@@ -74,27 +74,24 @@ export default function App() {
           </article>
         </section>
 
-        <section className="home-sheet">
+        <section className="home-sheet home-sheet-compact">
           <div className="home-sheet-top">
-            <p className="eyebrow">MI CHOFER</p>
-            <h1>Tu viaje, tu chofer.</h1>
+            <h1>Elegí tu modo de viajar</h1>
           </div>
 
           <p className="muted">
-            Elegí a tu conductor entre los mejores. Sabés quién te lleva antes de subir.
+            Escogé viaje normal o exclusivo para mujeres, conducido por mujeres verificadas.
           </p>
 
-          <div className="home-actions">
+          <div className="home-actions home-actions-equal">
             <a className="main-btn" href="/login">
-              Empezar <ArrowRight size={20} />
+              Viajar ahora
             </a>
             <a className="secondary-btn woman-mode-link" href="/login">
               <Heart size={16} />
               Modo Mujer
             </a>
           </div>
-
-          <p className="home-note">Viajá con confianza. Sabés quién te lleva.</p>
         </section>
       </section>
     </main>

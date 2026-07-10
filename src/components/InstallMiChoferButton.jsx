@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react'
 function isStandaloneMode() {
   return (
     window.matchMedia?.('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true
+    window.matchMedia?.('(display-mode: fullscreen)').matches ||
+    window.matchMedia?.('(display-mode: minimal-ui)').matches ||
+    window.navigator.standalone === true ||
+    window.location.search.includes('source=pwa')
   )
 }
 
