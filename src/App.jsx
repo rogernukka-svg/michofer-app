@@ -1,4 +1,4 @@
-import { ArrowRight, Heart } from 'lucide-react'
+import { ArrowRight, CarFront, LogIn, ShieldCheck, UserRound } from 'lucide-react'
 import InstallMiChoferButton from './components/InstallMiChoferButton.jsx'
 import InteractiveRouteMap from './components/InteractiveRouteMap.jsx'
 import alexAvatar from './assets/roger-nunez-client.jpeg'
@@ -24,7 +24,7 @@ const rogerLocation = {
 function homeRoutePadding() {
   return window.innerWidth >= 900
     ? { top: 110, bottom: 110, left: 500, right: 120 }
-    : { top: 112, bottom: 390, left: 34, right: 34 }
+    : { top: 112, bottom: 430, left: 34, right: 34 }
 }
 
 export default function App() {
@@ -61,7 +61,7 @@ export default function App() {
             <img className="home-card-avatar" src={alexAvatar} alt="Alex Gonzalez" />
             <div>
               <strong>Alex Gonzalez</strong>
-              <span>Chofer · 3 min</span>
+              <span>Chofer - 3 min</span>
             </div>
           </article>
 
@@ -74,22 +74,49 @@ export default function App() {
           </article>
         </section>
 
-        <section className="home-sheet home-sheet-compact">
+        <section className="home-sheet home-sheet-compact home-role-gateway">
           <div className="home-sheet-top">
-            <h1>Elegí tu modo de viajar</h1>
+            <h1>¿Vas a viajar o manejar?</h1>
           </div>
 
           <p className="muted">
-            Escogé viaje normal o exclusivo para mujeres, conducido por mujeres verificadas.
+            Elegí tu entrada. Después te mostramos solo lo que necesitás.
           </p>
 
-          <div className="home-actions home-actions-equal">
-            <a className="main-btn" href="/login">
-              Viajar ahora
+          <div className="home-role-grid" aria-label="Elegir experiencia MiChofer">
+            <a className="home-role-card passenger" href="/registro?role=passenger">
+              <span className="home-role-icon">
+                <UserRound size={20} />
+              </span>
+              <span>
+                <small>Pasajero</small>
+                <strong>Viajar ahora</strong>
+                <em>Pedir un viaje</em>
+              </span>
+              <ArrowRight size={18} />
             </a>
-            <a className="secondary-btn woman-mode-link" href="/login">
-              <Heart size={16} />
-              Modo Mujer
+
+            <a className="home-role-card driver" href="/registro?role=driver">
+              <span className="home-role-icon">
+                <CarFront size={20} />
+              </span>
+              <span>
+                <small>Chofer</small>
+                <strong>Manejar con MiChofer</strong>
+                <em>Recibir viajes</em>
+              </span>
+              <ArrowRight size={18} />
+            </a>
+          </div>
+
+          <div className="home-secondary-actions">
+            <a href="/login">
+              <LogIn size={16} />
+              Ya tengo cuenta
+            </a>
+            <a className="home-complete-profile-link" href="/registro">
+              <ShieldCheck size={16} />
+              Crear perfil completo
             </a>
           </div>
         </section>

@@ -1,6 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './styles.css'
+import { AuthProvider } from './pages/AuthContext'
+import PerformanceBootstrap from './components/PerformanceBootstrap'
+import { PerformanceProvider } from './context/PerformanceContext'
 
 import App from './App'
 import Admin from './pages/Admin'
@@ -9,7 +12,7 @@ import Client from './pages/Client'
 import DeleteAccount from './pages/DeleteAccount'
 import Driver from './pages/Driver'
 import Login from './pages/Login'
-import PrivacyPolicy from './pages/PrivacyPolicy'
+import Privacy from './pages/Privacy'
 import Register from './pages/Register'
 import Support from './pages/Support'
 import Terms from './pages/Terms'
@@ -23,8 +26,8 @@ const routes = {
   '/driver': Driver,
   '/viajes': Trips,
   '/chat': Chat,
-  '/admin': Admin,
-  '/privacy': PrivacyPolicy,
+  '/admin': Admin, // Mantener Admin en pages por su complejidad
+  '/privacy': Privacy,
   '/terms': Terms,
   '/delete-account': DeleteAccount,
   '/support': Support,
@@ -39,7 +42,13 @@ document.body.classList.add(`route-${routeName}`)
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Component />
+    <AuthProvider>
+      <PerformanceProvider>
+        <PerformanceBootstrap>
+          <Component />
+        </PerformanceBootstrap>
+      </PerformanceProvider>
+    </AuthProvider>
   </React.StrictMode>
 )
 

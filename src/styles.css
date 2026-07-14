@@ -15,6 +15,1392 @@
   --shadow: 0 18px 46px rgba(5, 5, 5, 0.14);
 }
 
+/* =========================
+   Driver Premium Navigation Camera
+========================= */
+
+body.route-driver .driver-nav-layout {
+  --driver-hud-scale: 1;
+  --driver-hud-opacity: 0.96;
+  --driver-panel-opacity: 0.94;
+}
+
+body.route-driver .driver-nav-layout.driver-view-horizon {
+  --driver-hud-scale: 0.88;
+  --driver-hud-opacity: 0.88;
+  --driver-panel-opacity: 0.86;
+}
+
+body.route-driver .driver-nav-layout.driver-view-maneuver,
+body.route-driver .driver-nav-layout.driver-view-arrival {
+  --driver-hud-scale: 1;
+  --driver-hud-opacity: 0.98;
+  --driver-panel-opacity: 0.94;
+}
+
+body.route-driver .driver-nav-layout .google-real-map::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+  background:
+    linear-gradient(180deg, rgba(2, 8, 12, 0.24), transparent 22%, transparent 68%, rgba(2, 8, 12, 0.28)),
+    radial-gradient(circle at 50% 70%, transparent 0 46%, rgba(0, 245, 212, 0.04) 72%, rgba(0, 0, 0, 0.18) 100%) !important;
+  opacity: 0.72 !important;
+  transition: opacity 520ms ease !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-horizon .google-real-map::after {
+  opacity: 0.48 !important;
+}
+
+body.route-driver .driver-nav-layout .driver-nav-hud {
+  transform: scale(var(--driver-hud-scale)) translateZ(0) !important;
+  transform-origin: top left !important;
+  opacity: var(--driver-hud-opacity) !important;
+  transition:
+    transform 520ms cubic-bezier(.2,.8,.2,1),
+    opacity 520ms ease,
+    background 520ms ease,
+    box-shadow 520ms ease !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-horizon .driver-nav-hud {
+  right: auto !important;
+  width: min(480px, calc(100% - 28px)) !important;
+  min-height: 90px !important;
+  max-height: 112px !important;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(34, 245, 211, 0.11), transparent 32%),
+    linear-gradient(135deg, rgba(6, 18, 24, 0.78), rgba(8, 22, 30, 0.68)) !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-maneuver .driver-nav-hud {
+  box-shadow:
+    0 22px 66px rgba(0, 0, 0, 0.42),
+    0 0 34px rgba(0, 213, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-arrival .driver-nav-hud {
+  animation: driverArrivalGlow 1.8s ease-in-out infinite alternate !important;
+}
+
+body.route-driver .driver-nav-layout .driver-trip-panel {
+  opacity: var(--driver-panel-opacity) !important;
+  transition:
+    opacity 520ms ease,
+    transform 520ms cubic-bezier(.2,.8,.2,1),
+    background 520ms ease !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-horizon .driver-trip-panel {
+  transform: translateY(8px) scale(0.985) !important;
+}
+
+body.route-driver .driver-cockpit-meta-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  min-width: 0 !important;
+}
+
+body.route-driver .driver-cockpit-chip {
+  min-height: 24px !important;
+  max-width: 100% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border-radius: 999px !important;
+  padding: 0 9px !important;
+  color: rgba(248, 251, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+body.route-driver .driver-cockpit-chip.camera-horizon {
+  color: #dffdf8 !important;
+  background: rgba(0, 245, 212, 0.14) !important;
+  border-color: rgba(0, 245, 212, 0.24) !important;
+}
+
+body.route-driver .driver-cockpit-chip.camera-maneuver,
+body.route-driver .driver-cockpit-chip.camera-arrival {
+  color: #ffffff !important;
+  background: rgba(35, 242, 155, 0.18) !important;
+  border-color: rgba(35, 242, 155, 0.28) !important;
+  box-shadow: 0 0 18px rgba(35, 242, 155, 0.12) !important;
+}
+
+body.route-driver .driver-cockpit-chip.gps-precise {
+  color: #dffdf8 !important;
+  background: rgba(0, 245, 212, 0.16) !important;
+  border-color: rgba(0, 245, 212, 0.3) !important;
+}
+
+body.route-driver .driver-cockpit-chip.gps-stable {
+  color: #e9fbff !important;
+  background: rgba(0, 213, 255, 0.13) !important;
+  border-color: rgba(0, 213, 255, 0.24) !important;
+}
+
+body.route-driver .driver-cockpit-chip.gps-weak,
+body.route-driver .driver-cockpit-chip.gps-waiting {
+  color: #fff4d7 !important;
+  background: rgba(245, 158, 11, 0.16) !important;
+  border-color: rgba(245, 158, 11, 0.28) !important;
+}
+
+body.route-driver .driver-trip-mini-rail {
+  display: grid !important;
+  grid-template-columns: auto minmax(42px, 1fr) auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-top: 8px !important;
+  color: rgba(248, 251, 255, 0.58) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+body.route-driver .driver-trip-mini-rail i {
+  position: relative !important;
+  height: 4px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.route-driver .driver-trip-mini-rail b {
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  min-width: 8px !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, #23f29b, #00d5ff) !important;
+  box-shadow: 0 0 16px rgba(0, 213, 255, 0.28) !important;
+  transition: width 520ms cubic-bezier(.2,.8,.2,1) !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-maneuver .driver-navigation-turn-icon,
+body.route-driver .driver-nav-layout.driver-view-arrival .driver-navigation-turn-icon {
+  animation: driverTurnPulse 1.25s ease-in-out infinite alternate !important;
+}
+
+@keyframes driverTurnPulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.055); }
+}
+
+@keyframes driverArrivalGlow {
+  from {
+    box-shadow:
+      0 18px 54px rgba(0, 0, 0, 0.34),
+      0 0 24px rgba(35, 242, 155, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  to {
+    box-shadow:
+      0 22px 66px rgba(0, 0, 0, 0.4),
+      0 0 42px rgba(35, 242, 155, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  body.route-driver .driver-nav-layout .driver-nav-hud {
+    left: 10px !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    width: min(430px, 54vw) !important;
+    min-height: 82px !important;
+    max-height: 104px !important;
+    padding: 10px 12px !important;
+    border-radius: 20px !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-navigation-title {
+    font-size: clamp(18px, 5vh, 24px) !important;
+  }
+
+  body.route-driver .driver-cockpit-meta-row {
+    margin-top: 6px !important;
+  }
+
+  body.route-driver .driver-cockpit-chip {
+    min-height: 21px !important;
+    font-size: 9px !important;
+    padding: 0 7px !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-trip-panel {
+    left: auto !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: min(430px, 42vw) !important;
+    min-height: 104px !important;
+    max-height: 146px !important;
+    border-radius: 22px !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 520px) {
+  body.route-driver .driver-nav-layout.driver-view-horizon .driver-nav-hud {
+    width: min(360px, calc(100% - 20px)) !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-trip-panel {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Final home premium cleanup: quieter map, fewer words, clearer role choice */
+body.route-home .home-map {
+  filter: saturate(0.82) contrast(0.94) brightness(0.92) !important;
+}
+
+body.route-home .home-map::after {
+  background:
+    linear-gradient(180deg, rgba(3, 8, 11, 0.12) 0%, rgba(3, 8, 11, 0.08) 38%, rgba(3, 8, 11, 0.68) 100%) !important;
+}
+
+body.route-home .home-driver-card,
+body.route-home .home-client-card {
+  opacity: 0.72 !important;
+  transform: scale(0.92) !important;
+}
+
+body.route-home .home-sheet.home-role-gateway {
+  width: min(calc(100% - 28px), 390px) !important;
+  min-height: auto !important;
+  bottom: max(18px, env(safe-area-inset-bottom, 0px)) !important;
+  padding: 18px !important;
+  gap: 12px !important;
+  border-radius: 30px !important;
+  color: #f8fffd !important;
+  background:
+    linear-gradient(180deg, rgba(16, 24, 29, 0.92), rgba(8, 12, 16, 0.96)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-eyebrow {
+  color: #2df5a8 !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.12em !important;
+}
+
+body.route-home .home-sheet.home-role-gateway h1 {
+  max-width: 11ch !important;
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-size: clamp(31px, 7.6vw, 42px) !important;
+  line-height: 1.01 !important;
+  font-weight: 950 !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .muted {
+  max-width: 29ch !important;
+  margin: 0 !important;
+  color: rgba(248, 255, 253, 0.62) !important;
+  font-size: 12px !important;
+  line-height: 1.32 !important;
+  font-weight: 760 !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-grid {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-card {
+  min-height: 76px !important;
+  padding: 11px !important;
+  border-radius: 22px !important;
+  grid-template-columns: 42px minmax(0, 1fr) 18px !important;
+  gap: 11px !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-card.driver {
+  background:
+    linear-gradient(135deg, rgba(45, 245, 168, 0.15), rgba(18, 216, 255, 0.06)),
+    rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(45, 245, 168, 0.20) !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-icon {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 16px !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-card small {
+  font-size: 9px !important;
+  color: rgba(248, 255, 253, 0.45) !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-card strong {
+  margin-top: 3px !important;
+  font-size: 16px !important;
+  line-height: 1.04 !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-card em {
+  margin-top: 4px !important;
+  color: rgba(248, 255, 253, 0.54) !important;
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-secondary-actions {
+  grid-template-columns: 1fr !important;
+  gap: 7px !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-secondary-actions a {
+  min-height: 42px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-complete-profile-link {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: rgba(248, 255, 253, 0.46) !important;
+  font-size: 11px !important;
+}
+
+@media (max-width: 380px), (max-height: 720px) {
+  body.route-home .home-sheet.home-role-gateway {
+    width: min(calc(100% - 22px), 360px) !important;
+    padding: 14px !important;
+    gap: 9px !important;
+    border-radius: 26px !important;
+  }
+
+  body.route-home .home-sheet.home-role-gateway h1 {
+    font-size: 29px !important;
+  }
+
+  body.route-home .home-sheet.home-role-gateway .muted {
+    display: none !important;
+  }
+
+  body.route-home .home-sheet.home-role-gateway .home-role-card {
+    min-height: 68px !important;
+  }
+}
+
+/* Final home gateway guard: keep passenger/driver entry above legacy home overrides */
+body.route-home .home-sheet.home-role-gateway {
+  width: min(calc(100% - 28px), 440px) !important;
+  min-height: auto !important;
+  padding: 22px !important;
+  display: grid !important;
+  gap: 15px !important;
+  color: #f8fffd !important;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(45, 245, 168, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(18, 28, 36, 0.96), rgba(7, 11, 16, 0.98)) !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-grid,
+body.route-home .home-sheet.home-role-gateway .home-secondary-actions {
+  width: 100% !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-actions {
+  display: none !important;
+}
+
+@media (max-width: 380px), (max-height: 720px) {
+  body.route-home .home-sheet.home-role-gateway {
+    width: min(calc(100% - 24px), 390px) !important;
+    padding: 16px !important;
+    gap: 11px !important;
+  }
+}
+
+/* Final home gateway guard */
+body.route-home .home-sheet.home-role-gateway {
+  width: min(calc(100% - 28px), 440px) !important;
+  min-height: auto !important;
+  padding: 22px !important;
+  display: grid !important;
+  gap: 15px !important;
+  color: #f8fffd !important;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(45, 245, 168, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(18, 28, 36, 0.96), rgba(7, 11, 16, 0.98)) !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-role-grid,
+body.route-home .home-sheet.home-role-gateway .home-secondary-actions {
+  width: 100% !important;
+}
+
+body.route-home .home-sheet.home-role-gateway .home-actions {
+  display: none !important;
+}
+
+@media (max-width: 380px), (max-height: 720px) {
+  body.route-home .home-sheet.home-role-gateway {
+    width: min(calc(100% - 24px), 390px) !important;
+    padding: 16px !important;
+    gap: 11px !important;
+  }
+}
+
+/* Premium account performance card: ordered, compact, and shared by client/driver */
+body.route-client .account-panel .account-section.performance-card,
+body.route-driver .mc-driver-profile-section.performance-card {
+  width: min(100%, 620px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 16px !important;
+  display: grid !important;
+  gap: 14px !important;
+  overflow: visible !important;
+  border-radius: 26px !important;
+  color: #f7fffd !important;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(45, 245, 168, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(12, 18, 22, 0.96), rgba(5, 8, 11, 0.98)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    0 22px 58px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .account-section-label,
+body.route-driver .mc-driver-profile-section.performance-card .mc-driver-profile-section-head strong {
+  display: block !important;
+  color: rgba(45, 245, 168, 0.90) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+body.route-client .account-panel .account-section.performance-card > p,
+body.route-driver .mc-driver-profile-section.performance-card > p {
+  margin: -4px 0 0 !important;
+  max-width: 44ch !important;
+  color: rgba(247, 255, 253, 0.72) !important;
+  font-size: 13px !important;
+  line-height: 1.38 !important;
+  font-weight: 750 !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-slow-notice,
+body.route-driver .mc-driver-profile-section.performance-card .performance-slow-notice {
+  margin: 0 !important;
+  padding: 10px 12px !important;
+  border-radius: 16px !important;
+  color: #ffe7a3 !important;
+  background: rgba(255, 209, 102, 0.10) !important;
+  border: 1px solid rgba(255, 209, 102, 0.22) !important;
+  font-size: 11px !important;
+  line-height: 1.32 !important;
+  font-weight: 850 !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-card-status,
+body.route-driver .mc-driver-profile-section.performance-card .performance-card-status {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-card-status > div,
+body.route-driver .mc-driver-profile-section.performance-card .performance-card-status > div {
+  min-height: 62px !important;
+  padding: 11px 12px !important;
+  border-radius: 18px !important;
+  display: grid !important;
+  align-content: center !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-card-status span,
+body.route-driver .mc-driver-profile-section.performance-card .performance-card-status span {
+  color: rgba(247, 255, 253, 0.48) !important;
+  font-size: 9px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-card-status strong,
+body.route-driver .mc-driver-profile-section.performance-card .performance-card-status strong {
+  margin-top: 5px !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-mode-selector,
+body.route-driver .mc-driver-profile-section.performance-card .performance-mode-selector {
+  padding: 4px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-mode-selector button,
+body.route-driver .mc-driver-profile-section.performance-card .performance-mode-selector button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: rgba(247, 255, 253, 0.72) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  text-align: center !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-mode-selector button.active,
+body.route-driver .mc-driver-profile-section.performance-card .performance-mode-selector button.active {
+  color: #031014 !important;
+  background: linear-gradient(135deg, #2df5a8, #12d8ff) !important;
+  box-shadow: 0 12px 30px rgba(18, 216, 255, 0.22) !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-mode-selector button span,
+body.route-driver .mc-driver-profile-section.performance-card .performance-mode-selector button span {
+  display: block !important;
+  min-width: 0 !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-card-actions,
+body.route-driver .mc-driver-profile-section.performance-card .performance-card-actions {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-card-actions button,
+body.route-driver .mc-driver-profile-section.performance-card .performance-card-actions button {
+  width: 100% !important;
+  min-height: 46px !important;
+  padding: 0 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  color: rgba(247, 255, 253, 0.88) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  box-shadow: none !important;
+}
+
+body.route-client .account-panel .account-section.performance-card .performance-card-actions button span,
+body.route-driver .mc-driver-profile-section.performance-card .performance-card-actions button span {
+  color: inherit !important;
+  font-size: inherit !important;
+  line-height: 1.1 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+@media (max-width: 380px) {
+  body.route-client .account-panel .account-section.performance-card,
+  body.route-driver .mc-driver-profile-section.performance-card {
+    padding: 14px !important;
+    gap: 12px !important;
+    border-radius: 24px !important;
+  }
+
+  body.route-client .account-panel .account-section.performance-card .performance-card-status,
+  body.route-driver .mc-driver-profile-section.performance-card .performance-card-status,
+  body.route-client .account-panel .account-section.performance-card .performance-mode-selector,
+  body.route-driver .mc-driver-profile-section.performance-card .performance-mode-selector {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Home role gateway: one app, clear passenger/driver entry */
+body.route-home .home-role-gateway {
+  width: min(calc(100% - 28px), 440px) !important;
+  padding: 22px !important;
+  display: grid !important;
+  gap: 15px !important;
+  color: #f8fffd !important;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(45, 245, 168, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(18, 28, 36, 0.96), rgba(7, 11, 16, 0.98)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(26px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(1.15) !important;
+}
+
+body.route-home .home-role-gateway .home-eyebrow {
+  display: block !important;
+  color: #2df5a8 !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-home .home-role-gateway h1 {
+  max-width: 12ch !important;
+  margin: 8px 0 0 !important;
+  color: #ffffff !important;
+  font-size: clamp(34px, 8vw, 48px) !important;
+  line-height: 0.98 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-home .home-role-gateway .muted {
+  max-width: 36ch !important;
+  margin: 0 !important;
+  color: rgba(248, 255, 253, 0.70) !important;
+  font-size: 13px !important;
+  line-height: 1.42 !important;
+  font-weight: 750 !important;
+}
+
+body.route-home .home-role-grid {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+body.route-home .home-role-card {
+  min-height: 92px !important;
+  padding: 13px !important;
+  border-radius: 24px !important;
+  display: grid !important;
+  grid-template-columns: 46px minmax(0, 1fr) 20px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+body.route-home .home-role-card.driver {
+  background:
+    linear-gradient(135deg, rgba(45, 245, 168, 0.16), rgba(18, 216, 255, 0.09)),
+    rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(45, 245, 168, 0.20) !important;
+}
+
+body.route-home .home-role-card:hover,
+body.route-home .home-role-card:focus-visible {
+  transform: translateY(-1px) !important;
+  border-color: rgba(45, 245, 168, 0.36) !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+body.route-home .home-role-icon {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 17px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #031014 !important;
+  background: linear-gradient(135deg, #ffffff, #dff7f4) !important;
+}
+
+body.route-home .home-role-card.driver .home-role-icon {
+  background: linear-gradient(135deg, #2df5a8, #12d8ff) !important;
+}
+
+body.route-home .home-role-card small,
+body.route-home .home-role-card strong,
+body.route-home .home-role-card em {
+  display: block !important;
+  min-width: 0 !important;
+}
+
+body.route-home .home-role-card small {
+  color: rgba(248, 255, 253, 0.50) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-home .home-role-card strong {
+  margin-top: 4px !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+}
+
+body.route-home .home-role-card em {
+  margin-top: 5px !important;
+  color: rgba(248, 255, 253, 0.60) !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-style: normal !important;
+  font-weight: 750 !important;
+}
+
+body.route-home .home-secondary-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.route-home .home-secondary-actions a {
+  min-height: 44px !important;
+  border-radius: 16px !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  color: rgba(248, 255, 253, 0.82) !important;
+  text-decoration: none !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+@media (orientation: landscape) and (min-width: 760px) {
+  body.route-home .home-role-gateway {
+    left: auto !important;
+    right: max(24px, calc((100vw - 1180px) / 2 + 24px)) !important;
+    bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+@media (max-width: 380px), (max-height: 720px) {
+  body.route-home .home-role-gateway {
+    width: min(calc(100% - 24px), 390px) !important;
+    padding: 16px !important;
+    gap: 11px !important;
+  }
+
+  body.route-home .home-role-gateway h1 {
+    font-size: 31px !important;
+  }
+
+  body.route-home .home-role-card {
+    min-height: 78px !important;
+    grid-template-columns: 40px minmax(0, 1fr) 18px !important;
+    border-radius: 20px !important;
+  }
+
+  body.route-home .home-role-icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 15px !important;
+  }
+
+  body.route-home .home-role-card strong {
+    font-size: 15px !important;
+  }
+
+  body.route-home .home-secondary-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Orientation polish: premium posture changes when the device rotates */
+@media (orientation: landscape) and (max-height: 760px) {
+  body.route-driver .app-shell,
+  body.route-client .app-shell {
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  body.route-driver .driver-phone.driver-nav-layout,
+  body.route-client .client-phone.client-premium {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body.route-driver .driver-nav-layout .mobility-map,
+  body.route-driver .driver-nav-layout .interactive-map,
+  body.route-driver .driver-nav-layout .google-real-map,
+  body.route-client .client-premium .mobility-map,
+  body.route-client .client-premium .interactive-map,
+  body.route-client .client-premium .google-real-map {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-nav-hud {
+    left: max(10px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    width: min(460px, 48vw) !important;
+    min-height: 80px !important;
+    max-height: calc(100dvh - 22px) !important;
+    padding: 10px 12px !important;
+    border-radius: 20px !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-navigation-title {
+    font-size: clamp(18px, 4.8vh, 25px) !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-navigation-subtitle,
+  body.route-driver .driver-cockpit-chip,
+  body.route-driver .driver-trip-mini-rail {
+    font-size: 9px !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-trip-panel {
+    left: auto !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: min(440px, 42vw) !important;
+    min-height: 104px !important;
+    max-height: calc(100dvh - 20px) !important;
+    overflow-y: auto !important;
+    border-radius: 22px !important;
+  }
+
+  body.route-driver .driver-nav-layout .navigation-toolbar,
+  body.route-driver .driver-nav-layout .map-locate-btn {
+    right: calc(min(440px, 42vw) + max(22px, env(safe-area-inset-right))) !important;
+  }
+
+  body.route-client .client-premium .client-top {
+    left: max(10px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    width: min(430px, 42vw) !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.route-client .client-premium .route-search-card,
+  body.route-client .client-premium .map-search-bar {
+    border-radius: 22px !important;
+    padding: 10px !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28) !important;
+  }
+
+  body.route-client .client-premium .destination-suggestions {
+    left: max(10px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+    top: 86px !important;
+    width: min(430px, 42vw) !important;
+    max-height: calc(100dvh - 104px) !important;
+    overflow-y: auto !important;
+  }
+
+  body.route-client .client-premium .client-sheet,
+  body.route-client .client-premium .client-trip-panel,
+  body.route-client .client-premium .mc-ride-live-sheet {
+    position: absolute !important;
+    left: auto !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: min(430px, 42vw) !important;
+    max-height: calc(100dvh - 22px) !important;
+    margin: 0 !important;
+    border-radius: 24px !important;
+    overflow-y: auto !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34) !important;
+  }
+
+  body.route-client .client-premium .map-toolbar,
+  body.route-client .client-premium .map-locate-btn {
+    right: calc(min(430px, 42vw) + max(22px, env(safe-area-inset-right))) !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 640px) {
+  body.route-driver .driver-phone.driver-nav-layout,
+  body.route-client .client-phone.client-premium {
+    width: 100vw !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-nav-hud {
+    left: 10px !important;
+    right: 10px !important;
+    top: max(10px, env(safe-area-inset-top)) !important;
+    width: auto !important;
+    min-height: 92px !important;
+    border-radius: 24px !important;
+  }
+
+  body.route-driver .driver-nav-layout.driver-view-horizon .driver-nav-hud {
+    transform: scale(0.94) translateZ(0) !important;
+    width: calc(100% - 20px) !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-trip-panel {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    border-radius: 26px !important;
+  }
+
+  body.route-client .client-premium .mobility-map {
+    height: 62dvh !important;
+    min-height: 440px !important;
+  }
+
+  body.route-client .client-premium .client-top {
+    top: max(10px, env(safe-area-inset-top)) !important;
+    left: 10px !important;
+    right: 10px !important;
+    padding: 0 !important;
+  }
+
+  body.route-client .client-premium .client-sheet {
+    border-radius: 30px 30px 0 0 !important;
+  }
+}
+
+@media (min-aspect-ratio: 4 / 5) and (max-aspect-ratio: 5 / 4) and (max-width: 1100px) {
+  body.route-driver .driver-nav-layout .driver-nav-hud {
+    width: min(560px, calc(100% - 28px)) !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-trip-panel,
+  body.route-client .client-premium .client-trip-panel,
+  body.route-client .client-premium .mc-ride-live-sheet {
+    left: 14px !important;
+    right: 14px !important;
+    width: auto !important;
+  }
+
+  body.route-client .client-premium .mobility-map {
+    height: 58dvh !important;
+    min-height: 430px !important;
+  }
+}
+
+/* Client map safety: avoid partial map with dark empty area on narrow/rotated screens */
+body.route-client .client-phone.client-premium {
+  position: relative !important;
+  min-height: 100dvh !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+  background: #eaf1f1 !important;
+}
+
+body.route-client .client-premium > .mobility-map,
+body.route-client .client-premium > .interactive-map {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+body.route-client .client-premium > .mobility-map .google-real-map,
+body.route-client .client-premium > .interactive-map .google-real-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+body.route-client .client-premium .client-top,
+body.route-client .client-premium .premium-map-header {
+  z-index: 40 !important;
+}
+
+body.route-client .client-premium .destination-suggestions,
+body.route-client .client-premium .route-guidance-card,
+body.route-client .client-premium .client-decision-dock,
+body.route-client .client-premium .client-bottom-start-card,
+body.route-client .client-premium .mc-confirm-ride-card,
+body.route-client .client-premium .mc-ride-live-sheet,
+body.route-client .client-premium .client-trip-panel {
+  z-index: 45 !important;
+}
+
+@media (orientation: portrait) and (max-width: 640px) {
+  body.route-client .client-premium > .mobility-map,
+  body.route-client .client-premium > .interactive-map {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+  }
+}
+
+/* Final safety: performance controls must never inherit account-menu truncation */
+body.route-client .performance-card,
+body.route-driver .performance-card {
+  overflow: visible !important;
+  min-width: 0 !important;
+}
+
+body.route-client .performance-card .performance-card-status,
+body.route-driver .performance-card .performance-card-status {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.route-client .performance-card .performance-mode-selector,
+body.route-driver .performance-card .performance-mode-selector {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.route-client .performance-card .performance-card-actions,
+body.route-driver .performance-card .performance-card-actions {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+body.route-client .performance-card .performance-mode-selector button,
+body.route-client .performance-card .performance-card-actions button,
+body.route-driver .performance-card .performance-mode-selector button,
+body.route-driver .performance-card .performance-card-actions button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  padding: 10px 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  grid-template-columns: none !important;
+  border-radius: 14px !important;
+  text-align: center !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+body.route-client .performance-card .performance-mode-selector button span,
+body.route-client .performance-card .performance-card-actions button span,
+body.route-driver .performance-card .performance-mode-selector button span,
+body.route-driver .performance-card .performance-card-actions button span {
+  color: inherit !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+@media (max-width: 420px) {
+  body.route-client .performance-card .performance-card-status,
+  body.route-driver .performance-card .performance-card-status,
+  body.route-client .performance-card .performance-mode-selector,
+  body.route-driver .performance-card .performance-mode-selector {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Performance bootstrap and adaptive rendering */
+.performance-bootstrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 24px;
+  padding: 32px;
+  color: #f7fffd;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(20, 241, 229, 0.10), transparent 34%),
+    linear-gradient(180deg, #020608, #071011 58%, #020405);
+}
+
+.performance-bootstrap-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.performance-bootstrap-mark span {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #14f1e5;
+  box-shadow: 0 0 22px rgba(20, 241, 229, 0.58);
+}
+
+.performance-bootstrap-copy {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+}
+
+.performance-bootstrap-copy h1 {
+  margin: 0;
+  font-size: clamp(28px, 8vw, 48px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.performance-bootstrap-copy p {
+  margin: 0;
+  color: rgba(247, 255, 253, 0.68);
+  font-weight: 700;
+}
+
+.performance-bootstrap-progress {
+  position: relative;
+  width: min(260px, 68vw);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.performance-bootstrap-progress i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #14f1e5, #20d7ff);
+  animation: performanceBootstrapProgress 980ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes performanceBootstrapProgress {
+  0% { transform: translateX(-105%); }
+  100% { transform: translateX(245%); }
+}
+
+.performance-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.performance-card p {
+  margin: 0;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.performance-card-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.performance-card-status span,
+.performance-card-status strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.performance-card-status span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.performance-card-status strong {
+  margin-top: 3px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.performance-card-actions,
+.performance-mode-selector {
+  display: grid;
+  gap: 8px;
+}
+
+.performance-mode-selector {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.performance-card-actions {
+  grid-template-columns: 1fr;
+}
+
+.performance-mode-selector button,
+.performance-card-actions button {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.performance-mode-selector button span,
+.performance-card-actions button span {
+  display: block;
+  min-width: 0;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.performance-mode-selector button.active {
+  background: linear-gradient(90deg, var(--accent-a, #14f1e5), var(--accent-b, #20d7ff)) !important;
+  color: #04110f !important;
+}
+
+.performance-slow-notice {
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 209, 102, 0.10);
+  border: 1px solid rgba(255, 209, 102, 0.18);
+  color: #ffe8a8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 420px) {
+  .performance-card-status {
+    grid-template-columns: 1fr;
+  }
+
+  .performance-mode-selector {
+    grid-template-columns: 1fr;
+  }
+}
+
+html[data-performance="low"] *,
+html[data-performance="medium"] * {
+  scroll-behavior: auto !important;
+}
+
+html[data-performance="low"] .performance-bootstrap-progress i,
+html[data-performance="low"] .focus-drive::after,
+html[data-performance="low"] [class*="Pulse"],
+html[data-performance="low"] [class*="Float"] {
+  animation: none !important;
+}
+
+html[data-performance="low"] .glass-panel,
+html[data-performance="low"] .floating-driver-panel,
+html[data-performance="low"] .account-panel,
+html[data-performance="low"] .login-panel,
+html[data-performance="low"] .trip-chat-panel,
+html[data-performance="low"] .michofer-live-sheet,
+html[data-performance="low"] .client-trip-panel,
+html[data-performance="low"] .driver-trip-panel,
+html[data-performance="low"] .driver-live-panel,
+html[data-performance="low"] .driver-route-loading,
+html[data-performance="low"] .admin-sim-navigation-hud {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-performance="low"] .phone,
+html[data-performance="low"] .floating-driver-panel,
+html[data-performance="low"] .account-panel,
+html[data-performance="low"] .driver-trip-panel,
+html[data-performance="low"] .client-trip-panel,
+html[data-performance="low"] .trip-chat-panel,
+html[data-performance="medium"] .phone,
+html[data-performance="medium"] .floating-driver-panel,
+html[data-performance="medium"] .account-panel {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22) !important;
+}
+
+html[data-performance="low"] .navigation-car-img,
+html[data-performance="low"] .google-driver-marker,
+html[data-performance="low"] .google-client-marker {
+  filter: none !important;
+}
+
+html[data-performance="low"] .driver-route-visual-overlay,
+html[data-performance="low"] .route-focus-glow {
+  opacity: 0.82 !important;
+}
+
+html[data-performance="low"] .mobility-map,
+html[data-performance="medium"] .mobility-map {
+  contain: layout paint;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .performance-bootstrap-progress i {
+    animation: none !important;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -27556,5 +28942,124 @@ body.route-driver .driver-ella-status-card {
     left: 10px !important;
     right: 10px !important;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 124px) !important;
+  }
+}
+
+/* Final override: real driver inherits premium simulator navigation */
+body.route-driver .driver-nav-layout {
+  --driver-hud-scale: 1;
+  --driver-hud-opacity: 0.96;
+  --driver-panel-opacity: 0.94;
+}
+
+body.route-driver .driver-nav-layout.driver-view-horizon {
+  --driver-hud-scale: 0.88;
+  --driver-hud-opacity: 0.88;
+  --driver-panel-opacity: 0.86;
+}
+
+body.route-driver .driver-nav-layout.driver-view-maneuver,
+body.route-driver .driver-nav-layout.driver-view-arrival {
+  --driver-hud-scale: 1;
+  --driver-hud-opacity: 0.98;
+  --driver-panel-opacity: 0.94;
+}
+
+body.route-driver .driver-nav-layout .google-real-map::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+  background:
+    linear-gradient(180deg, rgba(2, 8, 12, 0.24), transparent 22%, transparent 68%, rgba(2, 8, 12, 0.28)),
+    radial-gradient(circle at 50% 70%, transparent 0 46%, rgba(0, 245, 212, 0.04) 72%, rgba(0, 0, 0, 0.18) 100%) !important;
+  opacity: 0.72 !important;
+  transition: opacity 520ms ease !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-horizon .google-real-map::after {
+  opacity: 0.48 !important;
+}
+
+body.route-driver .driver-nav-layout .driver-nav-hud {
+  transform: scale(var(--driver-hud-scale)) translateZ(0) !important;
+  transform-origin: top left !important;
+  opacity: var(--driver-hud-opacity) !important;
+  transition:
+    transform 520ms cubic-bezier(.2,.8,.2,1),
+    opacity 520ms ease,
+    background 520ms ease,
+    box-shadow 520ms ease !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-horizon .driver-nav-hud {
+  right: auto !important;
+  width: min(480px, calc(100% - 28px)) !important;
+  min-height: 90px !important;
+  max-height: 112px !important;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(34, 245, 211, 0.11), transparent 32%),
+    linear-gradient(135deg, rgba(6, 18, 24, 0.78), rgba(8, 22, 30, 0.68)) !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-maneuver .driver-nav-hud {
+  box-shadow:
+    0 22px 66px rgba(0, 0, 0, 0.42),
+    0 0 34px rgba(0, 213, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-arrival .driver-nav-hud {
+  animation: driverArrivalGlow 1.8s ease-in-out infinite alternate !important;
+}
+
+body.route-driver .driver-nav-layout .driver-trip-panel {
+  opacity: var(--driver-panel-opacity) !important;
+  transition:
+    opacity 520ms ease,
+    transform 520ms cubic-bezier(.2,.8,.2,1),
+    background 520ms ease !important;
+}
+
+body.route-driver .driver-nav-layout.driver-view-horizon .driver-trip-panel {
+  transform: translateY(8px) scale(0.985) !important;
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  body.route-driver .driver-nav-layout .driver-nav-hud {
+    left: 10px !important;
+    top: max(8px, env(safe-area-inset-top)) !important;
+    width: min(430px, 54vw) !important;
+    min-height: 82px !important;
+    max-height: 104px !important;
+    padding: 10px 12px !important;
+    border-radius: 20px !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-navigation-title {
+    font-size: clamp(18px, 5vh, 24px) !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-trip-panel {
+    left: auto !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: min(430px, 42vw) !important;
+    min-height: 104px !important;
+    max-height: 146px !important;
+    border-radius: 22px !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 520px) {
+  body.route-driver .driver-nav-layout.driver-view-horizon .driver-nav-hud {
+    width: min(360px, calc(100% - 20px)) !important;
+  }
+
+  body.route-driver .driver-nav-layout .driver-trip-panel {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
   }
 }

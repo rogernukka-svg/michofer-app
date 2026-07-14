@@ -1,6 +1,7 @@
 //Driver.jsx
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useAuth } from './AuthContext'
 import driverRequestTone from '../assets/tonodriver.mp3'
 import messageTone from '../assets/toonomensaje.mp3'
 import {
@@ -30,8 +31,6 @@ import InteractiveRouteMap from '../components/InteractiveRouteMap'
 import TripChatModal from '../components/TripChatModal'
 import {
   getOwnDriverTrips,
-  getOwnDriverProfile,
-  getOwnProfile,
   requestDriverCategory,
   supabase,
   updateOwnDriverStatus,
@@ -42,6 +41,8 @@ import {
   GpsBuffer,
   snapToRoads,
 } from '../lib/googleMaps'
+import { MODE_LABELS } from '../lib/performanceProfile'
+import { usePerformanceProfile } from '../hooks/usePerformanceProfile'
 import {
   DRIVER_CATEGORY_ACTIONS,
   categoryStatusLabel,
@@ -451,11 +452,7 @@ function ellaDriverStatusCopy(status, baseApproved) {
 }
 
 export default function Driver() {
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [driverProfile, setDriverProfile] = useState(null)
   const [trips, setTrips] = useState([])
-  const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [routeGuidance, setRouteGuidance] = useState(null)
   const [clientRushNotice, setClientRushNotice] = useState(false)
@@ -469,7 +466,13 @@ export default function Driver() {
   const [passengerRatingStars, setPassengerRatingStars] = useState(5)
   const [passengerRatingComment, setPassengerRatingComment] = useState('')
   const [passengerRatingSubmitting, setPassengerRatingSubmitting] = useState(false)
+  const [showTripsHistory, setShowTripsHistory] = useState(false)
+  const [tripHistory, setTripHistory] = useState([])
+  const [tripHistoryLoading, setTripHistoryLoading] = useState(false)
 
+  const auth = useAuth()
+  const performance = usePerformanceProfile()
+  const driverProfile = auth.driverProfile
    const pendingTripsAudioRef = useRef(null)
   const messageAudioRef = useRef(null)
   const lastChatUnreadCountRef = useRef(0)
@@ -483,49 +486,43 @@ export default function Driver() {
   const gpsBufferRef = useRef(new GpsBuffer(20))
   const lastRoadsSnapAtRef = useRef(0)
   const roadsSyncBusyRef = useRef(false)
-   useEffect(() => {
-    isMountedRef.current = true
-
-    init()
-
-    return () => {
-      isMountedRef.current = false
-    }
-  }, [])
 
   useEffect(() => {
-    if (!user?.id) return undefined
+    if (auth.loading) return
 
-    let refreshTimeout = 0
-
-    const refreshTrips = () => {
-      window.clearTimeout(refreshTimeout)
-      refreshTimeout = window.setTimeout(() => {
-        loadTrips(user.id)
-      }, 120)
+    if (!auth.user) {
+      window.location.href = '/login'
+      return
+    }
+    if (auth.profile?.role === 'passenger') {
+      window.location.href = '/client'
+      return
     }
 
-    // Primera carga inmediata al entrar al panel del chofer.
-    loadTrips(user.id)
+    // Espera a que el perfil del chofer esté listo para cargar viajes y suscripciones.
+    if (!auth.driverProfile) {
+      return
+    }
+
+    // Carga inicial, solo una vez.
+    if (!hasLoadedTripsRef.current) {
+      loadTrips(auth.user.id)
+    }
+
+    const refreshTrips = () => {
+      loadTrips(auth.user.id)
+    }
 
     const channel = supabase
-      .channel(`driver-trips-${user.id}`)
+      .channel(`driver-trips-${auth.user.id}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'trips',
-          filter: `driver_id=eq.${user.id}`,
-        },
+        { event: '*', schema: 'public', table: 'trips', filter: `driver_id=eq.${auth.user.id}` },
         refreshTrips
       )
       .subscribe((status) => {
         if (import.meta.env.DEV) {
-          console.info('[MiChofer Driver Realtime]', {
-            status,
-            driverId: user.id,
-          })
+          console.info('[MiChofer Driver Realtime]', { status, driverId: auth.user.id })
         }
 
         if (status === 'SUBSCRIBED') {
@@ -533,32 +530,31 @@ export default function Driver() {
         }
       })
 
+    // Polling como fallback, con un intervalo más razonable.
     const interval = window.setInterval(() => {
-      loadTrips(user.id)
-    }, 1200)
+      loadTrips(auth.user.id)
+    }, 5000)
 
     return () => {
-      window.clearTimeout(refreshTimeout)
       window.clearInterval(interval)
       supabase.removeChannel(channel)
     }
-  }, [user?.id])
+  }, [auth.loading, auth.user, auth.profile, auth.driverProfile, loadTrips])
 
-  const verificationStatus = driverProfile?.verification_status || 'incomplete'
-  const approved = driverProfile?.verified === true && verificationStatus === 'approved'
+  const verificationStatus = auth.driverProfile?.verification_status || 'incomplete'
+  const approved = auth.driverProfile?.verified === true && verificationStatus === 'approved'
   const verificationTitle = useMemo(() => verificationCopy(verificationStatus, approved)[0], [verificationStatus, approved])
-  const isWomanDriver = useMemo(() => isWomanDriverProfile(profile, driverProfile), [profile, driverProfile])
-  const ellaDriverStatus = useMemo(() => getEllaDriverStatus(driverProfile), [driverProfile])
+  const isWomanDriver = useMemo(() => isWomanDriverProfile(auth.profile, auth.driverProfile), [auth.profile, auth.driverProfile])
+  const ellaDriverStatus = useMemo(() => getEllaDriverStatus(auth.driverProfile), [auth.driverProfile])
   const ellaDriverCopy = useMemo(
     () => ellaDriverStatusCopy(ellaDriverStatus, approved),
     [ellaDriverStatus, approved]
   )
   const showEllaDriverPanel = isWomanDriver || ellaDriverStatus !== 'not_requested'
-  const isOnline = driverProfile?.is_online === true
-  const isAvailable = driverProfile?.is_available === true
-  const hasDriverLocation = isValidParaguayCoord(driverProfile)
+  const isOnline = auth.driverProfile?.is_online === true
+  const isAvailable = auth.driverProfile?.is_available === true
+  const hasDriverLocation = isValidParaguayCoord(auth.driverProfile)
   const isReceivingTrips = useMemo(() => isOnline && isAvailable && hasDriverLocation, [isOnline, isAvailable, hasDriverLocation])
-  const driverUserId = useMemo(() => user?.id || driverProfile?.user_id || profile?.id, [user?.id, driverProfile?.user_id, profile?.id])
 
   const pushDriverNotification = useCallback((title, body, tone = 'info') => {
     const item = {
@@ -582,10 +578,12 @@ export default function Driver() {
     return () => window.clearTimeout(timeout)
   }, [message])
 
+  const driverUserId = useMemo(() => auth.user?.id || auth.driverProfile?.user_id || auth.profile?.id, [auth.user?.id, auth.driverProfile?.user_id, auth.profile?.id])
+
   const activeTrip = useMemo(() => trips.find((trip) => trip.status !== 'pending') || null, [trips])
   const activeTripId = activeTrip?.id
   useEffect(() => {
-    if (!activeTripId || !driverUserId) {
+    if (!activeTripId || !auth.user?.id) {
       setClientRushNotice(false)
       return undefined
     }
@@ -625,19 +623,19 @@ export default function Driver() {
     return () => {
       cancelled = true
       supabase.removeChannel(channel)
-    }
+    } // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTripId, driverUserId])
   const pendingTrips = useMemo(
     () =>
       trips
         .filter((trip) => trip.status === 'pending')
         .sort((a, b) => {
-          const driverPoint = { lat: driverProfile?.lat, lng: driverProfile?.lng }
+          const driverPoint = { lat: auth.driverProfile?.lat, lng: auth.driverProfile?.lng }
           const distanceA = distanceKm(driverPoint, { lat: a.pickup_lat, lng: a.pickup_lng }) ?? 999
           const distanceB = distanceKm(driverPoint, { lat: b.pickup_lat, lng: b.pickup_lng }) ?? 999
           return distanceA - distanceB
         }),
-    [driverProfile?.lat, driverProfile?.lng, trips]
+    [auth.driverProfile?.lat, auth.driverProfile?.lng, trips]
   )
 
    function playDriverTripNotificationSound() {
@@ -695,7 +693,7 @@ export default function Driver() {
   }, [chatUnreadCount])
 
   useEffect(() => {
-    if (!activeTripId || !driverUserId) return undefined
+    if (!activeTripId || !auth.user?.id) return undefined
 
     const channel = supabase
       .channel(`driver-message-tone-${activeTripId}`)
@@ -709,7 +707,7 @@ export default function Driver() {
         },
         ({ new: newMessage }) => {
           const senderId = String(newMessage?.sender_id || '')
-          const currentDriverId = String(driverUserId || '')
+          const currentDriverId = String(auth.user?.id || '')
 
           // No sonar por mensajes que escribió el mismo chofer.
           if (!senderId || senderId === currentDriverId) return
@@ -724,16 +722,16 @@ export default function Driver() {
 
     return () => {
       supabase.removeChannel(channel)
-    }
+    } // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTripId, driverUserId, chatOpen])
 
   const focusTrip = activeTrip || pendingTrips[0] || null
   const driverPoint = useMemo(() => {
-  const lat = Number(driverProfile?.lat)
-  const lng = Number(driverProfile?.lng)
-  const heading = Number(driverProfile?.heading)
-  const speed = Number(driverProfile?.speed)
-  const accuracy = Number(driverProfile?.accuracy)
+  const lat = Number(auth.driverProfile?.lat)
+  const lng = Number(auth.driverProfile?.lng)
+  const heading = Number(auth.driverProfile?.heading)
+  const speed = Number(auth.driverProfile?.speed)
+  const accuracy = Number(auth.driverProfile?.accuracy)
 
   if (!isValidParaguayCoord({ lat, lng })) {
     return null
@@ -747,11 +745,11 @@ export default function Driver() {
     accuracy: Number.isFinite(accuracy) ? accuracy : null,
   }
 }, [
-  driverProfile?.lat,
-  driverProfile?.lng,
-  driverProfile?.heading,
-  driverProfile?.speed,
-  driverProfile?.accuracy,
+  auth.driverProfile?.lat,
+  auth.driverProfile?.lng,
+  auth.driverProfile?.heading,
+  auth.driverProfile?.speed,
+  auth.driverProfile?.accuracy,
 ])
 
   const pickupPoint = focusTrip?.pickup_lat && focusTrip?.pickup_lng
@@ -775,6 +773,18 @@ export default function Driver() {
   const guidanceProgress = Math.max(0, Math.min(1, Number(routeGuidance?.progress) || 0))
   const guidanceTrafficText = routeGuidance?.trafficCopy || ''
   const guidanceIsFallbackRoute = Boolean(routeGuidance?.fallbackRoute)
+  const driverCameraDistance = Number(routeGuidance?.distanceToNextStep ?? routeGuidance?.remainingMeters ?? routeGuidance?.distance)
+  const driverNavigationView = routeGuidance?.cameraPhase === 'panoramic'
+    ? 'horizon'
+    : routeGuidance?.cameraPhase === 'close'
+      ? 'maneuver'
+      : guidanceAlertLevel === 'arrived' || (Number.isFinite(driverCameraDistance) && driverCameraDistance <= 55)
+    ? 'arrival'
+    : Number.isFinite(driverCameraDistance) && driverCameraDistance <= 120
+      ? 'maneuver'
+      : Number.isFinite(driverCameraDistance) && driverCameraDistance >= 500
+        ? 'horizon'
+        : 'cruise'
 
   const navigationMeters = Number.isFinite(Number(routeGuidance?.distance))
     ? Number(routeGuidance.distance)
@@ -836,13 +846,42 @@ export default function Driver() {
           : `${destinationRadarText} · ${guidanceEta}`)
   const navTitle = compactInstruction(closeArrival?.title || routeInstructionText) || 'Seguimos por la ruta'
   const navSubtitle = compactInstruction(guidanceSecondaryTextPremium) || guidanceEta
+  const cameraHeightLabel = Number.isFinite(Number(routeGuidance?.cameraHeightMeters))
+    ? `${Math.round(Number(routeGuidance.cameraHeightMeters))} m`
+    : driverNavigationView === 'horizon'
+      ? '100 m'
+      : driverNavigationView === 'maneuver'
+        ? '38 m'
+        : '18 m'
+  const driverViewLabel = driverNavigationView === 'horizon'
+    ? 'Vista horizonte'
+    : driverNavigationView === 'maneuver'
+      ? 'Maniobra precisa'
+      : driverNavigationView === 'arrival'
+        ? 'Llegada'
+        : 'Crucero suave'
+  const gpsAccuracy = Number(driverPoint?.accuracy)
+  const gpsSignalClass = !Number.isFinite(gpsAccuracy)
+    ? 'gps-waiting'
+    : gpsAccuracy <= 25
+      ? 'gps-precise'
+      : gpsAccuracy <= 60
+        ? 'gps-stable'
+        : 'gps-weak'
+  const gpsSignalText = !Number.isFinite(gpsAccuracy)
+    ? 'GPS ajustando'
+    : gpsAccuracy <= 25
+      ? 'GPS preciso'
+      : gpsAccuracy <= 60
+        ? 'GPS estable'
+        : 'GPS debil'
   const hasClientRushNotice = Boolean(
     clientRushNotice ||
     activeTrip?.client_rush_at ||
     Number(activeTrip?.client_rush_count) > 0
   )
 
-  const driverAvatar = driverProfile?.avatar_url || profile?.avatar_url || ''
+  const driverAvatar = auth.driverProfile?.avatar_url || auth.profile?.avatar_url || ''
    const focusDistance = useMemo(
     () =>
       focusTrip && driverPoint
@@ -851,7 +890,7 @@ export default function Driver() {
     [driverPoint?.lat, driverPoint?.lng, focusTrip]
   )
 
-  const driverDisplayName = profile?.full_name || driverProfile?.full_name || 'MiChofer'
+  const driverDisplayName = auth.profile?.full_name || auth.driverProfile?.full_name || 'MiChofer'
   const currentModeLabel = useMemo(() => {
     if (activeTrip) return 'En viaje'
     if (isReceivingTrips) return 'Disponible'
@@ -866,7 +905,7 @@ export default function Driver() {
     : null
 
      useEffect(() => {
-    if (!activeTrip?.id || !hasDriverLocation || !navigator.geolocation) return undefined
+    if (!activeTrip?.id || !hasDriverLocation || !navigator.geolocation || !auth.user?.id) return undefined
 
     let cancelled = false
 
@@ -921,67 +960,9 @@ export default function Driver() {
 
       window.clearInterval(fallbackInterval)
     }
-  }, [activeTrip?.id, activeTrip?.status, hasDriverLocation, user?.id])
-  const init = useCallback(async () => {
-    if (!isMountedRef.current) return
-    setLoading(true)
-    setMessage('')
+  }, [activeTrip?.id, activeTrip?.status, hasDriverLocation, auth.user?.id])
 
-    const { data: authData } = await supabase.auth.getUser()
-    const currentUser = authData?.user || null
-
-    if (!isMountedRef.current) return
-    setUser(currentUser)
-
-    if (!currentUser) {
-      window.location.href = '/login'
-      if (isMountedRef.current) {
-        setLoading(false)
-      }
-      return
-    }
-
-    const { data: profileData } = await getOwnProfile()
-    if (isMountedRef.current) {
-      setProfile(profileData || null)
-    }
-
-    const fallbackName = profileData?.full_name || currentUser.user_metadata?.full_name || 'Chofer MiChofer'
-    const fallbackAvatar = profileData?.avatar_url || currentUser.user_metadata?.avatar_url || ''
-
-    const { error: ensureError } = await upsertOwnDriverProfile({
-      fullName: fallbackName,
-      avatarUrl: fallbackAvatar,
-      email: currentUser.email,
-    })
-
-    if (ensureError && isMountedRef.current) {
-      setMessage('No pude preparar tu perfil de chofer. Ejecuta supabase/driver_live_state_rpcs.sql y recarga.')
-    }
-
-    let { data: driverData, error } = await getOwnDriverProfile()
-
-    if (error && isMountedRef.current) {
-      setMessage('No pude leer tu estado de chofer. Ejecuta supabase/driver_live_state_rpcs.sql.')
-    }
-
-    if (driverData?.user_id && (!driverData.avatar_url || !driverData.full_name)) {
-      const { data: updatedDriver } = await upsertOwnDriverProfile({
-        fullName: driverData.full_name || fallbackName,
-        avatarUrl: driverData.avatar_url || fallbackAvatar,
-        email: driverData.email || currentUser.email,
-      })
-      if (updatedDriver) driverData = updatedDriver
-    }
-
-    if (isMountedRef.current) {
-      setDriverProfile(driverData || null)
-      await loadTrips(currentUser.id)
-      setLoading(false)
-    }
-  }, [])
-
- const loadTrips = useCallback(async (driverId = user?.id) => {
+ const loadTrips = useCallback(async (driverId) => {
   /*
     FIX REAL:
     El viaje sí se crea. El problema es que el driver no lo pinta.
@@ -1009,8 +990,8 @@ export default function Driver() {
   const effectiveDriverId =
     driverId ||
     authUser?.id ||
-    user?.id ||
-    driverProfile?.user_id ||
+    auth.user?.id ||
+    auth.driverProfile?.user_id ||
     null
 
   if (!effectiveDriverId) {
@@ -1018,11 +999,11 @@ export default function Driver() {
       console.warn('[MiChofer Driver Trips] sin driverId efectivo', {
         driverId,
         authUserId: authUser?.id || null,
-        authEmail: authUser?.email || null,
-        stateUserId: user?.id || null,
-        stateUserEmail: user?.email || null,
-        driverProfileUserId: driverProfile?.user_id || null,
-        driverProfileEmail: driverProfile?.email || null,
+        authEmail: authUser?.email || null, // eslint-disable-line
+        stateUserId: auth.user?.id || null,
+        stateUserEmail: auth.user?.email || null,
+        driverProfileUserId: auth.driverProfile?.user_id || null,
+        driverProfileEmail: auth.driverProfile?.email || null,
       })
     }
     return
@@ -1044,20 +1025,6 @@ export default function Driver() {
     directError = directResult.error
   } else if (Array.isArray(directResult.data)) {
     nextTrips = directResult.data
-  }
-
-  if (nextTrips.length === 0) {
-    try {
-      const { data, error } = await supabase.rpc('get_own_driver_trips_v2')
-
-      if (error) {
-        rpcV2Error = error
-      } else if (Array.isArray(data) && data.length > 0) {
-        nextTrips = data
-      }
-    } catch (error) {
-      rpcV2Error = error
-    }
   }
 
   if (nextTrips.length === 0) {
@@ -1087,10 +1054,10 @@ export default function Driver() {
       effectiveDriverId,
       authUserId: authUser?.id || null,
       authEmail: authUser?.email || null,
-      stateUserId: user?.id || null,
-      stateUserEmail: user?.email || null,
-      driverProfileUserId: driverProfile?.user_id || null,
-      driverProfileEmail: driverProfile?.email || null,
+      stateUserId: auth.user?.id || null,
+      stateUserEmail: auth.user?.email || null,
+      driverProfileUserId: auth.driverProfile?.user_id || null,
+      driverProfileEmail: auth.driverProfile?.email || null,
       directCount: Array.isArray(directResult.data) ? directResult.data.length : 0,
       directError: directError?.message || null,
       rpcV2Error: rpcV2Error?.message || null,
@@ -1136,29 +1103,66 @@ export default function Driver() {
     hasLoadedTripsRef.current = true
     return nextTrips
   })
-}, [
-  driverProfile?.email,
-  driverProfile?.user_id,
-  pushDriverNotification,
-  user?.email,
-  user?.id,
-])
+  }, [
+    auth.driverProfile?.email,
+    auth.driverProfile?.user_id,
+    pushDriverNotification,
+    auth.user?.email,
+    auth.user?.id,
+  ])
+
+  const refreshDriverState = useCallback(async () => {
+    await auth.reloadProfiles()
+    const currentDriverId = auth.user?.id || auth.driverProfile?.user_id || auth.profile?.id
+    if (currentDriverId) loadTrips(currentDriverId)
+  }, [
+    auth.driverProfile?.user_id,
+    auth.profile?.id,
+    auth.reloadProfiles,
+    auth.user?.id,
+    loadTrips,
+  ])
+
+async function loadDriverTripHistory() {
+  const driverUserId = auth.user?.id || auth.driverProfile?.user_id || auth.profile?.id
+  if (!driverUserId) return
+
+  setTripHistoryLoading(true)
+
+  const { data, error } = await supabase
+    .from('trips')
+    .select('*')
+    .eq('driver_id', driverUserId)
+    .in('status', ['completed', 'cancelled'])
+    .order('created_at', { ascending: false })
+    .limit(30)
+
+  setTripHistoryLoading(false)
+
+  if (error) {
+    setMessage('No pude cargar el historial de viajes.')
+    return
+  }
+
+  setTripHistory(data || [])
+}
+
 const getStoredLocation = useCallback(() => {
-  const lat = Number(driverProfile?.lat)
-  const lng = Number(driverProfile?.lng)
+  const lat = Number(auth.driverProfile?.lat)
+  const lng = Number(auth.driverProfile?.lng)
   const stored = {
     lat,
     lng,
-    speed: Number.isFinite(Number(driverProfile?.speed)) ? Number(driverProfile.speed) : null,
-    heading: Number.isFinite(Number(driverProfile?.heading)) ? Number(driverProfile.heading) : null,
-    accuracy: Number.isFinite(Number(driverProfile?.accuracy)) ? Number(driverProfile.accuracy) : null,
-    _timestamp: driverProfile?.updated_at ? new Date(driverProfile.updated_at).getTime() : Date.now(),
+    speed: Number.isFinite(Number(auth.driverProfile?.speed)) ? Number(auth.driverProfile.speed) : null,
+    heading: Number.isFinite(Number(auth.driverProfile?.heading)) ? Number(auth.driverProfile.heading) : null,
+    accuracy: Number.isFinite(Number(auth.driverProfile?.accuracy)) ? Number(auth.driverProfile.accuracy) : null,
+    _timestamp: auth.driverProfile?.updated_at ? new Date(auth.driverProfile.updated_at).getTime() : Date.now(),
   }
 
   if (!isValidParaguayCoord(stored)) return null
 
   return stored
-}, [driverProfile])
+}, [auth.driverProfile])
 
 const getCurrentLocation = useCallback(async () => {
   const storedLocation = getStoredLocation()
@@ -1252,10 +1256,6 @@ const getCurrentLocation = useCallback(async () => {
       gpsBufferRef.current.push({ lat: location.lat, lng: location.lng })
     }
 
-    setDriverProfile((current) =>
-      current ? mergeDriverLiveTelemetry(current, null, location) : current
-    )
-
     const { data: updatedDriver } = await updateOwnDriverStatus({
       isOnline: true,
       isAvailable,
@@ -1263,20 +1263,20 @@ const getCurrentLocation = useCallback(async () => {
       lng: location.lng,
     })
 
-    if (updatedDriver) {
-      setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
-    }
+    // AuthContext will reload the driver profile automatically.
+    // For immediate visual feedback, we can optimistically update the local state if needed,
+    // but the context is the source of truth.
 
     await supabase
       .from('trips')
       .update(tripDriverTelemetryPayload(location))
       .eq('id', trip.id)
-      .eq('driver_id', user.id)
+      .eq('driver_id', auth.user.id)
 
     await supabase
       .from('driver_profiles')
       .update(driverProfileTelemetryPayload(location))
-      .eq('user_id', user.id)
+      .eq('user_id', auth.user.id)
 
     if (GOOGLE_ROADS_API_ENABLED && gpsBufferRef.current.getForRoads().length >= ROADS_MIN_POINTS) {
       const enoughTime = Date.now() - lastRoadsSnapAtRef.current >= ROADS_SYNC_INTERVAL_MS
@@ -1297,7 +1297,7 @@ const getCurrentLocation = useCallback(async () => {
                   driver_road_snapped_at: new Date(snappedPoint.snappedAt).toISOString(),
                 })
                 .eq('id', trip.id)
-                .eq('driver_id', user.id)
+                .eq('driver_id', auth.user.id)
               if (import.meta.env.DEV) {
                 console.info('[MiChofer Roads] saved snapped point:', snappedPoint)
               }
@@ -1316,10 +1316,10 @@ const getCurrentLocation = useCallback(async () => {
     }
 
     return location
-  }, [isAvailable, user?.id, setDriverProfile, setMessage])
+  }, [isAvailable, auth.user?.id, setMessage])
 
   const pushLiveTripLocation = useCallback(async (location, trip = activeTrip) => {
-    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !auth.user?.id) return null
 
     if (!isValidParaguayCoord(location)) {
       return getStoredLocation()
@@ -1344,7 +1344,7 @@ const getCurrentLocation = useCallback(async () => {
     } finally {
       liveSyncBusyRef.current = false
     }
-  }, [activeTrip, commitDriverLocationUpdate, user?.id])
+  }, [activeTrip, commitDriverLocationUpdate, auth.user?.id])
 
   const syncStoredTripLocation = useCallback(async (trip = activeTrip) => {
     // Si ya hubo una sincronización reciente vía watchPosition, no hace falta
@@ -1356,7 +1356,7 @@ const getCurrentLocation = useCallback(async () => {
     }
 
     const location = await getCurrentLocation()
-    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !user?.id) return null
+    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !auth.user?.id) return null
 
     if (!isValidParaguayCoord(location)) {
       return getStoredLocation()
@@ -1366,19 +1366,17 @@ const getCurrentLocation = useCallback(async () => {
     liveLastSyncAtRef.current = Date.now()
 
     return commitDriverLocationUpdate(location, trip, previousLocation)
-  }, [activeTrip, commitDriverLocationUpdate, getCurrentLocation, user?.id])
+  }, [activeTrip, commitDriverLocationUpdate, getCurrentLocation, auth.user?.id])
 
   const syncDriverLocation = useCallback(async (trip = activeTrip, nextOnline = isOnline, nextAvailable = isAvailable) => {
-  let currentUser = user
+  let currentUser = auth.user
   if (!currentUser?.id) {
     const { data: authData } = await supabase.auth.getUser()
     currentUser = authData?.user || null
-    if (currentUser?.id && !user?.id) {
-      setUser(currentUser)
-    }
+    // No need to setUser, AuthContext handles it.
   }
 
-  const driverUserId = currentUser?.id || driverProfile?.user_id || profile?.id
+  const driverUserId = currentUser?.id || auth.driverProfile?.user_id || auth.profile?.id
   if (!driverUserId) {
     setMessage('Todavía estoy cargando tu sesión de chofer. Esperá un momento y probá otra vez.')
     return null
@@ -1404,9 +1402,7 @@ const getCurrentLocation = useCallback(async () => {
     return null
   }
 
-  if (updatedDriver) {
-    setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
-  }
+  // AuthContext will reload the driver profile.
 
   await supabase
     .from('driver_profiles')
@@ -1422,10 +1418,10 @@ const getCurrentLocation = useCallback(async () => {
   }
 
   return location
-}, [activeTrip, driverUserId, getCurrentLocation, isAvailable, isOnline, setDriverProfile, setMessage, setUser, user])
+}, [activeTrip, driverUserId, getCurrentLocation, isAvailable, isOnline, setMessage, auth.user, auth.driverProfile, auth.profile])
 
   const updateAvailability = useCallback(async (nextOnline, nextAvailable) => {
-  const driverUserId = user?.id || driverProfile?.user_id || profile?.id
+  const driverUserId = auth.user?.id || auth.driverProfile?.user_id || auth.profile?.id
   if (!driverUserId) return
 
   if (!approved) {
@@ -1452,9 +1448,7 @@ const getCurrentLocation = useCallback(async () => {
     return
   }
 
-  if (updatedDriver) {
-    setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
-  }
+  // AuthContext will reload the driver profile.
 
   if (!nextOnline) {
     setMessage('Desconectado.')
@@ -1463,10 +1457,10 @@ const getCurrentLocation = useCallback(async () => {
   } else {
     setMessage('Conectado, pero pausado.')
   }
-}, [approved, driverProfile?.user_id, getCurrentLocation, profile?.id, setDriverProfile, setMessage, user?.id])
+}, [approved, auth.driverProfile?.user_id, getCurrentLocation, auth.profile?.id, setMessage, auth.user?.id])
 
   const requestCategory = useCallback(async (categoryCode) => {
-    if (!driverProfile?.user_id) {
+    if (!auth.driverProfile?.user_id) {
       setMessage('Primero guarda tu perfil de chofer.')
       return
     }
@@ -1480,17 +1474,10 @@ const getCurrentLocation = useCallback(async () => {
       setMessage('No pude solicitar esa categoria.')
       return
     }
-    setDriverProfile((current) => {
-      const requested = normalizeTextArray(current?.requested_categories)
-      const nextRequested = requested.includes(categoryCode) ? requested : [...requested, categoryCode]
-      return {
-        ...(current || {}),
-        requested_categories: nextRequested,
-        women_driver_requested: categoryCode === 'ella' ? true : current?.women_driver_requested,
-        women_driver_status: categoryCode === 'ella' ? 'requested' : current?.women_driver_status,
-        premium_status: categoryCode === 'premium' ? 'requested' : current?.premium_status,
-      }
-    })
+    // AuthContext will reload the driver profile.
+    // For optimistic UI, you could update a local state or the context directly,
+    // but for simplicity, we'll let the context handle the reload.
+
     const title = categoryCode === 'ella' ? 'Solicitud con preferencia enviada' : 'Solicitud enviada'
     const body = data?.status === 'approved'
       ? 'Esta categoria ya estaba habilitada.'
@@ -1498,9 +1485,9 @@ const getCurrentLocation = useCallback(async () => {
 
     setMessage(data?.status === 'approved' ? 'Categoria ya aprobada.' : 'Solicitud enviada.')
     pushDriverNotification(title, body, data?.status === 'approved' ? 'success' : 'info')
-  }, [approved, driverProfile, pushDriverNotification, setDriverProfile, setMessage])
+  }, [approved, auth.driverProfile, pushDriverNotification, setMessage])
 const submitDriverPassengerRating = useCallback(async () => {
-  const driverUserId = user?.id || driverProfile?.user_id || profile?.id
+  const driverUserId = auth.user?.id || auth.driverProfile?.user_id || auth.profile?.id
 
   if (!passengerRatingTrip?.id || !passengerRatingTrip?.client_id || !driverUserId) {
     setMessage('No pude identificar el pasajero para calificar.')
@@ -1543,17 +1530,17 @@ const submitDriverPassengerRating = useCallback(async () => {
     setPassengerRatingSubmitting(false)
   }
 }, [
-  driverProfile?.user_id,
+  auth.driverProfile?.user_id,
   loadTrips,
   passengerRatingComment,
   passengerRatingStars,
   passengerRatingTrip,
-  profile?.id,
+  auth.profile?.id,
   setMessage,
-  user?.id,
+  auth.user?.id,
 ])
 const updateTrip = useCallback(async (trip, status) => {
-  const driverUserId = user?.id || driverProfile?.user_id || profile?.id
+  const driverUserId = auth.user?.id || auth.driverProfile?.user_id || auth.profile?.id
 
   if (!trip?.id || !driverUserId) {
     setMessage('No pude identificar este viaje.')
@@ -1622,9 +1609,7 @@ const updateTrip = useCallback(async (trip, status) => {
       lng: location.lng,
     })
 
-    if (updatedDriver) {
-      setDriverProfile((current) => mergeDriverLiveTelemetry(current, updatedDriver, location))
-    }
+    // AuthContext will reload the driver profile.
 
     await supabase
       .from('driver_profiles')
@@ -1660,16 +1645,14 @@ const updateTrip = useCallback(async (trip, status) => {
     setTripAction('')
   }
 }, [
-  driverProfile?.user_id,
+  auth.driverProfile?.user_id,
   getCurrentLocation,
   loadTrips,
-  profile?.id,
+  auth.profile?.id,
   pushDriverNotification,
-  setDriverProfile,
   setMessage,
-  setTripAction,
   setTrips,
-  user?.id,
+  auth.user?.id,
 ])
   // ==================== RENDER ====================
 
@@ -1678,7 +1661,7 @@ const updateTrip = useCallback(async (trip, status) => {
     return (
       <main className="app-shell">
         <section
-          className={`phone driver-phone driver-cockpit driver-nav-layout ${showEllaDriverPanel || isEllaTrip(activeTrip) ? 'driver-ella-profile' : ''}`}
+          className={`phone driver-phone driver-cockpit driver-nav-layout driver-view-${driverNavigationView} ${showEllaDriverPanel || isEllaTrip(activeTrip) ? 'driver-ella-profile' : ''}`}
           style={{
             '--driver-nav-top-safe': '136px',
             '--driver-nav-bottom-safe': '178px',
@@ -1702,7 +1685,7 @@ const updateTrip = useCallback(async (trip, status) => {
             showRouteSummary={false}
             navigationMode
             navigationVariant="driver"
-            navigationCamera="cinematic"
+            navigationCamera="preview"
             showMapTypeControl={false}
             safetyZones={SAFETY_ZONES_CDE}
             onRouteUpdate={setRouteGuidance}
@@ -1751,6 +1734,14 @@ const updateTrip = useCallback(async (trip, status) => {
                   {guidanceIsFallbackRoute ? 'Ruta provisoria' : guidanceTrafficText}
                 </em>
               )}
+              <div className="driver-cockpit-meta-row" aria-label="Estado de navegacion">
+                <span className={`driver-cockpit-chip camera-${driverNavigationView}`}>
+                  {driverViewLabel} - {cameraHeightLabel}
+                </span>
+                <span className={`driver-cockpit-chip ${gpsSignalClass}`}>
+                  {gpsSignalText}
+                </span>
+              </div>
             </div>
 
             <button type="button" className="driver-navigation-refresh" onClick={() => syncDriverLocation(activeTrip)} aria-label="Actualizar ubicación">
@@ -1770,6 +1761,11 @@ const updateTrip = useCallback(async (trip, status) => {
               )}
               <span>{statusLabel(activeTrip.status)}</span>
               <strong>{activeTrip.destination_text || 'Destino'}</strong>
+              <div className="driver-trip-mini-rail" aria-hidden="true">
+                <span>{driverViewLabel}</span>
+                <i><b style={{ width: `${Math.round(guidanceProgress * 100)}%` }} /></i>
+                <span>{gpsSignalText}</span>
+              </div>
               <small>{formatGs(activeTrip.price)} · {guidanceDistance} · {guidanceEta}</small>
             </div>
 
@@ -1958,7 +1954,6 @@ const updateTrip = useCallback(async (trip, status) => {
             open={chatOpen}
             onClose={() => setChatOpen(false)}
             onUnreadCountChange={setChatUnreadCount}
-            currentUser={user}
             trip={activeTrip}
           />
         </section>
@@ -2111,7 +2106,7 @@ const updateTrip = useCallback(async (trip, status) => {
   <button
     type="button"
     className="mc-driver-hud-refresh"
-    onClick={init}
+    onClick={refreshDriverState}
     aria-label="Actualizar estado"
   >
     <RefreshCw size={18} />
@@ -2386,6 +2381,82 @@ const updateTrip = useCallback(async (trip, status) => {
         </div>
       </section>
 
+      <section className="mc-driver-profile-section">
+        <div className="mc-driver-profile-section-head">
+          <strong>Actividad</strong>
+          <small>Viajes finalizados y cancelados</small>
+        </div>
+
+        <button
+          type="button"
+          className="mc-driver-trips-btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            width: '100%',
+            background: 'transparent',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '14px',
+            padding: '12px 14px',
+            cursor: 'pointer',
+            color: 'inherit',
+            textAlign: 'left',
+          }}
+          onClick={() => {
+            loadDriverTripHistory()
+            setShowTripsHistory(true)
+          }}
+        >
+          <Clock size={17} />
+          <div style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontSize: '15px', fontWeight: 600 }}>Mis viajes</span>
+            <small style={{ display: 'block', fontSize: '12px', opacity: 0.6, marginTop: 2 }}>Ver historial completo</small>
+          </div>
+        </button>
+      </section>
+
+      <section className="mc-driver-profile-section performance-card">
+        <div className="mc-driver-profile-section-head">
+          <strong>Rendimiento de la aplicación</strong>
+          <small>{performance.profileLabel}</small>
+        </div>
+        <p>MiChofer adapta automáticamente el mapa y las animaciones para funcionar mejor en tu dispositivo.</p>
+        {performance.slowNotice && (
+          <div className="performance-slow-notice">
+            ¿MiChofer está funcionando lento? Probá el test de rendimiento desde Configuración.
+          </div>
+        )}
+        <div className="performance-card-status">
+          <div>
+            <span>Optimización automática</span>
+            <strong>{performance.mode === 'auto' ? 'Activada' : 'Desactivada'}</strong>
+          </div>
+          <div>
+            <span>Perfil actual</span>
+            <strong>{performance.profileLabel}</strong>
+          </div>
+        </div>
+        <div className="performance-mode-selector">
+          {['auto', 'low', 'medium', 'high'].map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={performance.mode === mode ? 'active' : ''}
+              onClick={() => performance.setManualProfile(mode)}
+            >
+              <span>{MODE_LABELS[mode]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="performance-card-actions">
+          <button type="button" onClick={() => performance.runPerformanceTest({ force: true })} disabled={performance.isTesting}>
+            <RefreshCw size={17} />
+            <span>{performance.isTesting ? 'Analizando...' : 'Volver a realizar el test'}</span>
+          </button>
+        </div>
+      </section>
+
       <nav className="mc-driver-profile-links" aria-label="Links legales">
         <a href="/support">Soporte</a>
         <a href="/privacy">Política de privacidad</a>
@@ -2405,6 +2476,67 @@ const updateTrip = useCallback(async (trip, status) => {
         <span>Cerrar sesión</span>
       </button>
     </aside>
+  </div>
+)}
+
+{/* Trip History Panel */}
+{showTripsHistory && (
+  <div className="trips-history-backdrop" onClick={() => setShowTripsHistory(false)}>
+    <section className="trips-history-panel" onClick={(event) => event.stopPropagation()}>
+      <button
+        className="panel-close trips-history-close"
+        type="button"
+        onClick={() => setShowTripsHistory(false)}
+        aria-label="Cerrar historial"
+      >
+        <XCircle size={18} />
+      </button>
+
+      <div className="trips-history-head">
+        <span>MiChofer Driver</span>
+        <h2>Tus viajes</h2>
+        <p>Acá guardamos tus últimos viajes completados y cancelados como chofer.</p>
+      </div>
+
+      <div className="trips-history-list">
+        {tripHistoryLoading ? (
+          <div className="trips-history-empty">Cargando tus viajes...</div>
+        ) : tripHistory.length === 0 ? (
+          <div className="trips-history-empty">
+            Todavía no tenés viajes guardados. Cuando completes uno, va a aparecer acá.
+          </div>
+        ) : (
+          tripHistory.map((trip) => {
+            const statusCopy = {
+              completed: 'Finalizado',
+              cancelled: 'Cancelado',
+            }[trip.status] || 'Viaje'
+
+            const createdAt = trip.created_at
+              ? new Date(trip.created_at).toLocaleDateString('es-PY', {
+                  day: '2-digit',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : ''
+
+            return (
+              <article key={trip.id} className={`trips-history-item ${trip.status}`}>
+                <div>
+                  <span>{statusCopy}</span>
+                  <strong>{trip.destination_text || 'Destino guardado'}</strong>
+                  <small>
+                    {[createdAt, tripPaymentLabel(trip)].filter(Boolean).join(' · ')}
+                  </small>
+                </div>
+                <b>{formatGs(trip.price)}</b>
+              </article>
+            )
+          })
+        )}
+      </div>
+    </section>
   </div>
 )}
       </section>

@@ -52,8 +52,8 @@ const DRIVER_DOCUMENT_REQUIREMENTS = [
   {
     key: 'ruc_certificate',
     label: 'Constancia de RUC',
-    helper: 'Necesaria para facturacion de ganancias.',
-    required: true,
+    helper: 'Solo si facturas. Opcional para empezar.',
+    required: false,
   },
   {
     key: 'vehicle_insurance',
@@ -104,6 +104,13 @@ const DRIVER_VEHICLE_TYPES = [
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase()
+}
+
+function getRequestedRoleFromUrl() {
+  const params = new URLSearchParams(window.location.search)
+  const role = params.get('role')
+
+  return role === 'driver' || role === 'passenger' ? role : ''
 }
 
 function makeCameraErrorMessage(error) {
@@ -273,7 +280,7 @@ async function savePendingRegistration({ email, fullName, role, genderIdentity, 
 export default function Register() {
   const [step, setStep] = useState('start')
   const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState('')
+  const [role, setRole] = useState(() => getRequestedRoleFromUrl())
   const [genderIdentity, setGenderIdentity] = useState('')
   const [ridePreference, setRidePreference] = useState('')
   const [email, setEmail] = useState('')
@@ -735,7 +742,7 @@ export default function Register() {
       return
     }
 
-    setStep('role')
+    setStep(role ? 'identity' : 'role')
   }
 
   function nextFromRole(value) {
@@ -745,7 +752,12 @@ export default function Register() {
 
   function nextFromRidePreference(value) {
     setRidePreference(value)
-    setGenderIdentity(value === 'female_driver_priority' ? 'woman' : 'prefer_not_to_say')
+    // FIX: No asumir que el usuario es mujer solo por la preferencia.
+    // El género se pregunta (o se debería preguntar) en otro paso si es relevante.
+    // Por ahora, lo dejamos neutral si no eligen la opción de mujer.
+    if (value === 'female_driver_priority') {
+      setGenderIdentity('woman')
+    }
     setStep('photo')
   }
 
@@ -1116,6 +1128,10 @@ export default function Register() {
     try {
       setBusy(true)
       setStep('loading')
+
+      if (role) {
+        localStorage.setItem('michofer_pending_role', role)
+      }
 
       const { error } = await signInWithGoogle()
 

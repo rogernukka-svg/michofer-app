@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import {
-  getOwnProfile,
-  signInWithGoogle,
-  supabase,
-  upsertOwnDriverProfile,
-  upsertOwnProfile,
-} from '../lib/supabase'
+import { useAuth } from './AuthContext'
+import { signInWithGoogle, supabase, upsertOwnDriverProfile, upsertOwnProfile } from '../lib/supabase'
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase()
@@ -24,11 +19,22 @@ function getStoredRoleForEmail(email) {
   return savedEmail === normalizeEmail(email) ? savedRole : ''
 }
 
+function getPendingRoleIntent() {
+  const role = localStorage.getItem('michofer_pending_role') || ''
+
+  return role === 'driver' || role === 'passenger' ? role : ''
+}
+
+function clearPendingRoleIntent() {
+  localStorage.removeItem('michofer_pending_role')
+}
+
 function resolveRole(user, profile, email) {
   return (
     profile?.role ||
     user?.user_metadata?.role ||
     getStoredRoleForEmail(email) ||
+    getPendingRoleIntent() ||
     ''
   )
 }
@@ -213,96 +219,46 @@ export default function Login() {
     const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const redirectingRef = useRef(false)
+  const auth = useAuth()
+
+useEffect(() => {
+  if (auth.loading) return
+
+  if (!auth.user) {
+    if (step === 'loading') {
+      setStep(knownUser?.email ? 'password' : 'welcome')
+    }
+    return
+  }
+
+  const resolvedRole =
+    auth.profile?.role ||
+    auth.user?.user_metadata?.role ||
+    getStoredRoleForEmail(auth.user.email) ||
+    getPendingRoleIntent() ||
+    'passenger'
+
+  if (redirectingRef.current) return
+
+  redirectingRef.current = true
+  clearPendingRoleIntent()
+  goToRole(resolvedRole)
+}, [
+  auth.loading,
+  auth.user,
+  auth.profile,
+  step,
+  knownUser?.email,
+])
 
   useEffect(() => {
     let alive = true
 
     async function initLogin() {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const sessionUser = sessionData?.session?.user
-
-      if (sessionUser) {
-        const cleanEmail = normalizeEmail(sessionUser.email)
-        const { data: profile, error: profileError } = await getOwnProfile()
-
-        if (profileError) {
-          console.warn('PROFILE SESSION LOAD ERROR:', profileError)
-        }
-
-        const pendingUpload = !profile?.avatar_url
-          ? await uploadPendingRegistrationAvatar(sessionUser, cleanEmail)
-          : null
-        const storedAvatar = !profile?.avatar_url && !pendingUpload?.avatarUrl
-          ? await findStoredAvatarUrl(sessionUser.id)
-          : ''
-        const role = pendingUpload?.role || resolveRole(sessionUser, profile, cleanEmail)
-        const fullName =
-          profile?.full_name ||
-          pendingUpload?.fullName ||
-          sessionUser.user_metadata?.full_name ||
-          localStorage.getItem('michofer_last_name') ||
-          ''
-        const avatarUrl =
-          profile?.avatar_url ||
-          pendingUpload?.avatarUrl ||
-          storedAvatar ||
-          sessionUser.user_metadata?.avatar_url ||
-          ''
-
-        const needsRoleChoice = shouldAskForRole({
-          user: sessionUser,
-          profile,
-          role,
-          email: cleanEmail,
-          pendingRole: pendingUpload?.role,
-        })
-
-        if (needsRoleChoice) {
-          if (!alive) return
-
-          setSessionUser(sessionUser)
-          setEmail(cleanEmail)
-          setKnownUser({
-            email: cleanEmail,
-            name: fullName,
-            role: role || '',
-            photo: avatarUrl,
-          })
-          setProfileDraft({ fullName, avatarUrl })
-          cacheProfile({ email: cleanEmail, fullName, avatarUrl })
-          setStep('role')
-          return
-        }
-
-        cacheProfile({ email: cleanEmail, fullName, role, avatarUrl })
-        markRoleConfirmed(cleanEmail)
-
-        if ((!profile || !profile.avatar_url) && !profileError) {
-          await upsertOwnProfile({
-            email: cleanEmail,
-            fullName,
-            role: pendingUpload?.role || role || 'passenger',
-            avatarUrl,
-          })
-        }
-
-        if (pendingUpload?.avatarUrl || pendingUpload?.fullName || pendingUpload?.role) {
-          await supabase.auth.updateUser({
-            data: {
-              full_name: fullName,
-              avatar_url: avatarUrl,
-              role: role || 'passenger',
-              role_confirmed: true,
-            },
-          })
-        }
-
-                if (redirectingRef.current) return
-
-        redirectingRef.current = true
-        goToRole(role || 'passenger')
-        return
-      }
+      // Primero, intentar obtener la sesión activa.
+      // Si el usuario ya está logueado, no deberíamos estar en esta página.
+      // La lógica de redirección ahora está en el useEffect que consume useAuth.
+      // Esta función ahora solo maneja el caso donde NO hay sesión activa.
 
       if (!alive) return
 
@@ -336,7 +292,7 @@ export default function Login() {
     return () => {
       alive = false
     }
-  }, [])
+  }, []) // Este useEffect ahora solo corre una vez para setear el estado inicial si no hay sesión.
 
   const title = useMemo(() => {
     if (knownUser?.email && step === 'password') {
@@ -568,6 +524,7 @@ export default function Login() {
       }
 
       cacheProfile({ email: cleanEmail, fullName, role: nextRole, avatarUrl })
+      clearPendingRoleIntent()
       markRoleConfirmed(cleanEmail)
             if (redirectingRef.current) return
 
@@ -667,7 +624,7 @@ export default function Login() {
       setStep('loading')
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
+        email: cleanEmail, // eslint-disable-line
         password,
       })
 
@@ -682,7 +639,7 @@ export default function Login() {
       }
 
       const user = data.user
-      const { data: profile, error: profileError } = await getOwnProfile()
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', user.id).single()
 
       if (profileError) {
         console.warn('PROFILE LOAD ERROR:', profileError)
@@ -713,6 +670,7 @@ export default function Login() {
       }
 
       cacheProfile({ email: cleanEmail, fullName, role, avatarUrl })
+      clearPendingRoleIntent()
       markRoleConfirmed(cleanEmail)
 
       if ((!profile || !profile.avatar_url) && !profileError) {

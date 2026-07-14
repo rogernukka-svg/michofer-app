@@ -17,7 +17,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import InteractiveRouteMap from '../components/InteractiveRouteMap'
-import { computeRouteWithRoutesApi } from '../lib/googleMaps'
+import { computeRouteWithRoutesApi, loadGoogleMaps } from '../lib/googleMaps'
 import {
   adminCreateTestTrip,
   adminReviewDriverCategory,
@@ -58,8 +58,8 @@ const DOCUMENT_REQUIREMENTS = [
   {
     key: 'ruc_certificate',
     label: 'Constancia de RUC',
-    required: true,
-    description: 'Necesaria para facturar ganancias cuando aplica.',
+    required: false,
+    description: 'Solo si factura. Opcional para empezar.',
   },
   {
     key: 'vehicle_insurance',
@@ -183,9 +183,9 @@ const QUICK_DEMO_A = { lat: -25.5161, lng: -54.6164 }
 const QUICK_DEMO_B = { lat: -25.5039, lng: -54.6111 }
 const QUICK_DEMO_DRIVER_START = { lat: -25.5213, lng: -54.6222 }
 const SIM_SPEEDS = {
-  slow: { label: 'Lento', interval: 700, speed: 3.5 },
-  normal: { label: 'Normal', interval: 460, speed: 6 },
-  fast: { label: 'Rapido', interval: 300, speed: 9.5 },
+  slow: { label: 'Lento', interval: 360, speed: 3.5 },
+  normal: { label: 'Normal', interval: 260, speed: 6 },
+  fast: { label: 'Rapido', interval: 190, speed: 9.5 },
 }
 
 function wait(ms) {
@@ -272,6 +272,39 @@ function densifySimRoute(path = [], maxSegmentMeters = 6) {
   return result
 }
 
+async function computeRouteWithDirectionsService(origin, destination) {
+  if (!isValidSimPoint(origin) || !isValidSimPoint(destination)) return null
+
+  const google = await loadGoogleMaps()
+  if (!google?.maps?.DirectionsService) return null
+
+  const directionsService = new google.maps.DirectionsService()
+  return new Promise((resolve) => {
+    directionsService.route(
+      {
+        origin: { lat: Number(origin.lat), lng: Number(origin.lng) },
+        destination: { lat: Number(destination.lat), lng: Number(destination.lng) },
+        travelMode: google.maps.TravelMode.DRIVING,
+        optimizeWaypoints: false,
+        provideRouteAlternatives: false,
+      },
+      (result, status) => {
+        const route = result?.routes?.[0]
+        const overviewPath = Array.isArray(route?.overview_path)
+          ? route.overview_path.map((point) => ({ lat: point.lat(), lng: point.lng() }))
+          : []
+
+        if (status === 'OK' && overviewPath.length >= 2) {
+          resolve({ path: overviewPath, source: 'Google Directions JS' })
+          return
+        }
+
+        resolve(null)
+      }
+    )
+  })
+}
+
 function createDriverSpawnPoint(pickup, destination) {
   if (!isValidSimPoint(pickup) || !isValidSimPoint(destination)) return DEFAULT_SIM_DRIVER_START
   const awayHeading = normalizeSimHeading(simBearing(destination, pickup))
@@ -340,6 +373,10 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   const [simDriverPoint, setSimDriverPoint] = useState(DEFAULT_SIM_DRIVER_START)
   const [lastSimUpdateAt, setLastSimUpdateAt] = useState('')
   const [simRouteInfo, setSimRouteInfo] = useState(null)
+  const [manualDrive, setManualDrive] = useState(false)
+  const [manualSpeed, setManualSpeed] = useState(0)
+  const [manualHeading, setManualHeading] = useState(0)
+  const [manualAction, setManualAction] = useState('')
   const [liveMapVersion, setLiveMapVersion] = useState(0)
   const [simulatorOpen, setSimulatorOpen] = useState(false)
   const [mapPickerOpen, setMapPickerOpen] = useState(false)
@@ -350,6 +387,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   const simIndexRef = useRef(0)
   const markModeRef = useRef('a')
   const autoRunRef = useRef(false)
+  const manualDriveRef = useRef({ speed: 0, heading: 0, action: '' })
 
   const selectedDriver = useMemo(
     () => drivers.find((driver) => driver.user_id === selectedDriverId) || null,
@@ -390,6 +428,12 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
   useEffect(() => {
     simDriverPointRef.current = simDriverPoint
   }, [simDriverPoint])
+
+  useEffect(() => {
+    manualDriveRef.current.speed = manualSpeed
+    manualDriveRef.current.heading = manualHeading
+    manualDriveRef.current.action = manualAction
+  }, [manualSpeed, manualHeading, manualAction])
 
   useEffect(() => {
     simIndexRef.current = simIndex
@@ -479,6 +523,13 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
 
     let routeResult = null
     try {
+      routeResult = await computeRouteWithDirectionsService(endpoints.origin, endpoints.destination)
+    } catch (directionsError) {
+      console.error('ADMIN TEST TRIP DIRECTIONS ERROR:', directionsError)
+    }
+
+    if (!routeResult) {
+      try {
       routeResult = await computeRouteWithRoutesApi({
         origin: endpoints.origin,
         destination: endpoints.destination,
@@ -486,21 +537,24 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
       })
     } catch (routeError) {
       console.error('ADMIN TEST TRIP ROUTE ERROR:', routeError)
-      onMessage?.(`Google Routes API falló, uso ruta en línea recta: ${routeError?.message || 'revisá la clave de Google Maps.'}`)
+        onMessage?.(`Google Routes API falló: ${routeError?.message || 'revisá la clave de Google Maps.'}`)
+    }
+
     }
 
     if (Array.isArray(routeResult?.path) && routeResult.path.length >= 2) {
       const precisePath = densifySimRoute(routeResult.path, 2)
       setRoutePath(precisePath)
       routeRef.current = precisePath
-      setRouteSource(`${phase === 'trip' ? 'Viaje' : 'Pickup'} · Google Routes API`)
+      setRouteSource(`${phase === 'trip' ? 'Viaje' : 'Pickup'} · ${routeResult.source || 'Google route'}`)
       return precisePath
     }
 
-    const fallback = densifySimRoute(interpolateSimRoute(endpoints.origin, endpoints.destination), 2)
-    setRoutePath(fallback)
-    routeRef.current = fallback
-    setRouteSource(`${phase === 'trip' ? 'Viaje' : 'Pickup'} · fallback interpolado`)
+    const fallback = []
+    setRoutePath([])
+    routeRef.current = []
+    setRouteSource(`${phase === 'trip' ? 'Viaje' : 'Pickup'} · sin ruta Google`)
+    onMessage?.('No hay ruta por calles disponible. No simulo una linea falsa que cruce edificios.')
     return fallback
   }
 
@@ -558,6 +612,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
       setSimIndex(0)
       simIndexRef.current = 0
       setSimDriverPoint(initialPoint)
+      setManualHeading(initialPoint.heading)
       simDriverPointRef.current = initialPoint
       tripRef.current = tripRow
       await pushSimPoint(0, 'pending')
@@ -590,10 +645,63 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     }
   }
 
-  async function pushSimPoint(index, status = null) {
+  async function handleManualDrive(action) {
+    if (!manualDrive) {
+      onMessage?.('Activá Teclado libre para manejar manualmente.')
+      return
+    }
+
+    const currentPoint = simDriverPointRef.current
+    const currentHeading = manualDriveRef.current.heading
+    let nextHeading = currentHeading
+    let nextSpeed = manualDriveRef.current.speed
+
+    stopSimulation()
+
+    if (action === 'left') nextHeading = normalizeSimHeading(currentHeading - 15)
+    if (action === 'right') nextHeading = normalizeSimHeading(currentHeading + 15)
+    if (action === 'accelerate') nextSpeed = Math.min(25, nextSpeed + 2.5)
+    if (action === 'brake') nextSpeed = Math.max(0, nextSpeed - 3)
+
+    manualDriveRef.current = {
+      speed: nextSpeed,
+      heading: nextHeading,
+      action,
+    }
+    setManualHeading(nextHeading)
+    setManualSpeed(nextSpeed)
+    setManualAction(action)
+    setTimeout(() => setManualAction(''), 150)
+
+    if (nextSpeed <= 0) {
+      await pushSimPoint(simIndexRef.current, tripRef.current?.status, { manualDrive: true, speed: 0 })
+      return
+    }
+
+    const distance = (nextSpeed * 400) / 1000 // speed in m/s, interval is ~400ms
+    const nextPoint = moveSimPointByBearing(currentPoint, nextHeading, distance)
+
+    const visualPoint = {
+      lat: nextPoint.lat,
+      lng: nextPoint.lng,
+      heading: nextHeading,
+      speed: nextSpeed,
+      accuracy: 8,
+    }
+
+    setSimDriverPoint(visualPoint)
+    simDriverPointRef.current = visualPoint
+    await pushSimPoint(simIndexRef.current, tripRef.current?.status, {
+      manualDrive: true,
+      overridePoint: nextPoint,
+      heading: nextHeading,
+      speed: nextSpeed,
+    })
+  }
+
+  async function pushSimPoint(index, status = null, options = {}) {
     const path = routeRef.current.length >= 2 ? routeRef.current : interpolateSimRoute(pointA, pointB)
     const point = path[Math.min(index, path.length - 1)]
-    const nextPoint = path[Math.min(index + 1, path.length - 1)] || point
     const trip = tripRef.current
 
     if (!trip?.id) {
@@ -610,13 +718,27 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
       return false
     }
 
-    const heading = simBearing(point, nextPoint)
-    const speed = SIM_SPEEDS[speedMode]?.speed || SIM_SPEEDS.normal.speed
+    let finalPoint = point
+    let finalHeading = manualDriveRef.current.heading
+    let finalSpeed = manualDriveRef.current.speed
+
+    const isManualMove = options.manualDrive === true
+
+    if (!isManualMove) {
+      const nextPoint = path[Math.min(index + 1, path.length - 1)] || point
+      finalHeading = simBearing(point, nextPoint)
+      finalSpeed = SIM_SPEEDS[speedMode]?.speed || SIM_SPEEDS.normal.speed
+    } else {
+      finalPoint = options.overridePoint || point
+      finalHeading = Number.isFinite(Number(options.heading)) ? Number(options.heading) : finalHeading
+      finalSpeed = Number.isFinite(Number(options.speed)) ? Number(options.speed) : finalSpeed
+    }
+
     const visualPoint = {
-      lat: point.lat,
-      lng: point.lng,
-      heading,
-      speed,
+      lat: finalPoint.lat,
+      lng: finalPoint.lng,
+      heading: finalHeading,
+      speed: finalSpeed,
       accuracy: 8,
     }
     setSimDriverPoint(visualPoint)
@@ -629,10 +751,10 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
       const result = await adminUpdateTestTripLocation({
         tripId: trip.id,
         driverId: trip.driver_id || selectedDriverId,
-        lat: point.lat,
-        lng: point.lng,
-        heading,
-        speed,
+        lat: finalPoint.lat,
+        lng: finalPoint.lng,
+        heading: finalHeading,
+        speed: finalSpeed,
         accuracy: 8,
         status,
       })
@@ -654,10 +776,48 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
       setActiveTrip(tripRow)
       tripRef.current = tripRow
     }
-    setSimIndex(index)
-    simIndexRef.current = index
+    if (!isManualMove) {
+      setSimIndex(index)
+      simIndexRef.current = index
+    }
     return true
   }
+
+  useEffect(() => {
+    if (!simulatorOpen || mapPickerOpen || !manualDrive) return undefined
+
+    const handleKeyDown = (event) => {
+      const tagName = String(event.target?.tagName || '').toLowerCase()
+      if (['input', 'select', 'textarea'].includes(tagName) || event.target?.isContentEditable) return
+
+      const key = String(event.key || '').toLowerCase()
+      const actionByKey = {
+        arrowup: 'accelerate',
+        w: 'accelerate',
+        arrowdown: 'brake',
+        s: 'brake',
+        arrowleft: 'left',
+        a: 'left',
+        arrowright: 'right',
+        d: 'right',
+        ' ': 'brake',
+      }
+      const action = actionByKey[key]
+      if (!action) return
+
+      event.preventDefault()
+
+      if (!tripRef.current?.id) {
+        onMessage?.('Primero crea un viaje test para manejar con teclado.')
+        return
+      }
+
+      handleManualDrive(action)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [manualDrive, mapPickerOpen, onMessage, simulatorOpen])
 
   async function startSimulation() {
     const currentTrip = tripRef.current || activeTrip
@@ -687,6 +847,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
       simIndexRef.current = 0
       setSimIndex(0)
     }
+    setManualDrive(false)
 
     if (tripRef.current?.status === 'pending') {
       await setTripStatus('accepted')
@@ -740,6 +901,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     stopSimulation()
     setSimPhase('pickup')
     setSimIndex(0)
+    setManualDrive(false)
     simIndexRef.current = 0
 
     try {
@@ -749,6 +911,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
         return
       }
       const ok = await pushSimPoint(0, tripRef.current?.status || 'accepted')
+      setManualHeading(simDriverPointRef.current.heading)
       if (!ok) return
       setLiveMapVersion((value) => value + 1)
       await wait(240)
@@ -770,6 +933,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     stopSimulation()
     setSimPhase('trip')
     setSimIndex(0)
+    setManualDrive(false)
     simIndexRef.current = 0
 
     try {
@@ -789,6 +953,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
         return
       }
       const ok = await pushSimPoint(0, 'in_progress')
+      setManualHeading(simDriverPointRef.current.heading)
       if (!ok) return
       setLiveMapVersion((value) => value + 1)
       await wait(240)
@@ -839,12 +1004,15 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
     stopSimulation()
     setSimIndex(0)
     simIndexRef.current = 0
+    setManualDrive(false)
     if (activeTrip?.id) {
       await pushSimPoint(0, activeTrip.status || 'accepted')
     }
   }
 
     const progress = routePath.length > 1 ? Math.round((simIndex / (routePath.length - 1)) * 100) : 0
+    const simRemainingMeters = Number(simRouteInfo?.remainingMeters ?? simRouteInfo?.distance)
+    const simHudArrived = simRouteInfo?.alertLevel === 'arrived' || (Number.isFinite(simRemainingMeters) && simRemainingMeters <= 18)
 
   if (!enabled) {
     return (
@@ -893,17 +1061,18 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
                   onChooseDriver={() => {}}
                   onRefreshLocation={() => {}}
                   showRouteSummary={false}
-                  animateCamera
+                  animateCamera={false}
                   showOriginCar
                   navigationMode
                   navigationVariant="driver"
-                  navigationCamera="cinematic"
+                  navigationCamera="preview"
+                  freeDriveMode={manualDrive}
                   onRouteUpdate={setSimRouteInfo}
                 />
-                <div className="admin-sim-navigation-hud">
-                  <span>{formatSimNavDistance(simRouteInfo?.distance) || (simPhase === 'trip' ? 'Viaje al destino' : 'Ida al cliente')}</span>
-                  <strong>{simRouteInfo?.shortInstruction || simRouteInfo?.instruction || 'Seguimos por la ruta'}</strong>
-                  <small>{simRouteInfo?.instruction || (simPhase === 'trip' ? 'Guiando al destino final' : 'Guiando al punto de recogida')}</small>
+                <div className={`admin-sim-navigation-hud ${simHudArrived ? 'is-arrived' : ''}`}>
+                  <span>{simHudArrived ? 'Destino' : formatSimNavDistance(simRouteInfo?.distance) || (simPhase === 'trip' ? 'Viaje al destino' : 'Ida al cliente')}</span>
+                  <strong>{simHudArrived ? 'Llegaste' : simRouteInfo?.shortInstruction || simRouteInfo?.instruction || 'Seguimos por la ruta'}</strong>
+                  <small>{simHudArrived ? 'Viaje completado con posicion precisa.' : simRouteInfo?.instruction || (simPhase === 'trip' ? 'Guiando al destino final' : 'Guiando al punto de recogida')}</small>
                 </div>
               </div>
 
@@ -979,6 +1148,52 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
                     {item.label}
                   </button>
                 ))}
+              </div>
+
+              <div className="admin-sim-drive-toggle" aria-label="Modo de manejo del simulador">
+                <button
+                  type="button"
+                  className={!manualDrive ? 'active' : ''}
+                  onClick={() => {
+                    setManualDrive(false)
+                    setManualSpeed(0)
+                    manualDriveRef.current.speed = 0
+                  }}
+                >
+                  Auto ruta
+                </button>
+                <button
+                  type="button"
+                  className={manualDrive ? 'active' : ''}
+                  onClick={() => {
+                    stopSimulation()
+                    setManualDrive(true)
+                    setManualHeading(simDriverPointRef.current?.heading || 0)
+                  }}
+                >
+                  Teclado libre
+                </button>
+                <small>{manualDrive ? 'W/↑ acelera · S/↓ frena · A/← izquierda · D/→ derecha' : 'El simulador sigue la ruta automáticamente.'}</small>
+              </div>
+
+              <div className="admin-sim-drive-controls" aria-label="Controles de manejo manual">
+                <button type="button" onClick={() => handleManualDrive('accelerate')} disabled={!activeTrip?.id || !manualDrive} aria-label="Acelerar">
+                  ↑
+                </button>
+                <div>
+                  <button type="button" onClick={() => handleManualDrive('left')} disabled={!activeTrip?.id || !manualDrive} aria-label="Girar a la izquierda">
+                    ←
+                  </button>
+                  <button type="button" onClick={() => handleManualDrive('brake')} disabled={!activeTrip?.id || !manualDrive} aria-label="Frenar">
+                    ■
+                  </button>
+                  <button type="button" onClick={() => handleManualDrive('right')} disabled={!activeTrip?.id || !manualDrive} aria-label="Girar a la derecha">
+                    →
+                  </button>
+                </div>
+                <span>
+                  Manual: {manualDrive ? 'activo' : 'apagado'} · {Number(manualSpeed || 0).toFixed(1)} m/s · {Number(manualHeading || 0).toFixed(0)}°
+                </span>
               </div>
 
               <div className="admin-sim-actions">
@@ -1174,12 +1389,14 @@ export default function Admin() {
     setAdminUser(currentUser)
 
     if (!currentUser) {
-     setDrivers([])
-setCategoryRequests([])
-setWomenRequests([])
-setRatingReports([])
-setAdminProfile(null)
-      setMessage('No hay sesión activa. Iniciá sesión con robycho@gmail.com o rogercho@gmail.com y volvé a /admin.')
+      setDrivers([])
+      setCategoryRequests([])
+      setWomenRequests([])
+      setRatingReports([])
+      setAdminProfile(null)
+      setMessage(
+        'No hay sesión activa. Iniciá sesión con robycho@gmail.com o rogercho@gmail.com y volvé a /admin.'
+      )
       setLoading(false)
       return
     }
@@ -1205,11 +1422,11 @@ setAdminProfile(null)
     setAdminProfile(finalProfile)
 
     if (!isAdminAccount(currentUser, finalProfile)) {
-    setDrivers([])
-setCategoryRequests([])
-setWomenRequests([])
-setRatingReports([])
-setMessage(`Estás logueado como ${currentUser.email}, pero su rol no es admin.`)
+      setDrivers([])
+      setCategoryRequests([])
+      setWomenRequests([])
+      setRatingReports([])
+      setMessage(`Estás logueado como ${currentUser.email}, pero su rol no es admin.`)
       setLoading(false)
       return
     }
@@ -2071,10 +2288,23 @@ const adminStyles = `
   .admin-sim-markers button, .admin-sim-speed button, .admin-sim-actions button { min-height: 44px; border: 0; border-radius: 999px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255,255,255,0.02); color: #fff; font-weight: 800; cursor: pointer; transition: transform .14s ease, box-shadow .14s ease; }
   .admin-sim-markers button:hover, .admin-sim-speed button:hover, .admin-sim-actions button:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 
-  .admin-sim-markers button.active, .admin-sim-speed button.active, .admin-sim-actions button.approve { background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color: #04110f; }
+  .admin-sim-markers button.active, .admin-sim-speed button.active, .admin-sim-drive-toggle button.active, .admin-sim-actions button.approve { background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color: #04110f; }
   .admin-sim-actions button.reject { background: linear-gradient(90deg, rgba(255,77,99,0.18), rgba(255,77,99,0.06)); color: #ffdce3; }
 
   .admin-sim-actions .admin-sim-start { flex: 1 1 100%; min-height: 56px; border-radius: 14px; background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color: #04110f; box-shadow: 0 24px 64px rgba(4,199,244,0.12); letter-spacing: .03em; text-transform: uppercase; font-weight: 900; }
+
+  .admin-sim-drive-controls { display: grid; justify-items: center; gap: 6px; padding: 12px; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; background: rgba(255,255,255,0.025); }
+  .admin-sim-drive-controls > div { display: flex; gap: 6px; }
+  .admin-sim-drive-controls button { width: 48px; height: 48px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; background: rgba(255,255,255,0.04); color: #fff; font-size: 20px; cursor: pointer; }
+  .admin-sim-drive-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .admin-sim-drive-controls button:active:not(:disabled) { background: rgba(255,255,255,0.1); transform: translateY(1px); }
+  .admin-sim-drive-controls span { color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 800; }
+
+  .admin-sim-drive-toggle { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; color: rgba(255,255,255,0.8); }
+  .admin-sim-drive-toggle button { min-height: 40px; border: 0; border-radius: 999px; padding: 0 12px; background: rgba(255,255,255,0.04); color: #fff; font-size: 13px; font-weight: 900; cursor: pointer; }
+  .admin-sim-drive-toggle small { color: rgba(255,255,255,0.58); font-size: 11px; font-weight: 700; }
+  .admin-sim-drive-toggle small { grid-column: 1 / -1; }
+
   .admin-sim-actions button:disabled { opacity: 0.36; cursor: not-allowed; transform: none; box-shadow: none; }
 
   .admin-simulator-trigger { border-radius: 18px; padding: 14px 18px; background: radial-gradient(circle at 10% 20%, rgba(34,240,189,0.06), transparent), rgba(2,6,8,0.4); color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
@@ -2085,27 +2315,34 @@ const adminStyles = `
 
   .admin-sim-trigger-btn { flex: 0 0 auto; min-height: 46px; border: 0; border-radius: 999px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color: #04110f; font-weight: 900; cursor: pointer; box-shadow: 0 18px 44px rgba(4,199,244,0.12); }
 
-  .admin-simulator-modal { width: min(1200px, calc(100vw - 36px)); height: calc(100vh - 36px); max-height: calc(100vh - 36px); border-radius: 22px; background: linear-gradient(180deg, rgba(3,6,10,0.95), rgba(3,6,10,0.94)); color: #f8fffd; padding: 18px; display: grid; grid-template-rows: auto 1fr; gap: 14px; box-shadow: 0 40px 120px rgba(0,0,0,0.6); overflow: hidden; }
+  .admin-simulator-modal { width: min(1440px, calc(100vw - 32px)); height: min(900px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); border-radius: clamp(16px, 2vw, 26px); background: radial-gradient(circle at 18% 0%, rgba(32,245,211,0.08), transparent 34%), linear-gradient(180deg, rgba(3,6,10,0.96), rgba(3,6,10,0.94)); color: #f8fffd; padding: clamp(12px, 1.4vw, 20px); display: grid; grid-template-rows: auto minmax(0, 1fr); gap: clamp(10px, 1.1vw, 16px); box-shadow: 0 40px 120px rgba(0,0,0,0.64); overflow: hidden; animation: adminSimModalIn .34s cubic-bezier(.2,.8,.2,1); }
 
   .admin-map-picker-modal { width: min(1180px, calc(100vw - 36px)); height: calc(100vh - 36px); max-height: calc(100vh - 36px); border-radius: 22px; background: linear-gradient(180deg, rgba(3,6,10,0.95), rgba(3,6,10,0.94)); color: #f8fffd; padding: 18px; display: grid; grid-template-rows: auto auto minmax(220px, 1fr) auto; gap: 14px; box-shadow: 0 40px 120px rgba(0,0,0,0.6); overflow: hidden; }
 
-  .admin-sim-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .admin-sim-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; min-height: 0; }
   .admin-sim-modal-header p { margin: 0 0 6px; color: var(--accent-a); font-size: 11px; letter-spacing: .16em; font-weight: 900; }
-  .admin-sim-modal-header h2 { margin: 0; font-size: 22px; font-weight: 900; }
+  .admin-sim-modal-header h2 { margin: 0; font-size: clamp(19px, 2.2vw, 28px); font-weight: 900; }
   .admin-sim-modal-header span { display: block; margin-top: 6px; color: rgba(248,255,253,.76); font-size: 12px; font-weight: 700; }
   .admin-sim-modal-header .admin-preview-close { background: rgba(255,255,255,0.04); color: #fff; }
 
-  .admin-sim-modal-body { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 480px); gap: 16px; overflow: hidden; -webkit-overflow-scrolling: touch; }
+  .admin-sim-modal-body { min-height: 0; display: grid; grid-template-columns: minmax(520px, 1fr) minmax(340px, 0.42fr); gap: clamp(12px, 1.3vw, 18px); overflow: hidden; -webkit-overflow-scrolling: touch; }
 
-  .admin-sim-live-map { position: relative; min-height: 0; border-radius: 18px; overflow: hidden; background: #0b1416; box-shadow: inset 0 -60px 120px rgba(0,0,0,0.4); }
-  .admin-sim-live-map .mobility-map { height: 100%; min-height: 100%; margin: 0; border-radius: 18px; }
+  .admin-sim-live-map { position: relative; min-height: 0; border-radius: clamp(14px, 1.5vw, 22px); overflow: hidden; background: #0b1416; box-shadow: inset 0 -60px 120px rgba(0,0,0,0.34), 0 18px 60px rgba(0,0,0,0.28); isolation: isolate; }
+  .admin-sim-live-map::after { content: ""; position: absolute; inset: 0; z-index: 7; pointer-events: none; background: radial-gradient(circle at 50% 64%, transparent 0 42%, rgba(4,10,12,0.16) 82%, rgba(4,10,12,0.34) 100%); opacity: .74; mix-blend-mode: multiply; }
+  .admin-sim-live-map .mobility-map { height: 100%; min-height: 100%; margin: 0; border-radius: inherit; }
 
-  .admin-sim-navigation-hud { position: absolute; top: 18px; left: 18px; z-index: 8; width: min(420px, calc(100% - 36px)); border-radius: 14px; padding: 16px 18px; background: linear-gradient(180deg, rgba(2,8,10,0.86), rgba(2,8,10,0.72)); color: #f8fffd; box-shadow: 0 22px 60px rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: grid; gap: 4px; pointer-events: none; border: 1px solid rgba(255,255,255,0.02); }
+  .admin-sim-navigation-hud { position: absolute; top: clamp(10px, 1.6vw, 18px); left: clamp(10px, 1.6vw, 18px); z-index: 8; width: min(44rem, calc(100% - clamp(20px, 3.2vw, 36px))); max-width: 64%; border-radius: clamp(12px, 1.2vw, 16px); padding: clamp(12px, 1.35vw, 18px); background: linear-gradient(180deg, rgba(2,8,10,0.86), rgba(2,8,10,0.72)); color: #f8fffd; box-shadow: 0 22px 60px rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: grid; gap: 4px; pointer-events: none; border: 1px solid rgba(255,255,255,0.02); transform-origin: top left; }
   .admin-sim-navigation-hud span { font-size: 12px; font-weight: 800; color: var(--accent-a); text-transform: uppercase; letter-spacing: .08em; }
-  .admin-sim-navigation-hud strong { font-size: clamp(22px, 3.4vw, 36px); line-height: 1.02; font-weight: 900; color: #fff; }
+  .admin-sim-navigation-hud strong { font-size: clamp(24px, 3.1vw, 48px); line-height: 1.02; font-weight: 900; color: #fff; }
   .admin-sim-navigation-hud small { font-size: 13px; color: rgba(255,255,255,0.72); font-weight: 700; }
+  .admin-sim-navigation-hud.is-arrived { overflow: hidden; border-color: rgba(32, 245, 211, 0.24); background: linear-gradient(135deg, rgba(4, 20, 18, 0.92), rgba(9, 48, 41, 0.78)); box-shadow: 0 24px 70px rgba(0,0,0,0.58), 0 0 0 1px rgba(32,245,211,0.08), 0 0 38px rgba(32,245,211,0.16); animation: adminArrivalFloat 1.8s ease-in-out infinite alternate; }
+  .admin-sim-navigation-hud.is-arrived::after { content: ""; position: absolute; inset: -40% auto -40% -35%; width: 45%; transform: rotate(18deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent); animation: adminArrivalShine 2.8s ease-in-out infinite; }
+  .admin-sim-navigation-hud.is-arrived span { color: #20f5d3; }
+  .admin-sim-navigation-hud.is-arrived small { color: rgba(234,255,250,0.82); }
+  @keyframes adminArrivalFloat { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+  @keyframes adminArrivalShine { 0%, 34% { left: -50%; opacity: 0; } 48% { opacity: 1; } 72%, 100% { left: 112%; opacity: 0; } }
 
-  .admin-sim-control-panel { min-height: 0; display: grid; gap: 12px; align-content: start; overflow-y: auto; padding-right: 8px; }
+  .admin-sim-control-panel { min-height: 0; display: grid; gap: 12px; align-content: start; overflow-y: auto; padding-right: 8px; scroll-behavior: smooth; overscroll-behavior: contain; }
 
   .admin-sim-modal-body label { display: grid; gap: 6px; color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 800; }
   .admin-sim-modal-body select { width: 100%; min-height: 46px; border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 0 12px; background: rgba(255,255,255,0.02); color: #fff; outline: 0; font-weight: 700; }
@@ -2133,7 +2370,77 @@ const adminStyles = `
   .admin-map-picker-coords { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 700; }
   .admin-map-picker-footer .approve { min-height: 48px; border: 0; border-radius: 12px; padding: 0 20px; background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color: #04110f; font-weight: 900; cursor: pointer; white-space: nowrap; }
 
-  @media (max-width: 760px) { .admin-sim-modal-body { grid-template-columns: 1fr; grid-template-rows: minmax(44vh, 1fr) auto; } .admin-sim-live-map { min-height: 44vh; } .admin-map-picker-map { min-height: 50vh; } }
+  @keyframes adminSimModalIn { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  @media (min-width: 1180px) and (min-aspect-ratio: 13 / 9) {
+    .admin-simulator-modal { width: min(1540px, calc(100vw - 36px)); }
+    .admin-sim-modal-body { grid-template-columns: minmax(620px, 1.12fr) minmax(360px, .48fr); }
+  }
+
+  @media (max-width: 980px) {
+    .admin-simulator-modal { width: calc(100vw - 20px); height: calc(100dvh - 20px); max-height: calc(100dvh - 20px); }
+    .admin-sim-modal-body { grid-template-columns: 1fr; grid-template-rows: minmax(52dvh, 1fr) minmax(220px, .62fr); overflow-y: auto; }
+    .admin-sim-live-map { min-height: 52dvh; }
+    .admin-sim-control-panel { overflow: visible; padding-right: 0; }
+    .admin-sim-navigation-hud { max-width: min(560px, calc(100% - 20px)); }
+    .admin-map-picker-map { min-height: 50vh; }
+  }
+
+  @media (orientation: landscape) and (max-height: 620px) {
+    .admin-preview-backdrop { padding: 8px; }
+    .admin-simulator-modal { width: calc(100vw - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); padding: 10px; border-radius: 16px; gap: 8px; }
+    .admin-sim-modal-header p { margin-bottom: 2px; font-size: 9px; }
+    .admin-sim-modal-header h2 { font-size: 18px; }
+    .admin-sim-modal-header span { margin-top: 3px; font-size: 11px; }
+    .admin-sim-modal-header .admin-preview-close { width: 40px; height: 40px; border-radius: 11px; }
+    .admin-sim-modal-body { grid-template-columns: minmax(0, 1fr) minmax(300px, 38vw); grid-template-rows: minmax(0, 1fr); gap: 10px; overflow: hidden; }
+    .admin-sim-live-map { min-height: 0; }
+    .admin-sim-control-panel { overflow-y: auto; padding-right: 6px; gap: 9px; }
+    .admin-sim-navigation-hud { max-width: 56%; padding: 10px 12px; border-radius: 12px; }
+    .admin-sim-navigation-hud strong { font-size: clamp(22px, 4.8vh, 34px); }
+    .admin-sim-navigation-hud small { font-size: 11px; }
+    .admin-sim-steps, .admin-sim-location-card { display: none; }
+    .admin-sim-drive-controls { padding: 9px; }
+    .admin-sim-drive-controls button { width: 40px; height: 40px; }
+    .admin-sim-actions .admin-sim-start { min-height: 46px; }
+  }
+
+  @media (orientation: landscape) and (max-height: 760px) {
+    .admin-preview-backdrop { padding: 8px; align-items: stretch; }
+    .admin-simulator-modal { width: calc(100vw - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: 18px; }
+    .admin-sim-modal-body { grid-template-columns: minmax(0, 1fr) minmax(300px, 40vw); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+    .admin-sim-live-map { min-height: 0; }
+    .admin-sim-control-panel { overflow-y: auto; padding-right: 6px; }
+    .admin-sim-navigation-hud { width: min(460px, 56vw); max-width: 56vw; padding: 11px 13px; }
+    .admin-sim-navigation-hud strong { font-size: clamp(22px, 5vh, 36px); }
+    .admin-sim-drive-controls { padding: 9px; }
+    .admin-sim-drive-controls button { width: 40px; height: 40px; }
+  }
+
+  @media (orientation: portrait) and (max-width: 760px) {
+    .admin-preview-backdrop { padding: 0; align-items: stretch; }
+    .admin-simulator-modal { width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; padding: 10px; }
+    .admin-sim-modal-body { grid-template-rows: minmax(58dvh, 62dvh) minmax(0, 1fr); gap: 10px; }
+    .admin-sim-live-map { min-height: 58dvh; border-radius: 18px; }
+    .admin-sim-navigation-hud { width: calc(100% - 20px); max-width: calc(100% - 20px); }
+    .admin-sim-navigation-hud strong { font-size: clamp(28px, 8vw, 42px); }
+  }
+
+  @media (orientation: portrait) and (max-width: 520px) {
+    .admin-sim-modal-header h2 { font-size: 19px; }
+    .admin-sim-modal-header span { font-size: 11px; }
+    .admin-sim-navigation-hud { top: 10px; left: 10px; width: calc(100% - 20px); max-width: calc(100% - 20px); padding: 12px; }
+    .admin-sim-navigation-hud small { font-size: 12px; }
+    .admin-sim-control-panel { gap: 10px; }
+    .admin-sim-actions button { min-height: 42px; }
+  }
+
+  @media (min-aspect-ratio: 4 / 5) and (max-aspect-ratio: 5 / 4) and (max-width: 1100px) {
+    .admin-simulator-modal { width: min(94vw, 980px); height: min(94dvh, 980px); }
+    .admin-sim-modal-body { grid-template-columns: 1fr; grid-template-rows: minmax(54%, 1fr) minmax(250px, .72fr); overflow-y: auto; }
+    .admin-sim-live-map { min-height: 52dvh; }
+    .admin-sim-control-panel { overflow: visible; padding-right: 0; }
+  }
 
   .admin-sim-status { display: grid; gap: 6px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.8); font-size: 13px; font-weight: 700; }
 

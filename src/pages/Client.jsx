@@ -1,6 +1,7 @@
 //Client.jsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import messageTone from '../assets/toonomensaje.mp3'
+import { useAuth } from './AuthContext'
 import {
   ArrowLeft,
   ArrowRight,
@@ -36,8 +37,6 @@ import TripChatModal from '../components/TripChatModal'
 import {
   getAvailableDrivers,
   getAvailableDriversViaLocalProxy,
-  getOwnProfile,
-  getProfilePreviewByEmail,
   requestTrip,
   requestWomenMode,
   supabase,
@@ -61,6 +60,8 @@ import {
 } from '../lib/placeSearch'
 import { geocodeAddress, loadGoogleMaps, reverseGeocode } from '../lib/googleMaps'
 import { calculateFare } from '../lib/fareCalculator'
+import { MODE_LABELS } from '../lib/performanceProfile'
+import { usePerformanceProfile } from '../hooks/usePerformanceProfile'
 
 const DEFAULT_CENTER = { lat: -25.5167, lng: -54.6167 }
 const ACTIVE_STATUSES = ['pending', 'accepted', 'arriving', 'in_progress']
@@ -75,7 +76,9 @@ const MODE_ICON_LABEL = {
   ella: '♀',
 }
 
-const VEHICLE_CATEGORY_OPTIONS = RIDE_CATEGORY_OPTIONS.filter((category) => category.code !== 'ella')
+const VEHICLE_CATEGORY_OPTIONS = RIDE_CATEGORY_OPTIONS.filter(
+  (category) => category.code !== 'ella' && category.code !== 'all'
+)
 
 function isValidParaguayCoord(point) {
   const lat = Number(point?.lat)
@@ -475,8 +478,8 @@ function resolveRideCategoryForRequest(driver, selectedVehicleMode) {
   return 'auto_standard'
 }
 export default function Client() {
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
+  const auth = useAuth()
+  const performance = usePerformanceProfile()
   const [destination, setDestination] = useState('')
   const [destinationPoint, setDestinationPoint] = useState(null)
   const [destinationStatus, setDestinationStatus] = useState('idle')
@@ -570,38 +573,35 @@ export default function Client() {
     lastChatUnreadCountRef.current = Number(chatUnreadCount) || 0
   }, [chatUnreadCount])
 
-  useEffect(() => {
-    if (!activeTrip?.id || !user?.id) return undefined
+useEffect(() => {
+  if (!activeTrip?.id || !auth.user?.id) return undefined
 
-    const channel = supabase
-      .channel(`client-message-tone-${activeTrip.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `trip_id=eq.${activeTrip.id}`,
-        },
-        ({ new: newMessage }) => {
-          const senderId = String(newMessage?.sender_id || '')
-          const currentUserId = String(user.id || '')
+  const channel = supabase
+    .channel(`client-message-tone-${activeTrip.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `trip_id=eq.${activeTrip.id}`,
+      },
+      ({ new: newMessage }) => {
+        const senderId = String(newMessage?.sender_id || '')
+        const currentUserId = String(auth.user?.id || '')
 
-          // No sonar por mensajes que escribió el mismo cliente.
-          if (!senderId || senderId === currentUserId) return
+        if (!senderId || senderId === currentUserId) return
+        if (chatOpen) return
 
-          // Si el chat está abierto, no notificar con sonido.
-          if (chatOpen) return
+        playMessageNotificationSound()
+      }
+    )
+    .subscribe()
 
-          playMessageNotificationSound()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [activeTrip?.id, user?.id, chatOpen])
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}, [activeTrip?.id, auth.user?.id, chatOpen])
 
   const hasDestination = Boolean(destination.trim())
   const canOpenDrivers = Boolean(destinationPoint)
@@ -616,6 +616,7 @@ export default function Client() {
     const autoStandardFare = calculateFare('auto_standard', distanceMeters, durationSeconds)
     const comfortFare = calculateFare('comfort', distanceMeters, durationSeconds)
     const premiumFare = calculateFare('premium', distanceMeters, durationSeconds)
+    const campusFare = calculateFare('campus', distanceMeters, durationSeconds)
 
     return {
       moto: motoFare.totalPassengerPays,
@@ -623,6 +624,7 @@ export default function Client() {
       ella: autoStandardFare.totalPassengerPays,
       comfort: comfortFare.totalPassengerPays,
       premium: premiumFare.totalPassengerPays,
+      campus: campusFare.totalPassengerPays,
       details: {
         distanceKm: autoStandardFare.distanceKm,
         durationMin: autoStandardFare.durationMin,
@@ -630,7 +632,7 @@ export default function Client() {
     }
   }, [destinationPoint, clientLocation, routeGuidance])
 
-  const clientCanUseElla = canUseWomenMode(profile)
+  const clientCanUseElla = canUseWomenMode(auth.profile)
   const ellaSafetyActive = womenOnly || mode === 'ella'
   const vehicleMode = mode === 'ella' ? 'all' : mode
 
@@ -650,9 +652,9 @@ export default function Client() {
 
   const routePrice = selectedDriver ? getDriverFare(selectedDriver) : currentFare
 
-  const accountEmail = user?.email || profile?.email || localStorage.getItem('michofer_last_email') || ''
+  const accountEmail = auth.user?.email || auth.profile?.email || localStorage.getItem('michofer_last_email') || ''
   const selectedModeMeta = useMemo(() => getRideCategoryMeta(vehicleMode), [vehicleMode])
-  const womenModeStatus = getWomenModeStatus(profile)
+  const womenModeStatus = getWomenModeStatus(auth.profile)
   const destinationSuggestions = useMemo(
     () => searchLocalPlaces(destination, localPlaces, 6),
     [destination, localPlaces]
@@ -666,8 +668,22 @@ export default function Client() {
     destinationSuggestionItems.length > 0
 
   useEffect(() => {
-    init()
-  }, [])
+    if (auth.loading) return
+
+    if (auth.user) {
+      if (auth.profile?.role === 'driver') {
+        window.location.href = '/driver'
+        return
+      }
+      restoreActiveTrip(auth.user.id)
+    }
+
+    // This part runs regardless of session, to get location
+    navigator.geolocation.getCurrentPosition(
+      (pos) => handleLocationSuccess(pos),
+      () => handleLocationError()
+    )
+  }, [auth.loading, auth.user, auth.profile])
 
   useEffect(() => {
     let cancelled = false
@@ -895,17 +911,17 @@ export default function Client() {
     const interval = window.setInterval(async () => {
       const { data, error } = await supabase.from('trips').select('*').eq('id', activeTrip.id).maybeSingle()
 
-      if (data) {
+      if (data && data.id) {
         handleTripUpdate(data)
         return
       }
 
-      if (error || !user?.id) return
+      if (error || !auth.user?.id) return
 
-      const { data: liveTrip, error: liveError } = await supabase
-        .from('trips')
-        .select('*')
-        .eq('client_id', user.id)
+const { data: liveTrip, error: liveError } = await supabase
+  .from('trips')
+  .select('*, client:client_id(*), driver:driver_id(*)')
+  .eq('client_id', auth.user.id)
         .in('status', ACTIVE_STATUSES)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -925,13 +941,13 @@ export default function Client() {
       window.clearInterval(interval)
       supabase.removeChannel(channel)
     }
-  }, [activeTrip?.id, user?.id])
+  }, [activeTrip?.id, auth.user?.id])
 
   const isClientWomanProfile = Boolean(
-    profile?.gender_identity === 'woman' ||
-    profile?.women_mode_verified === true ||
-    profile?.women_mode_status === 'verified' ||
-    profile?.women_mode_requested === true
+    auth.profile?.gender_identity === 'woman' ||
+    auth.profile?.women_mode_verified === true ||
+    auth.profile?.women_mode_status === 'verified' ||
+    auth.profile?.women_mode_requested === true
   )
 
   const visibleDrivers = useMemo(() => {
@@ -967,142 +983,37 @@ export default function Client() {
     setMessage('Ese chofer ya no está disponible. Elegí otro.')
   }, [selectedDriver, visibleDrivers])
 
-  async function init() {
+  async function handleLocationSuccess(pos) {
     setLoading(true)
-
-    const cachedProfile = {
-      full_name: localStorage.getItem('michofer_last_name') || '',
-      avatar_url: localStorage.getItem('michofer_last_photo') || '',
-      role: localStorage.getItem('michofer_last_role') || 'passenger',
-      email: localStorage.getItem('michofer_last_email') || '',
+    const nextLocation = {
+      lat: Number(pos.coords.latitude),
+      lng: Number(pos.coords.longitude),
     }
-
-    if (cachedProfile.full_name || cachedProfile.avatar_url || cachedProfile.email) {
-      setProfile(cachedProfile)
+    if (!isValidParaguayCoord(nextLocation)) {
+      setClientLocation(null)
+      setLocationReady(false)
+      setLoading(false)
+      setMessage('Tu GPS devolvió una ubicación inválida. Activá ubicación precisa y probá de nuevo.')
+      return
     }
+    setClientLocation(nextLocation)
+    setLocationReady(true)
+    await loadDrivers(nextLocation)
+    setLoading(false)
+  }
 
-    let currentUser = null
-
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError) console.warn('CLIENT SESSION ERROR:', sessionError)
-      currentUser = sessionData?.session?.user || null
-    } catch (sessionError) {
-      console.warn('CLIENT SESSION FETCH ERROR:', sessionError)
-    }
-
-    setUser(currentUser)
-
-    if (currentUser) {
-      let profileData = null
-
-      try {
-        const { data, error: profileError } = await getOwnProfile()
-        profileData = data
-
-        if (profileError) {
-          console.warn('CLIENT PROFILE RPC ERROR:', profileError)
-        }
-      } catch (profileError) {
-        console.warn('CLIENT PROFILE FETCH ERROR:', profileError)
-      }
-
-      let preview = null
-      const needsProfileFallback = !profileData?.full_name || !profileData?.avatar_url
-
-      if (needsProfileFallback && currentUser.email) {
-        try {
-          const { data: previewData, error: previewError } = await getProfilePreviewByEmail(currentUser.email)
-          if (previewError) {
-            console.warn('CLIENT PROFILE PREVIEW RPC ERROR:', previewError)
-          }
-          preview = Array.isArray(previewData) ? previewData[0] : previewData
-        } catch (previewError) {
-          console.warn('CLIENT PROFILE PREVIEW FETCH ERROR:', previewError)
-        }
-      }
-
-      const storedAvatarUrl =
-        profileData?.avatar_url ||
-        preview?.avatar_url ||
-        currentUser.user_metadata?.avatar_url ||
-        localStorage.getItem('michofer_last_photo') ||
-        await findStoredAvatarUrl(currentUser.id)
-
-      const nextProfile = {
-        ...(profileData || {}),
-        full_name:
-          profileData?.full_name ||
-          preview?.full_name ||
-          currentUser.user_metadata?.full_name ||
-          localStorage.getItem('michofer_last_name') ||
-          '',
-        avatar_url: storedAvatarUrl,
-        role:
-          profileData?.role ||
-          preview?.role ||
-          currentUser.user_metadata?.role ||
-          localStorage.getItem('michofer_last_role') ||
-          'passenger',
-        email: profileData?.email || currentUser.email || localStorage.getItem('michofer_last_email') || '',
-      }
-
-      setProfile(nextProfile)
-
-      if (nextProfile.full_name) localStorage.setItem('michofer_last_name', nextProfile.full_name)
-      if (nextProfile.avatar_url) localStorage.setItem('michofer_last_photo', nextProfile.avatar_url)
-      if (nextProfile.role) localStorage.setItem('michofer_last_role', nextProfile.role)
-      if (nextProfile.email) localStorage.setItem('michofer_last_email', nextProfile.email)
-
-      const role =
-        nextProfile.role ||
-        currentUser.user_metadata?.role ||
-        localStorage.getItem('michofer_last_role') ||
-        ''
-
-      if (role === 'driver') {
-        window.location.href = '/driver'
-        return
-      }
-
-      await restoreActiveTrip(currentUser.id)
-    }
-
-        navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const nextLocation = {
-  lat: Number(pos.coords.latitude),
-  lng: Number(pos.coords.longitude),
-}
-
-if (!isValidParaguayCoord(nextLocation)) {
-  setClientLocation(null)
-  setLocationReady(false)
-  setLoading(false)
-  setMessage('Tu GPS devolvió una ubicación inválida. Activá ubicación precisa y probá de nuevo.')
-  return
-}
-
-setClientLocation(nextLocation)
-setLocationReady(true)
-await loadDrivers(nextLocation)
-setLoading(false)
-      },
-      async () => {
-        setClientLocation(null)
-        setLocationReady(false)
-        setLoading(false)
-        setMessage('Activá tu ubicación para ver choferes reales cerca de vos.')
-      },
-           { enableHighAccuracy: true, timeout: 9000, maximumAge: 1000 }
-    )
+  function handleLocationError() {
+    setClientLocation(null)
+    setLocationReady(false)
+    setLoading(false)
+    setMessage('Activá tu ubicación para ver choferes reales cerca de vos.')
   }
 
   async function handleAvatarUpload(event) {
     const file = event.target.files?.[0]
     event.target.value = ''
 
-    if (!file || !user?.id) return
+    if (!file || !auth.user?.id) return
 
     if (!file.type.startsWith('image/')) {
       setMessage('Elegí una imagen válida para tu perfil.')
@@ -1114,7 +1025,7 @@ setLoading(false)
       setMessage('')
 
       const fileExt = file.name.split('.').pop() || 'jpg'
-      const filePath = `${user.id}/avatar-${Date.now()}.${fileExt}`
+      const filePath = `${auth.user.id}/avatar-${Date.now()}.${fileExt}`
       let avatarUrl = ''
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -1147,22 +1058,12 @@ setLoading(false)
       }
 
       const { error: profileError } = await upsertOwnProfile({
-        email: user.email,
-        fullName: profile?.full_name || user.user_metadata?.full_name || '',
-        role: profile?.role || user.user_metadata?.role || 'passenger',
+        email: auth.user.email,
+        fullName: auth.profile?.full_name || auth.user.user_metadata?.full_name || '',
+        role: auth.profile?.role || auth.user.user_metadata?.role || 'passenger',
         avatarUrl,
       })
-
-      if (profileError) {
-        console.error('CLIENT PROFILE AVATAR UPDATE ERROR:', profileError)
-        setMessage(`La foto subió, pero no pude actualizar tu perfil: ${profileError.message}.`)
-        return
-      }
-
-      setProfile((current) => ({
-        ...(current || {}),
-        avatar_url: avatarUrl,
-      }))
+      // AuthContext will automatically reload the profile
       localStorage.setItem('michofer_last_photo', avatarUrl)
       setMessage('Foto de perfil actualizada.')
     } finally {
@@ -1309,15 +1210,8 @@ if (!normalized.length) {
   }
 
   async function handleLogout() {
-    try {
-      await supabase.auth.signOut({ scope: 'local' })
-    } catch (logoutError) {
-      console.warn('CLIENT LOGOUT ERROR:', logoutError)
-    } finally {
-      setUser(null)
-      setProfile(null)
-      window.location.href = '/login'
-    }
+    await auth.logout()
+    window.location.href = '/login'
   }
 
   function clearLiveTrip(messageText = '') {
@@ -1333,14 +1227,14 @@ if (!normalized.length) {
   }
 
   async function loadClientTripHistory() {
-    if (!user?.id) return
+    if (!auth.user?.id) return
 
     setTripHistoryLoading(true)
 
     const { data, error } = await supabase
       .from('trips')
       .select('*')
-      .eq('client_id', user.id)
+      .eq('client_id', auth.user.id)
       .order('created_at', { ascending: false })
       .limit(30)
 
@@ -1355,7 +1249,7 @@ if (!normalized.length) {
   }
 
   async function sendRushSignal() {
-    if (!activeTrip?.id || !activeTrip?.driver_id || !user?.id || rushSending) return
+    if (!activeTrip?.id || !activeTrip?.driver_id || !auth.user?.id || rushSending) return
 
     const lastSent = rushSentAt ? new Date(rushSentAt).getTime() : 0
     if (lastSent && Date.now() - lastSent < 60000) {
@@ -1382,7 +1276,7 @@ if (!normalized.length) {
     try {
       const { error } = await supabase.from('messages').insert({
         trip_id: activeTrip.id,
-        sender_id: user.id,
+        sender_id: auth.user.id,
         body: 'El cliente está apurado y pidió avanzar apenas sea seguro. Seguridad primero.',
       })
 
@@ -1440,7 +1334,7 @@ async function handleTripUpdate(nextTrip) {
   }
 
   if (statusChanged) {
-    const clientName = firstName(profile?.full_name || user?.email || 'Roger')
+    const clientName = firstName(auth.profile?.full_name || auth.user?.email || 'Roger')
     const driverName = firstName(driver?.name || activeTripDriver?.name || selectedDriver?.name || 'tu chofer')
 
     const statusMessages = {
@@ -1475,7 +1369,7 @@ async function handleTripUpdate(nextTrip) {
 }
 
 async function requestRide() {
-  if (!user) {
+  if (!auth.user) {
     window.location.href = '/login'
     return
   }
@@ -1508,7 +1402,7 @@ async function requestRide() {
     return
   }
 
-  if (selectedDriverId === user.id) {
+  if (selectedDriverId === auth.user.id) {
     setMessage('No podés solicitarte un viaje a tu misma cuenta. Probá cliente y chofer con correos distintos.')
     return
   }
@@ -1619,23 +1513,23 @@ async function requestRide() {
       return
     }
 
-    if (!canUseWomenMode(profile)) {
+    if (!canUseWomenMode(auth.profile)) {
       setCategorySheet(getRideCategoryMeta('ella'))
       return
     }
 
-    setWomenOnly(true)
+    setWomenOnly(true) // This will trigger the filter in visibleDrivers
     setSelectedDriver(null)
     setMessage('')
   }
 
   async function handleWomenModeRequest() {
-    if (!user) {
+    if (!auth.user) {
       window.location.href = '/login'
       return
     }
 
-    if (canUseWomenMode(profile)) {
+    if (canUseWomenMode(auth.profile)) {
       setWomenOnly(true)
       setSelectedDriver(null)
       setCategorySheet(null)
@@ -1646,14 +1540,7 @@ async function requestRide() {
       setWomenRequesting(true)
       const { data, error } = await requestWomenMode('woman')
 
-      if (error) throw error
-
-      setProfile((current) => ({
-        ...(current || {}),
-        ...(data || {}),
-        women_mode_requested: true,
-        women_mode_status: data?.women_mode_status || 'requested',
-      }))
+      // AuthContext will reload the profile automatically
       setCategorySheet(null)
       setMessage('Solicitud enviada. La preferencia de confianza se activa cuando admin verifica tu perfil.')
     } catch (error) {
@@ -1796,7 +1683,7 @@ async function requestRide() {
     }
   }
 async function submitClientDriverRating() {
-  if (!ratingTrip?.id || !ratingTrip?.driver_id || !user?.id) {
+  if (!ratingTrip?.id || !ratingTrip?.driver_id || !auth.user?.id) {
     setMessage('No pude identificar el viaje para calificar.')
     return
   }
@@ -1809,7 +1696,7 @@ async function submitClientDriverRating() {
       .upsert(
         {
           trip_id: ratingTrip.id,
-          rater_id: user.id,
+          rater_id: auth.user.id,
           ratee_id: ratingTrip.driver_id,
           type: 'client_to_driver',
           stars: driverRatingStars,
@@ -1838,9 +1725,9 @@ async function submitClientDriverRating() {
   }
 }
 async function cancelActiveTrip() {
-  if (!activeTrip?.id || !user?.id) return
+  if (!activeTrip?.id || !auth.user?.id) return
 
-  if (activeTrip.client_id && activeTrip.client_id !== user.id) {
+  if (activeTrip.client_id && activeTrip.client_id !== auth.user.id) {
     setMessage('No podés cancelar un viaje que no pertenece a tu cuenta.')
     return
   }
@@ -1856,7 +1743,7 @@ async function cancelActiveTrip() {
       console.error('[MiChofer cancel_own_trip_v2 ERROR]', {
         error,
         activeTrip,
-        userId: user.id,
+        userId: auth.user.id,
       })
 
       setMessage(
@@ -2088,7 +1975,7 @@ setMessage('')
     mapDestinationMarker?.lng,
   ])
 
-  const mapAvatar = shouldTrackDriverOnMap ? liveDriverPoint?.avatar : profile?.avatar_url
+  const mapAvatar = shouldTrackDriverOnMap ? liveDriverPoint?.avatar : auth.profile?.avatar_url
 
   const mapDrivers = useMemo(() => {
     return activeTrip ? [] : visibleDrivers
@@ -2165,7 +2052,7 @@ setMessage('')
               onClick={() => setShowMenu(true)}
               aria-label="Abrir cuenta"
             >
-              {profile?.avatar_url ? <img src={profile.avatar_url} alt="Perfil" /> : <UserRound size={20} />}
+              {auth.profile?.avatar_url ? <img src={auth.profile.avatar_url} alt="Perfil" /> : <UserRound size={20} />}
             </button>
           </section>
 
@@ -2724,6 +2611,10 @@ setMessage('')
           title: 'Premium',
           label: 'Alta gama',
         },
+        campus: {
+          title: 'Campus',
+          label: 'Universitario',
+        },
       }
 
       const copy = modeCopy[category.code] || {
@@ -3007,8 +2898,8 @@ setMessage('')
           tripId={activeTrip?.id}
           open={chatOpen && canChatInRide}
           onClose={() => setChatOpen(false)}
-          onUnreadCountChange={setChatUnreadCount}
-          currentUser={user}
+          onUnreadCountChange={setChatUnreadCount} // This can stay, it's UI state
+          currentUser={auth.user}
           trip={activeTrip}
         />
 
@@ -3047,12 +2938,12 @@ setMessage('')
     disabled={avatarUploading}
     aria-label="Ver foto de perfil"
   >
-    {profile?.avatar_url ? <img src={profile.avatar_url} alt="Perfil" /> : <UserRound size={34} />}
+    {auth.profile?.avatar_url ? <img src={auth.profile.avatar_url} alt="Perfil" /> : <UserRound size={34} />}
   </button>
 
   <div className="mc-account-profile-copy">
     <span>Cliente MiChofer</span>
-    <h2>{profile?.full_name || 'Hola'}</h2>
+    <h2>{auth.profile?.full_name || 'Hola'}</h2>
     <small>{accountEmail || 'Cuenta verificada'}</small>
   </div>
 </section>
@@ -3100,11 +2991,57 @@ setMessage('')
               </div>
 
               <div className="account-section">
-                <button type="button" onClick={refreshLocation}>
-                  <Share2 size={19} />
-                  <span>Compartir ubicación</span>
+                <button type="button" onClick={() => { loadClientTripHistory(); setShowTripsHistory(true); }}>
+                  <Clock size={19} />
+                  <span>Mis viajes</span>
                   <ChevronRight size={17} />
                 </button>
+              </div>
+
+              <div className="account-section">
+                <button type="button" onClick={refreshLocation}>
+                  <Share2 size={19} />
+                  <span>Calibrar ubicación</span>
+                  <ChevronRight size={17} />
+                </button>
+              </div>
+
+              <div className="account-section performance-card">
+                <span className="account-section-label">Rendimiento de la aplicación</span>
+                <p>MiChofer adapta automáticamente el mapa y las animaciones para funcionar mejor en tu dispositivo.</p>
+                {performance.slowNotice && (
+                  <div className="performance-slow-notice">
+                    ¿MiChofer está funcionando lento? Probá el test de rendimiento desde Configuración.
+                  </div>
+                )}
+                <div className="performance-card-status">
+                  <div>
+                    <span>Optimización automática</span>
+                    <strong>{performance.mode === 'auto' ? 'Activada' : 'Desactivada'}</strong>
+                  </div>
+                  <div>
+                    <span>Perfil actual</span>
+                    <strong>{performance.profileLabel}</strong>
+                  </div>
+                </div>
+                <div className="performance-mode-selector">
+                  {['auto', 'low', 'medium', 'high'].map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      className={performance.mode === mode ? 'active' : ''}
+                      onClick={() => performance.setManualProfile(mode)}
+                    >
+                      <span>{MODE_LABELS[mode]}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="performance-card-actions">
+                  <button type="button" onClick={() => performance.runPerformanceTest({ force: true })} disabled={performance.isTesting}>
+                    <RefreshCw size={17} />
+                    <span>{performance.isTesting ? 'Analizando...' : 'Volver a realizar el test'}</span>
+                  </button>
+                </div>
               </div>
 
               <div className="account-section account-support-section mc-account-legal-card">
@@ -3165,12 +3102,12 @@ setMessage('')
                     </button>
 
                     <div className="avatar-preview-photo">
-                      {profile?.avatar_url ? <img src={profile.avatar_url} alt="Foto de perfil" /> : <UserRound size={64} />}
+                      {auth.profile?.avatar_url ? <img src={auth.profile.avatar_url} alt="Foto de perfil" /> : <UserRound size={64} />}
                     </div>
 
                     <div className="avatar-preview-copy">
                       <span>MiChofer ID</span>
-                      <h3>{profile?.full_name || 'Cliente MiChofer'}</h3>
+                      <h3>{auth.profile?.full_name || 'Cliente MiChofer'}</h3>
                     </div>
 
                     <button
