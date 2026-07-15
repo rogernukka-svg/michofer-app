@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, CalendarClock, CarFront, ChevronRight, MapPin, ReceiptText } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { isAdminSimulatorTrip, supabase } from '../lib/supabase'
 
 function formatGs(value) {
   return `${Number(value || 0).toLocaleString('es-PY')} Gs.`
@@ -60,7 +60,7 @@ export default function Trips() {
       return
     }
 
-    setTrips(data || [])
+    setTrips((data || []).filter((trip) => !isAdminSimulatorTrip(trip)))
     setLoading(false)
   }
 

@@ -31,6 +31,7 @@ import InteractiveRouteMap from '../components/InteractiveRouteMap'
 import TripChatModal from '../components/TripChatModal'
 import {
   getOwnDriverTrips,
+  isAdminSimulatorTrip,
   requestDriverCategory,
   supabase,
   updateOwnDriverStatus,
@@ -827,20 +828,30 @@ export default function Driver() {
         ? 'Llegada'
         : 'Crucero suave'
   const gpsAccuracy = Number(driverPoint?.accuracy)
-  const gpsSignalClass = !Number.isFinite(gpsAccuracy)
+  const navigationHealthStatus = String(routeGuidance?.navigationHealth?.status || '')
+  const navigationHealthSignal = String(routeGuidance?.navigationHealth?.signalStatus || '')
+  const gpsSignalClass = navigationHealthStatus === 'wrong_way' || navigationHealthStatus === 'off_route'
+    ? 'gps-weak'
+    : navigationHealthSignal === 'good'
+      ? 'gps-precise'
+      : navigationHealthSignal === 'adjusting'
+        ? 'gps-stable'
+        : navigationHealthSignal === 'weak'
+          ? 'gps-weak'
+          : !Number.isFinite(gpsAccuracy)
     ? 'gps-waiting'
     : gpsAccuracy <= 25
       ? 'gps-precise'
       : gpsAccuracy <= 60
         ? 'gps-stable'
         : 'gps-weak'
-  const gpsSignalText = !Number.isFinite(gpsAccuracy)
+  const gpsSignalText = routeGuidance?.navigationHealth?.label || (!Number.isFinite(gpsAccuracy)
     ? 'GPS ajustando'
     : gpsAccuracy <= 25
       ? 'GPS preciso'
       : gpsAccuracy <= 60
         ? 'GPS estable'
-        : 'GPS debil'
+        : 'GPS debil')
   const hasClientRushNotice = Boolean(
     clientRushNotice ||
     activeTrip?.client_rush_at ||
@@ -1012,6 +1023,7 @@ export default function Driver() {
 
   nextTrips = (nextTrips || [])
     .filter((trip) => trip?.id)
+    .filter((trip) => !isAdminSimulatorTrip(trip))
     .filter((trip) => String(trip.driver_id || '') === String(effectiveDriverId))
     .filter((trip) => ACTIVE_STATUSES.includes(String(trip.status || '').toLowerCase()))
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
@@ -1167,7 +1179,7 @@ async function loadDriverTripHistory() {
     return
   }
 
-  setTripHistory(data || [])
+  setTripHistory((data || []).filter((trip) => !isAdminSimulatorTrip(trip)))
 }
 
 const getStoredLocation = useCallback(() => {

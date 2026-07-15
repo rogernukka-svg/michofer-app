@@ -125,6 +125,10 @@ const MIN_MOVE_FOR_UPDATE_M = 15
 const MIN_MOVE_FOR_UPDATE_MOVING_M = 3
 const GPS_STATIONARY_SPEED_MPS = 0.35
 const GPS_ROUTE_BLEND_MAX_METERS = 80
+const GPS_HEALTH_STALE_MS = 6500
+const GPS_HEALTH_WEAK_ACCURACY = 70
+const GPS_HEALTH_UNUSABLE_ACCURACY = 110
+const GPS_HEALTH_WRONG_WAY_DEG = 112
 
 // Animation durations (ms)
 const DURATION_NEAR = 900
@@ -139,6 +143,7 @@ const VEHICLE_GLIDE_HEADING_RESPONSE_MS = 640
 const CAMERA_GLIDE_POSITION_RESPONSE_MS = 980
 const CAMERA_GLIDE_HEADING_RESPONSE_MS = 1120
 const CAMERA_GLIDE_ZOOM_RESPONSE_MS = 1300
+const DRIVER_ROUTE_UNDER_CAR_HIDE_METERS = 6
 
 // Theme update interval
 const THEME_CHECK_INTERVAL_MS = 300000 // 5 min
@@ -407,6 +412,157 @@ function isGoodGpsPoint(point, previousPoint) {
   }
 
   return true
+}
+
+function getNavigationHealth({
+  point,
+  previousPoint,
+  projection = null,
+  routeHeading = null,
+  heading = null,
+  timestamp = Date.now(),
+  now = Date.now(),
+} = {}) {
+  const accuracy = Number(point?.accuracy)
+  const speed = Number(point?.speed)
+  const effectiveSpeed = Number.isFinite(speed) ? speed : estimateSpeedMps(previousPoint, point)
+  const ageMs = Math.max(0, now - (Number(timestamp) || now))
+  const projectionDistance = Number(projection?.distance)
+  const headingNumber = Number(heading ?? point?.heading)
+  const routeHeadingNumber = Number(routeHeading)
+  const reliableHeading = isReliableHeading({
+    ...point,
+    heading: headingNumber,
+    speed: effectiveSpeed,
+    accuracy,
+  })
+  const headingDiff = reliableHeading && Number.isFinite(routeHeadingNumber)
+    ? Math.abs(shortestAngleDiff(routeHeadingNumber, headingNumber))
+    : 0
+  const wrongWay = reliableHeading && Number(effectiveSpeed) >= 1.4 && headingDiff >= GPS_HEALTH_WRONG_WAY_DEG
+  const softOffRoute = Number.isFinite(projectionDistance) && projectionDistance >= NAVIGATION_SOFT_OFF_ROUTE_METERS
+  const hardOffRoute = Number.isFinite(projectionDistance) && projectionDistance >= NAVIGATION_HARD_OFF_ROUTE_METERS
+  const stale = ageMs > GPS_HEALTH_STALE_MS
+  const unusableAccuracy = Number.isFinite(accuracy) && accuracy > GPS_HEALTH_UNUSABLE_ACCURACY
+  const weakAccuracy = Number.isFinite(accuracy) && accuracy > GPS_HEALTH_WEAK_ACCURACY
+  const stableAccuracy = Number.isFinite(accuracy) && accuracy <= 25
+
+  if (stale) {
+    return {
+      status: 'stale',
+      signalStatus: 'weak',
+      label: 'GPS sin actualizar',
+      acceptPoint: false,
+      shouldReroute: false,
+      wrongWay: false,
+      softOffRoute,
+      hardOffRoute,
+      reason: 'gps-stale',
+      ageMs,
+      headingDiff,
+      projectionDistance,
+    }
+  }
+
+  if (unusableAccuracy) {
+    return {
+      status: 'weak',
+      signalStatus: 'weak',
+      label: 'GPS debil',
+      acceptPoint: false,
+      shouldReroute: false,
+      wrongWay: false,
+      softOffRoute,
+      hardOffRoute,
+      reason: 'gps-accuracy-unusable',
+      ageMs,
+      headingDiff,
+      projectionDistance,
+    }
+  }
+
+  if (wrongWay) {
+    return {
+      status: 'wrong_way',
+      signalStatus: 'weak',
+      label: 'Sentido contrario',
+      acceptPoint: true,
+      shouldReroute: true,
+      wrongWay: true,
+      softOffRoute,
+      hardOffRoute,
+      reason: 'wrong-way-heading',
+      ageMs,
+      headingDiff,
+      projectionDistance,
+    }
+  }
+
+  if (hardOffRoute) {
+    return {
+      status: 'off_route',
+      signalStatus: weakAccuracy ? 'weak' : 'adjusting',
+      label: 'Recalculando ruta',
+      acceptPoint: true,
+      shouldReroute: true,
+      wrongWay: false,
+      softOffRoute,
+      hardOffRoute,
+      reason: 'off-route-distance',
+      ageMs,
+      headingDiff,
+      projectionDistance,
+    }
+  }
+
+  if (softOffRoute) {
+    return {
+      status: 'possible_off_route',
+      signalStatus: weakAccuracy ? 'weak' : 'adjusting',
+      label: 'Verificando ruta',
+      acceptPoint: true,
+      shouldReroute: false,
+      wrongWay: false,
+      softOffRoute,
+      hardOffRoute,
+      reason: 'possible-off-route',
+      ageMs,
+      headingDiff,
+      projectionDistance,
+    }
+  }
+
+  if (weakAccuracy) {
+    return {
+      status: 'weak',
+      signalStatus: 'weak',
+      label: 'GPS debil',
+      acceptPoint: true,
+      shouldReroute: false,
+      wrongWay: false,
+      softOffRoute,
+      hardOffRoute,
+      reason: 'gps-accuracy-weak',
+      ageMs,
+      headingDiff,
+      projectionDistance,
+    }
+  }
+
+  return {
+    status: stableAccuracy ? 'excellent' : 'usable',
+    signalStatus: stableAccuracy ? 'good' : 'adjusting',
+    label: stableAccuracy ? 'GPS preciso' : 'GPS ajustando',
+    acceptPoint: true,
+    shouldReroute: false,
+    wrongWay: false,
+    softOffRoute,
+    hardOffRoute,
+    reason: stableAccuracy ? 'gps-excellent' : 'gps-usable',
+    ageMs,
+    headingDiff,
+    projectionDistance,
+  }
 }
 
 function getAnimationDuration(distanceMeters) {
@@ -711,6 +867,54 @@ function getRoutePathFromProjectionWithGap(routePath, projection, gapMeters = 0)
   }
 
   return [routePoints[routePoints.length - 1]]
+}
+
+function getRoutePointBetweenProjections(routePath, fromProjection, toProjection, progress = 0.5) {
+  const routePoints = Array.isArray(routePath)
+    ? routePath.map((point) => normalizeMapPoint(point, null)).filter(isValidCoord)
+    : []
+
+  if (
+    routePoints.length < 2 ||
+    !fromProjection ||
+    !toProjection ||
+    !isValidCoord(fromProjection.point) ||
+    !isValidCoord(toProjection.point)
+  ) {
+    return isValidCoord(toProjection?.point) ? toLatLng(toProjection.point) : null
+  }
+
+  const startIndex = Math.max(1, Math.min(fromProjection.index, routePoints.length - 1))
+  const endIndex = Math.max(1, Math.min(toProjection.index, routePoints.length - 1))
+
+  if (endIndex < startIndex) return toLatLng(toProjection.point)
+
+  const clampedProgress = clamp(Number(progress), 0, 1)
+  const segments = []
+  let totalDistance = 0
+  let previous = fromProjection.point
+
+  for (let index = startIndex; index <= endIndex; index += 1) {
+    const current = index === endIndex ? toProjection.point : routePoints[index]
+    const distance = getDistanceMeters(previous, current)
+    if (distance > 0) {
+      segments.push({ from: previous, to: current, distance })
+      totalDistance += distance
+    }
+    previous = current
+  }
+
+  if (totalDistance <= 0 || !segments.length) return toLatLng(toProjection.point)
+
+  let targetDistance = totalDistance * clampedProgress
+  for (const segment of segments) {
+    if (targetDistance <= segment.distance) {
+      return interpolateLatLng(segment.from, segment.to, targetDistance / segment.distance)
+    }
+    targetDistance -= segment.distance
+  }
+
+  return toLatLng(toProjection.point)
 }
 
 function formatInstructionDistance(meters) {
@@ -1552,12 +1756,13 @@ function createClientOverlay(clientAvatar, name, google, onCenter) {
  * Creates a navigation overlay with requestAnimationFrame-based smooth animation.
  * Replaces the old CSS-transition-based overlay for smooth GPS tracking.
  */
-function createNavigationOverlaySmooth(position, google, heading = 0, spriteType = 'back', containerElement = null) {
+function createNavigationOverlaySmooth(position, google, heading = 0, spriteType = 'back', containerElement = null, options = {}) {
   const overlay = new google.maps.OverlayView()
   const element = document.createElement('div')
   const routeMask = document.createElement('div')
   const wake = document.createElement('div')
   const image = document.createElement('img')
+  const showGroundEffect = options.showGroundEffect === true
 
   // Current visual state (what the user sees)
   overlay.currentPosition = isValidCoord(position) ? toLatLng(position) : null
@@ -1581,10 +1786,13 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
   overlay._lastFrameAt = 0
   overlay._positionResponseMs = VEHICLE_GLIDE_POSITION_RESPONSE_MS
   overlay._headingResponseMs = VEHICLE_GLIDE_HEADING_RESPONSE_MS
+  overlay.onVisualFrame = null
   overlay.__modeKey = 'car'
   overlay.currentSpriteType = spriteType
 
-  element.className = 'google-navigation-marker car-navigation-marker'
+  element.className = showGroundEffect
+    ? 'google-navigation-marker car-navigation-marker has-ground-effect'
+    : 'google-navigation-marker car-navigation-marker'
   element.style.position = 'absolute'
   element.style.zIndex = String(MAP_LAYER_Z.vehicle)
   element.style.pointerEvents = 'none'
@@ -1605,8 +1813,10 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
   image.style.transformOrigin = '50% 50%'
   image.style.transform = `rotate(${overlay.currentHeading}deg)`
 
-  element.appendChild(routeMask)
-  element.appendChild(wake)
+  if (showGroundEffect) {
+    element.appendChild(routeMask)
+    element.appendChild(wake)
+  }
   element.appendChild(image)
 
   /**
@@ -1647,6 +1857,9 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     }
 
     this.draw()
+    if (typeof this.onVisualFrame === 'function') {
+      this.onVisualFrame(this.currentPosition, this.currentHeading)
+    }
 
     const remainingDistance = getDistanceMeters(this.currentPosition, targetPosition)
     const remainingHeading = Number.isFinite(Number(targetHeading))
@@ -1664,6 +1877,9 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
       if (Number.isFinite(Number(targetHeading))) {
         this.currentHeading = normalizeHeading(targetHeading)
         image.style.transform = `rotate(${this.currentHeading}deg)`
+      }
+      if (typeof this.onVisualFrame === 'function') {
+        this.onVisualFrame(this.currentPosition, this.currentHeading)
       }
       this._animating = false
       this._animFrameId = null
@@ -1981,6 +2197,7 @@ export default function InteractiveRouteMap({
   const [googleApi, setGoogleApi] = useState(null)
   const [mapTheme, setMapTheme] = useState(() => getAutoMapTheme())
   const [isFollowingDriver, setIsFollowingDriver] = useState(true)
+  const [navigationHealth, setNavigationHealth] = useState(null)
   const stableDriverNavigation = isDriverNavigationVariant(navigationMode, navigationVariant) || (navigationMode && showOriginCar)
   const cinematicNavigation = navigationCamera === 'cinematic'
   const stablePreviewNavigation = navigationCamera === 'stable'
@@ -2003,13 +2220,14 @@ export default function InteractiveRouteMap({
   }, [fitPadding, uiSafeArea])
   const isProgrammaticCameraMoveRef = useRef(false)
   const gpsSignalStatus = useMemo(() => {
+    if (navigationHealth?.signalStatus) return navigationHealth.signalStatus
     const accuracy = Number(origin?.accuracy)
     if (!Number.isFinite(accuracy)) return 'adjusting'
     if (accuracy <= 25) return 'good'
     if (accuracy <= 60) return 'adjusting'
     return 'weak'
-  }, [origin?.accuracy])
-  const gpsSignalLabel = {
+  }, [navigationHealth?.signalStatus, origin?.accuracy])
+  const gpsSignalLabel = navigationHealth?.label || {
     good: 'GPS preciso',
     adjusting: 'GPS ajustando',
     weak: 'GPS débil · manteniendo ruta',
@@ -2092,6 +2310,8 @@ export default function InteractiveRouteMap({
   const cameraPositionResponseRef = useRef(CAMERA_GLIDE_POSITION_RESPONSE_MS)
   const cameraHeadingResponseRef = useRef(CAMERA_GLIDE_HEADING_RESPONSE_MS)
   const cameraZoomResponseRef = useRef(CAMERA_GLIDE_ZOOM_RESPONSE_MS)
+  const lastVehicleRouteVisualAtRef = useRef(0)
+  const lastVehicleRouteVisualPointRef = useRef(null)
   const currentCarSpriteRef = useRef('back')
   const lastSpriteChangeAtRef = useRef(0)
   const lastSpriteHeadingRef = useRef(0)
@@ -2293,6 +2513,31 @@ export default function InteractiveRouteMap({
     }
 
     driverRouteOverlayRef.current.updatePath(routePath)
+  }
+
+  function syncRouteVisualToVehicleFrame(vehiclePoint) {
+    if (!driverPreviewNavigation || !navigationMode || !isValidCoord(vehiclePoint)) return
+
+    const routePath = activeRoutePathRef.current
+    if (!Array.isArray(routePath) || routePath.length < 2) return
+
+    const now = performance.now()
+    const lastPoint = lastVehicleRouteVisualPointRef.current
+    const movedMeters = lastPoint ? getDistanceMeters(lastPoint, vehiclePoint) : Infinity
+
+    if (now - lastVehicleRouteVisualAtRef.current < 32 && movedMeters < 0.28) return
+
+    const searchIndex = lastMatchedRouteIndexRef.current || 1
+    const visualProjection = getClosestRouteProjection(vehiclePoint, routePath, {
+      fromIndex: Math.max(1, searchIndex - NAVIGATION_BACKTRACK_TOLERANCE),
+      toIndex: Math.min(routePath.length - 1, searchIndex + NAVIGATION_FORWARD_SEARCH),
+    }) || getClosestRouteProjection(vehiclePoint, routePath)
+
+    if (!visualProjection) return
+
+    lastVehicleRouteVisualAtRef.current = now
+    lastVehicleRouteVisualPointRef.current = toLatLng(vehiclePoint)
+    updateNavigationRouteVisuals(routePath, visualProjection, lastRouteUpdateRef.current)
   }
 
   function updateNavigationRouteVisuals(routePath, projection, smartInstruction = null) {
@@ -3107,6 +3352,7 @@ const visibleDrivers = useMemo(() => {
       offRouteCountRef.current = 0
       rerouteReasonRef.current = ''
       gpsBufferRef.current = []
+      setNavigationHealth(null)
       stopDeadReckoning()
 
       return
@@ -3119,7 +3365,6 @@ const visibleDrivers = useMemo(() => {
 
     // === GPS FILTERING ===
     const rawPoint = toLatLng(origin)
-    const rawHeading = Number(origin?.heading)
     const rawSpeed = Number(origin?.speed)
     const rawAccuracy = Number(origin?.accuracy)
 
@@ -3132,11 +3377,27 @@ const visibleDrivers = useMemo(() => {
           ? originTimestamp
           : Date.now()
 
-    // Add timestamp for speed calculation
-    const pointWithTs = { ...rawPoint, heading: rawHeading, speed: rawSpeed, accuracy: rawAccuracy, _timestamp: gpsTimestamp }
     const previousPoint = lastGoodDriverPositionRef.current
-    const estimatedSpeed = estimateSpeedMps(previousPoint, pointWithTs)
+    const rawPointWithTs = { ...rawPoint, speed: rawSpeed, accuracy: rawAccuracy, _timestamp: gpsTimestamp }
+    const estimatedSpeed = estimateSpeedMps(previousPoint, rawPointWithTs)
     const effectiveSpeed = Number.isFinite(rawSpeed) ? rawSpeed : estimatedSpeed
+    const providedHeading = Number(origin?.heading)
+    const movementMeters = previousPoint ? getDistanceMeters(previousPoint, rawPoint) : 0
+    const movementHeading = previousPoint && movementMeters >= 2.2
+      ? getBearingBetweenPoints(previousPoint, rawPoint)
+      : null
+    const rawHeading = Number.isFinite(providedHeading) && !(providedHeading === 0 && Number(effectiveSpeed) < 1.4)
+      ? providedHeading
+      : Number.isFinite(Number(movementHeading))
+        ? movementHeading
+        : providedHeading
+    const pointWithTs = { ...rawPoint, heading: rawHeading, speed: rawSpeed, accuracy: rawAccuracy, _timestamp: gpsTimestamp }
+    const baseNavigationHealth = getNavigationHealth({
+      point: pointWithTs,
+      previousPoint,
+      heading: rawHeading,
+      timestamp: gpsTimestamp,
+    })
 
     // Update raw position ref
     lastRawDriverPositionRef.current = rawPoint
@@ -3146,10 +3407,13 @@ const visibleDrivers = useMemo(() => {
     let matchedProjection = null
     let nextHeading = navigationHeadingRef.current
     let acceptedGpsUpdate = !showCarAsOrigin
+    let routeConstrainedVisual = false
+    let currentNavigationHealth = baseNavigationHealth
 
     if (showCarAsOrigin) {
       // Track GPS quality
-      const goodPoint = isGoodGpsPoint(pointWithTs, previousPoint)
+      setNavigationHealth(baseNavigationHealth)
+      const goodPoint = isGoodGpsPoint(pointWithTs, previousPoint) && baseNavigationHealth.acceptPoint
 
       if (import.meta.env.DEV) {
         console.info('[MiChofer GPS]', {
@@ -3211,20 +3475,76 @@ const visibleDrivers = useMemo(() => {
 
           const snapMeters = cinematicNavigation ? 140 : NAVIGATION_SNAP_METERS
           if (!freeDriveNavigation && matchedProjection && matchedProjection.distance <= snapMeters) {
-            matchedOrigin = matchedProjection.point
-            offRouteCountRef.current = 0
-            rerouteReasonRef.current = ''
-
-            lastMatchedRouteIndexRef.current = Math.max(
-              currentIndex - NAVIGATION_BACKTRACK_TOLERANCE,
-              matchedProjection.index
-            )
-
-            lastMatchedPointRef.current = matchedOrigin
             const routeHeading = getRouteHeadingFromProjection(routePath, matchedProjection, destination)
-            nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current, {
-              preferRouteHeading: stableDriverNavigation && !isReliableHeading(origin),
+            const headingSourcePoint = { ...origin, heading: rawHeading, speed: effectiveSpeed, accuracy: rawAccuracy }
+            const routeNavigationHealth = getNavigationHealth({
+              point: { ...pointWithTs, heading: rawHeading, speed: effectiveSpeed },
+              previousPoint,
+              projection: matchedProjection,
+              routeHeading,
+              heading: rawHeading,
+              timestamp: gpsTimestamp,
             })
+            currentNavigationHealth = routeNavigationHealth
+            setNavigationHealth(routeNavigationHealth)
+            const reliableHeading = isReliableHeading(headingSourcePoint)
+            const wrongWayHeading = routeNavigationHealth.wrongWay
+
+            if (wrongWayHeading) {
+              offRouteCountRef.current += 1
+              rerouteReasonRef.current = routeNavigationHealth.reason || 'wrong-way-heading'
+              nextHeading = normalizeHeading(rawHeading)
+              const now = Date.now()
+              if (navigationMode && now - lastRerouteAtRef.current > NAVIGATION_REROUTE_COOLDOWN_MS) {
+                lastRerouteAtRef.current = now
+                routeOriginRef.current = isValidCoord(matchedOrigin) ? toLatLng(matchedOrigin) : toLatLng(origin)
+                routeSignatureRef.current = ''
+                onRouteUpdate?.({
+                  distance: isValidCoord(destination) ? getDistanceMeters(matchedOrigin, destination) : 0,
+                  duration: 0,
+                  instruction: 'Recalculando ruta...',
+                  shortInstruction: 'Recalculando',
+                  maneuver: 'recalculating',
+                  heading: nextHeading,
+                  alertLevel: 'recalculating',
+                  distanceToNextStep: 0,
+                  nextInstruction: null,
+                  nextManeuver: null,
+                  remainingMeters: isValidCoord(destination) ? getDistanceMeters(matchedOrigin, destination) : 0,
+                  progress: 0,
+                  recalculating: true,
+                  rerouteReason: rerouteReasonRef.current,
+                  navigationHealth: routeNavigationHealth,
+                })
+                setRouteRefreshToken((value) => value + 1)
+              }
+            } else {
+              const visualProjection = originOverlayRef.current?.currentPosition
+                ? getClosestRouteProjection(originOverlayRef.current.currentPosition, routePath, {
+                    fromIndex,
+                    toIndex,
+                  })
+                : null
+              const routeSmoothAlpha = clamp(getGpsSmoothingAlpha(rawAccuracy, effectiveSpeed) + 0.18, 0.24, 0.62)
+              const routeSmoothedPoint = visualProjection
+                ? getRoutePointBetweenProjections(routePath, visualProjection, matchedProjection, routeSmoothAlpha)
+                : matchedProjection.point
+
+              matchedOrigin = routeSmoothedPoint || matchedProjection.point
+              routeConstrainedVisual = true
+              offRouteCountRef.current = 0
+              rerouteReasonRef.current = ''
+
+              lastMatchedRouteIndexRef.current = Math.max(
+                currentIndex - NAVIGATION_BACKTRACK_TOLERANCE,
+                matchedProjection.index
+              )
+
+              lastMatchedPointRef.current = matchedOrigin
+              nextHeading = getBestVehicleHeading(headingSourcePoint, routeHeading, navigationHeadingRef.current, {
+                preferRouteHeading: stableDriverNavigation && !reliableHeading,
+              })
+            }
           } else if (freeDriveNavigation && matchedProjection) {
             lastMatchedRouteIndexRef.current = Math.max(
               currentIndex - NAVIGATION_BACKTRACK_TOLERANCE,
@@ -3232,7 +3552,7 @@ const visibleDrivers = useMemo(() => {
             )
             lastMatchedPointRef.current = matchedOrigin
             const routeHeading = getRouteHeadingFromProjection(routePath, matchedProjection, destination)
-            nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current, {
+            nextHeading = getBestVehicleHeading({ ...origin, heading: rawHeading, speed: effectiveSpeed, accuracy: rawAccuracy }, routeHeading, navigationHeadingRef.current, {
               preferRouteHeading: false,
             })
           } else {
@@ -3242,15 +3562,25 @@ const visibleDrivers = useMemo(() => {
             const routeHeading = matchedProjection
               ? getRouteHeadingFromProjection(routePath, matchedProjection, destination)
               : navigationHeadingRef.current
-            const headingDiff = Math.abs(shortestAngleDiff(routeHeading, navigationHeadingRef.current))
-            const softOffRoute = Number.isFinite(projectionDistance) && projectionDistance >= NAVIGATION_SOFT_OFF_ROUTE_METERS
-            const hardOffRoute = Number.isFinite(projectionDistance) && projectionDistance >= NAVIGATION_HARD_OFF_ROUTE_METERS
+            const routeNavigationHealth = getNavigationHealth({
+              point: { ...pointWithTs, heading: rawHeading, speed: effectiveSpeed },
+              previousPoint,
+              projection: matchedProjection,
+              routeHeading,
+              heading: rawHeading,
+              timestamp: gpsTimestamp,
+            })
+            currentNavigationHealth = routeNavigationHealth
+            setNavigationHealth(routeNavigationHealth)
+            const headingDiff = routeNavigationHealth.headingDiff || Math.abs(shortestAngleDiff(routeHeading, navigationHeadingRef.current))
+            const softOffRoute = routeNavigationHealth.softOffRoute
+            const hardOffRoute = routeNavigationHealth.hardOffRoute
             const headingOffRoute = softOffRoute && headingDiff >= NAVIGATION_RECALCULATE_HEADING_DEG
 
             if (softOffRoute) {
               offRouteCountRef.current += 1
               lastOffRouteAtRef.current = now
-              rerouteReasonRef.current = hardOffRoute ? 'off-route-distance' : headingOffRoute ? 'off-route-heading' : 'possible-off-route'
+              rerouteReasonRef.current = routeNavigationHealth.reason || (hardOffRoute ? 'off-route-distance' : headingOffRoute ? 'off-route-heading' : 'possible-off-route')
             } else {
               offRouteCountRef.current = 0
               rerouteReasonRef.current = ''
@@ -3279,6 +3609,7 @@ const visibleDrivers = useMemo(() => {
                 progress: 0,
                 recalculating: true,
                 rerouteReason: rerouteReasonRef.current,
+                navigationHealth: routeNavigationHealth,
               })
               setRouteRefreshToken((value) => value + 1)
             }
@@ -3291,17 +3622,20 @@ const visibleDrivers = useMemo(() => {
           }
         } else if (isValidCoord(destination)) {
           const routeHeading = getBearingBetweenPoints(matchedOrigin, destination)
-          nextHeading = getBestVehicleHeading(origin, routeHeading, navigationHeadingRef.current, {
-            preferRouteHeading: stableDriverNavigation && !isReliableHeading(origin),
+          const headingSourcePoint = { ...origin, heading: rawHeading, speed: effectiveSpeed, accuracy: rawAccuracy }
+          nextHeading = getBestVehicleHeading(headingSourcePoint, routeHeading, navigationHeadingRef.current, {
+            preferRouteHeading: stableDriverNavigation && !isReliableHeading(headingSourcePoint),
           })
         }
 
-        matchedOrigin = smoothVisualPosition(
-          visualDriverPositionRef.current || originOverlayRef.current?.currentPosition || previousPoint,
-          matchedOrigin,
-          rawAccuracy,
-          effectiveSpeed
-        )
+        if (!routeConstrainedVisual) {
+          matchedOrigin = smoothVisualPosition(
+            visualDriverPositionRef.current || originOverlayRef.current?.currentPosition || previousPoint,
+            matchedOrigin,
+            rawAccuracy,
+            effectiveSpeed
+          )
+        }
 
         lastKnownPositionRef.current = matchedOrigin
       } else {
@@ -3373,6 +3707,7 @@ const visibleDrivers = useMemo(() => {
             cameraHeightMeters: previewCameraProfile?.visualHeightMeters,
             cameraZoom: previewCameraProfile?.zoom,
             cameraTilt: previewCameraProfile?.tilt,
+            navigationHealth: currentNavigationHealth,
           }
 
           lastRouteUpdateRef.current = navUpdate
@@ -3412,8 +3747,12 @@ const visibleDrivers = useMemo(() => {
           googleApi,
           vehicleVisual.rotation,
           vehicleVisual.spriteType,
-          vehicleOverlayHost
+          vehicleOverlayHost,
+          {
+            showGroundEffect: driverPreviewNavigation && navigationMode,
+          }
         )
+        originOverlayRef.current.onVisualFrame = syncRouteVisualToVehicleFrame
         originOverlayRef.current._firstPosition = true
       } else {
         originOverlayRef.current = createClientOverlay(clientAvatar, 'Tu ubicación', googleApi, matchedOrigin)
@@ -3421,6 +3760,7 @@ const visibleDrivers = useMemo(() => {
 
       originOverlayRef.current.setMap(map)
     } else if (showCarAsOrigin) {
+      originOverlayRef.current.onVisualFrame = syncRouteVisualToVehicleFrame
       // Update car position with smooth animation
       if (typeof originOverlayRef.current.updatePositionSmooth === 'function') {
         const gpsDuration = getGpsAnimationDuration(

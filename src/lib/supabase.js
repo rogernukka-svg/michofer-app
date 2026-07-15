@@ -230,6 +230,13 @@ function isMissingRpc(error, rpcName = '') {
   )
 }
 
+export function isAdminSimulatorTrip(trip) {
+  if (!trip) return false
+
+  const destinationText = String(trip.destination_text || '').trim().toLowerCase()
+  return trip.is_test === true || destinationText === 'viaje test admin'
+}
+
 export async function adminCreateTestTrip(payload) {
   const rpcPayload = {
     p_client_id: payload.clientId,
@@ -307,22 +314,6 @@ export async function adminUpdateTestTripLocation({ tripId, driverId, lat, lng, 
     .single()
 
   if (tripResult.error) return tripResult
-
-  if (driverId) {
-    const driverResult = await supabase
-      .from('driver_profiles')
-      .update({
-        lat: Number(lat),
-        lng: Number(lng),
-        heading: payload.p_heading,
-        speed: payload.p_speed,
-        accuracy: payload.p_accuracy,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', driverId)
-
-    if (driverResult.error) return driverResult
-  }
 
   return tripResult
 }

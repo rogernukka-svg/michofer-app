@@ -616,7 +616,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
       simDriverPointRef.current = initialPoint
       tripRef.current = tripRow
       await pushSimPoint(0, 'pending')
-      onMessage?.('Viaje test creado. Abrí /client y /driver para ver el flujo real.')
+      onMessage?.('Viaje test creado. Probalo dentro del simulador Admin; no afecta Client ni Driver de producción.')
       return tripRow
     } catch (createError) {
       console.error('ADMIN TEST TRIP CREATE UNEXPECTED ERROR:', createError)
@@ -1081,7 +1081,7 @@ function AdminTripSimulator({ adminUser, drivers, enabled, onMessage }) {
                 <span>Paso 1: Elegí chofer y cliente</span>
                 <span>Paso 2: Marcá A y B en el mapa</span>
                 <span>Paso 3: Crear viaje test</span>
-                <span>Paso 4: Abrí /client y /driver</span>
+                <span>Paso 4: Validá el recorrido en Admin</span>
                 <span>Paso 5: Iniciar recorrido</span>
               </div>
 
@@ -1543,6 +1543,11 @@ export default function Admin() {
     const documents = driver.documents || {}
     const { missingRequiredDocs } = getDocumentStats(documents)
 
+    if (approved && missingRequiredDocs.length > 0) {
+      setMessage(`No se puede aprobar: faltan documentos obligatorios (${missingRequiredDocs.map((doc) => doc.label).join(', ')}).`)
+      return
+    }
+
     const reviewedAt = new Date().toISOString()
 
     const { error } = await supabase
@@ -1580,9 +1585,7 @@ export default function Admin() {
 
     setMessage(
       approved
-        ? missingRequiredDocs.length > 0
-          ? `Chofer aprobado con documentos pendientes: ${missingRequiredDocs.map((doc) => doc.label).join(', ')}.`
-          : 'Chofer aprobado. Ya puede comenzar viajes.'
+        ? 'Chofer aprobado. Ya puede comenzar viajes.'
         : 'Chofer rechazado. Queda bloqueado para recibir viajes.'
     )
   }

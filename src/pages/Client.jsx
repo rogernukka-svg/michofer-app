@@ -37,6 +37,7 @@ import TripChatModal from '../components/TripChatModal'
 import {
   getAvailableDrivers,
   getAvailableDriversViaLocalProxy,
+  isAdminSimulatorTrip,
   requestTrip,
   requestWomenMode,
   supabase,
@@ -513,6 +514,9 @@ export default function Client() {
   const [tripHistory, setTripHistory] = useState([])
   const [tripHistoryLoading, setTripHistoryLoading] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [profileEditing, setProfileEditing] = useState(false)
+  const [profileNameDraft, setProfileNameDraft] = useState('')
+  const [profileSaving, setProfileSaving] = useState(false)
   const [showAvatarPreview, setShowAvatarPreview] = useState(false)
   const [googlePlacesError, setGooglePlacesError] = useState(null)
   const [ratingTrip, setRatingTrip] = useState(null)
@@ -914,15 +918,15 @@ useEffect(() => {
 
       if (error || !auth.user?.id) return
 
-const { data: liveTrip, error: liveError } = await supabase
+const { data: liveTrips, error: liveError } = await supabase
   .from('trips')
   .select('*, client:client_id(*), driver:driver_id(*)')
   .eq('client_id', auth.user.id)
         .in('status', ACTIVE_STATUSES)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+        .limit(5)
 
+      const liveTrip = (liveTrips || []).find((trip) => !isAdminSimulatorTrip(trip))
       if (liveTrip?.id) {
         handleTripUpdate(liveTrip)
         return
@@ -1067,6 +1071,40 @@ const { data: liveTrip, error: liveError } = await supabase
     }
   }
 
+  async function saveClientProfile() {
+    if (!auth.user?.id || profileSaving) return
+
+    const cleanName = profileNameDraft.trim()
+    if (!cleanName) {
+      setMessage('Escribí tu nombre para guardar el perfil.')
+      return
+    }
+
+    try {
+      setProfileSaving(true)
+      setMessage('')
+
+      const { error } = await upsertOwnProfile({
+        email: auth.user.email,
+        fullName: cleanName,
+        role: auth.profile?.role || auth.user.user_metadata?.role || 'passenger',
+        avatarUrl: auth.profile?.avatar_url || auth.user.user_metadata?.avatar_url || '',
+      })
+
+      if (error) {
+        setMessage(`No pude guardar tu perfil: ${getErrorMessage(error)}.`)
+        return
+      }
+
+      await auth.reloadProfiles?.()
+      localStorage.setItem('michofer_last_name', cleanName)
+      setProfileEditing(false)
+      setMessage('Perfil actualizado.')
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
   async function restoreActiveTrip(clientId) {
     const { data } = await supabase
       .from('trips')
@@ -1074,23 +1112,23 @@ const { data: liveTrip, error: liveError } = await supabase
       .eq('client_id', clientId)
       .in('status', ACTIVE_STATUSES)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .limit(5)
 
-    if (!data?.id) return
+    const trip = (data || []).find((item) => !isAdminSimulatorTrip(item))
+    if (!trip?.id) return
 
-    setActiveTrip(data)
+    setActiveTrip(trip)
 
-    if (Number.isFinite(Number(data.destination_lat)) && Number.isFinite(Number(data.destination_lng))) {
+    if (Number.isFinite(Number(trip.destination_lat)) && Number.isFinite(Number(trip.destination_lng))) {
       setDestinationPoint({
-        lat: Number(data.destination_lat),
-        lng: Number(data.destination_lng),
+        lat: Number(trip.destination_lat),
+        lng: Number(trip.destination_lng),
       })
-      setDestination(data.destination_text || '')
+      setDestination(trip.destination_text || '')
     }
 
-    if (data.driver_id) {
-      await loadActiveTripDriver(data.driver_id)
+    if (trip.driver_id) {
+      await loadActiveTripDriver(trip.driver_id)
     }
   }
 
@@ -1249,7 +1287,7 @@ const { data: liveTrip, error: liveError } = await supabase
       return
     }
 
-    setTripHistory(data || [])
+    setTripHistory((data || []).filter((trip) => !isAdminSimulatorTrip(trip)))
   }
 
   async function sendRushSignal() {
@@ -1294,6 +1332,11 @@ const { data: liveTrip, error: liveError } = await supabase
 
 async function handleTripUpdate(nextTrip) {
   if (!nextTrip?.id) return
+
+  if (isAdminSimulatorTrip(nextTrip)) {
+    clearLiveTrip('')
+    return
+  }
 
   const previousStatus = activeTrip?.status || lastTripStatus
   const statusChanged = previousStatus !== nextTrip.status
@@ -1769,13 +1812,39 @@ async function cancelActiveTrip() {
   setMessage('Cancelando viaje...')
 
   try {
-    const { data, error } = await supabase.rpc('cancel_own_trip_v2', {
+    const rpcResult = await supabase.rpc('cancel_own_trip_v2', {
       p_trip_id: activeTrip.id,
     })
 
+    let data = rpcResult.data
+    let error = rpcResult.error
+    let fallbackError = null
+
     if (error) {
-      console.error('[MiChofer cancel_own_trip_v2 ERROR]', {
+      const fallback = await supabase
+        .from('trips')
+        .update({
+          status: 'cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', activeTrip.id)
+        .eq('client_id', auth.user.id)
+        .in('status', ACTIVE_STATUSES)
+        .select('*')
+        .single()
+
+      if (fallback.error) {
+        fallbackError = fallback.error
+      } else {
+        data = fallback.data
+        error = null
+      }
+    }
+
+    if (error) {
+      console.error('[MiChofer cancel trip ERROR]', {
         error,
+        fallbackError,
         activeTrip,
         userId: auth.user.id,
       })
@@ -2983,10 +3052,40 @@ async function cancelActiveTrip() {
   </div>
 </section>
 
-<button className="mc-account-edit-btn" type="button">
+<button
+  className="mc-account-edit-btn"
+  type="button"
+  onClick={() => {
+    setProfileNameDraft(auth.profile?.full_name || auth.user?.user_metadata?.full_name || '')
+    setProfileEditing((current) => !current)
+  }}
+>
   <span>Editar perfil</span>
   <ChevronRight size={17} />
 </button>
+
+{profileEditing && (
+  <div className="account-section">
+    <label className="mc-account-inline-editor">
+      <span>Nombre visible</span>
+      <input
+        value={profileNameDraft}
+        onChange={(event) => setProfileNameDraft(event.target.value)}
+        placeholder="Tu nombre"
+      />
+    </label>
+    <button type="button" onClick={saveClientProfile} disabled={profileSaving}>
+      <ShieldCheck size={19} />
+      <span>{profileSaving ? 'Guardando...' : 'Guardar perfil'}</span>
+      <ChevronRight size={17} />
+    </button>
+    <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading}>
+      <UserRound size={19} />
+      <span>{avatarUploading ? 'Subiendo foto...' : 'Cambiar foto'}</span>
+      <ChevronRight size={17} />
+    </button>
+  </div>
+)}
 
               <div className="account-section">
                 <button

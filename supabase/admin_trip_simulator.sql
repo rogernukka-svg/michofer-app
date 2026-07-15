@@ -142,16 +142,6 @@ begin
     raise exception 'test trip not found';
   end if;
 
-  update public.driver_profiles
-  set
-    lat = p_lat,
-    lng = p_lng,
-    heading = p_heading,
-    speed = p_speed,
-    accuracy = p_accuracy,
-    updated_at = now()
-  where user_id = coalesce(p_driver_id, saved_trip.driver_id);
-
   return saved_trip;
 end;
 $$;
