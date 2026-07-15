@@ -2182,6 +2182,7 @@ export default function InteractiveRouteMap({
   navigationVariant = 'default',
   navigationCamera = 'default',
   navigationCameraConfig = null,
+  preserveNavigationRouteOrigin = true,
   freeDriveMode = false,
   showOriginCar = false,
   showMapTypeControl = true,
@@ -4058,7 +4059,7 @@ const visibleDrivers = useMemo(() => {
     const normalizedDestination = toLatLng(destination)
     const normalizedSelectedDriver = isValidCoord(selectedDriver) ? toLatLng(selectedDriver) : null
 
-    const routeOrigin = stableDriverNavigation
+    const routeOrigin = stableDriverNavigation && preserveNavigationRouteOrigin
       ? routeOriginRef.current || normalizedOrigin
       : normalizedOrigin
     const routeSignature = JSON.stringify({
@@ -4066,6 +4067,7 @@ const visibleDrivers = useMemo(() => {
       destination: normalizedDestination,
       selectedDriver: normalizedSelectedDriver,
       navigationMode,
+      preserveNavigationRouteOrigin,
       routeRefreshToken,
     })
 
@@ -4504,6 +4506,7 @@ const visibleDrivers = useMemo(() => {
     mapReady,
     navigationMode,
     navigationVariant,
+    preserveNavigationRouteOrigin,
     onRouteUpdate,
     origin?.lat,
     origin?.lng,

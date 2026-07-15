@@ -86,6 +86,10 @@ const CLIENT_LIVE_DRIVER_CAMERA = {
   maneuverTilt: 52,
   panoramicTilt: 58,
 }
+const CLIENT_DRIVER_ROAD_MAX_AGE_MS = 18000
+const CLIENT_DRIVER_GPS_MAX_AGE_MS = 45000
+const CLIENT_DRIVER_PROFILE_MAX_AGE_MS = 90000
+const CLIENT_ROAD_GPS_DRIFT_METERS = 180
 
 const MODE_ICON_LABEL = {
   all: 'T',
@@ -308,6 +312,12 @@ function rideStatusUi(status, driverName, etaText = '') {
 function liveDistanceMeters(driver, target) {
   const km = distanceKm(driver, target)
   return km == null ? null : km * 1000
+}
+
+function isFreshTimestamp(value, maxAgeMs) {
+  const parsed = Date.parse(value || '')
+  if (!Number.isFinite(parsed)) return false
+  return Date.now() - parsed <= maxAgeMs
 }
 
 function clientLiveStatusUi(status, driverName, etaText, distanceMeters) {
@@ -1917,42 +1927,54 @@ async function cancelActiveTrip() {
   }
 
   const liveDriverPoint = useMemo(() => {
-    // Priority:
-    // 1. activeTrip.driver_road_lat / driver_road_lng (Roads API snapped)
-    // 2. activeTrip.driver_lat / driver_lng (raw GPS from driver updates)
-    // 3. activeTripDriver.lat / activeTripDriver.lng (driver_profiles fallback)
+    const tripUpdatedAt = activeTrip?.updated_at || activeTrip?.driver_updated_at || null
 
-    // Check Roads snapped coordinates first
     const roadLat = Number(activeTrip?.driver_road_lat)
     const roadLng = Number(activeTrip?.driver_road_lng)
     const hasRoadCoords = isValidParaguayCoord({ lat: roadLat, lng: roadLng })
+    const hasFreshRoadCoords =
+      hasRoadCoords &&
+      isFreshTimestamp(activeTrip?.driver_road_snapped_at, CLIENT_DRIVER_ROAD_MAX_AGE_MS)
 
-    // Check trip raw GPS
     const tripLat = Number(activeTrip?.driver_lat)
     const tripLng = Number(activeTrip?.driver_lng)
     const hasTripCoords = isValidParaguayCoord({ lat: tripLat, lng: tripLng })
+    const hasFreshTripCoords =
+      hasTripCoords &&
+      isFreshTimestamp(tripUpdatedAt, CLIENT_DRIVER_GPS_MAX_AGE_MS)
 
-    // Check driver profile fallback
     const driverLat = Number(activeTripDriver?.lat)
     const driverLng = Number(activeTripDriver?.lng)
     const hasDriverCoords = isValidParaguayCoord({ lat: driverLat, lng: driverLng })
+    const hasFreshProfileCoords =
+      hasDriverCoords &&
+      isFreshTimestamp(activeTripDriver?.updated_at, CLIENT_DRIVER_PROFILE_MAX_AGE_MS)
 
-    if (!hasRoadCoords && !hasTripCoords && !hasDriverCoords) {
+    const roadDriftMeters =
+      hasRoadCoords && hasTripCoords
+        ? liveDistanceMeters({ lat: roadLat, lng: roadLng }, { lat: tripLat, lng: tripLng })
+        : null
+    const roadMatchesLiveGps =
+      roadDriftMeters == null || roadDriftMeters <= CLIENT_ROAD_GPS_DRIFT_METERS
+
+    const source = hasFreshRoadCoords && roadMatchesLiveGps
+      ? 'roads'
+      : hasFreshTripCoords
+        ? 'trip'
+        : hasFreshProfileCoords
+          ? 'profile'
+          : null
+
+    if (!source) {
       return null
     }
 
-    const source = hasRoadCoords
-      ? 'roads'
-      : hasTripCoords
-        ? 'trip'
-        : 'profile'
-
-    const bestLat = hasRoadCoords ? roadLat : hasTripCoords ? tripLat : driverLat
-    const bestLng = hasRoadCoords ? roadLng : hasTripCoords ? tripLng : driverLng
-    const updatedAt = hasRoadCoords
+    const bestLat = source === 'roads' ? roadLat : source === 'trip' ? tripLat : driverLat
+    const bestLng = source === 'roads' ? roadLng : source === 'trip' ? tripLng : driverLng
+    const updatedAt = source === 'roads'
       ? activeTrip.driver_road_snapped_at
-      : hasTripCoords
-        ? activeTrip.updated_at
+      : source === 'trip'
+        ? tripUpdatedAt
         : activeTripDriver?.updated_at || null
 
     return {
@@ -1986,6 +2008,8 @@ async function cancelActiveTrip() {
     activeTrip?.driver_speed,
     activeTrip?.driver_accuracy,
     activeTrip?.driver_road_snapped_at,
+    activeTrip?.updated_at,
+    activeTrip?.driver_updated_at,
     activeTripDriver?.id,
     activeTripDriver?.user_id,
     activeTripDriver?.lat,
@@ -1993,6 +2017,7 @@ async function cancelActiveTrip() {
     activeTripDriver?.heading,
     activeTripDriver?.speed,
     activeTripDriver?.accuracy,
+    activeTripDriver?.updated_at,
     activeTripDriver?.avatar,
     activeTripDriver?.name,
   ])
@@ -2008,6 +2033,9 @@ async function cancelActiveTrip() {
 
   const shouldTrackDriverOnMap = Boolean(
     activeTripAcceptedByDriver && liveDriverPoint
+  )
+  const waitingForDriverLiveLocation = Boolean(
+    activeTripAcceptedByDriver && !liveDriverPoint
   )
 
    const liveEtaText = routeGuidance?.duration
@@ -2071,9 +2099,11 @@ async function cancelActiveTrip() {
 
    const mapOrigin = useMemo(() => {
     if (shouldTrackDriverOnMap) return liveDriverPoint
+    if (activeTripAcceptedByDriver) return null
     return locationReady ? clientLocation : null
   }, [
     shouldTrackDriverOnMap,
+    activeTripAcceptedByDriver,
     liveDriverPoint,
     locationReady,
     clientLocation?.lat,
@@ -2367,7 +2397,16 @@ async function cancelActiveTrip() {
     )}
   </section>
 )}
-{locationReady || shouldTrackDriverOnMap ? (
+{waitingForDriverLiveLocation ? (
+  <section className="mobility-map interactive-map">
+    <div className="map-empty-state">
+      <div className="map-empty-card">
+        <strong>Buscando ubicaci&oacute;n del chofer...</strong>
+        <span>Estamos esperando un GPS reciente para mostrar el auto y la ruta real.</span>
+      </div>
+    </div>
+  </section>
+) : locationReady || shouldTrackDriverOnMap ? (
     <InteractiveRouteMap
       origin={mapOrigin}
       destination={mapDestination}
@@ -2415,6 +2454,7 @@ async function cancelActiveTrip() {
       navigationVariant={shouldTrackDriverOnMap ? 'driver' : 'default'}
       navigationCamera={shouldTrackDriverOnMap ? 'preview' : 'default'}
       navigationCameraConfig={shouldTrackDriverOnMap ? CLIENT_LIVE_DRIVER_CAMERA : null}
+      preserveNavigationRouteOrigin={!shouldTrackDriverOnMap}
     />
   ) : (
   <section className="mobility-map interactive-map">
