@@ -132,6 +132,13 @@ const DURATION_NORMAL = 1500
 const DURATION_FAR = 2200
 const MIN_ANIMATION_DURATION = 600
 const MAX_ANIMATION_DURATION = 3000
+const MIN_LIVE_VEHICLE_ANIMATION_MS = 320
+const MAX_LIVE_VEHICLE_ANIMATION_MS = 1450
+const VEHICLE_GLIDE_POSITION_RESPONSE_MS = 760
+const VEHICLE_GLIDE_HEADING_RESPONSE_MS = 640
+const CAMERA_GLIDE_POSITION_RESPONSE_MS = 980
+const CAMERA_GLIDE_HEADING_RESPONSE_MS = 1120
+const CAMERA_GLIDE_ZOOM_RESPONSE_MS = 1300
 
 // Theme update interval
 const THEME_CHECK_INTERVAL_MS = 300000 // 5 min
@@ -140,6 +147,10 @@ const THEME_CHECK_INTERVAL_MS = 300000 // 5 min
 
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+}
+
+function easeInOutSine(t) {
+  return -(Math.cos(Math.PI * t) - 1) / 2
 }
 
 function lerp(a, b, t) {
@@ -310,16 +321,16 @@ function estimateSpeedMps(previousPoint, nextPoint) {
 function getGpsAnimationDuration(previousPoint, nextPoint) {
   const distance = getDistanceMeters(previousPoint, nextPoint)
   if (Number.isFinite(distance)) {
-    if (distance < 2.5) return 820
-    if (distance < 22) return clamp(900 + distance * 22, 1100, 1600)
-    if (distance < 70) return clamp(1500 + distance * 9, 1800, 2300)
+    if (distance < 2.5) return 980
+    if (distance < 22) return clamp(1150 + distance * 26, 1300, 1850)
+    if (distance < 70) return clamp(1750 + distance * 9, 1950, 2600)
   }
 
   const prevTime = Number(previousPoint?._timestamp || 0)
   const nextTime = Number(nextPoint?._timestamp || Date.now())
   const delta = nextTime && prevTime ? nextTime - prevTime : 1500
 
-  return clamp(delta * 0.85, 700, 2300)
+  return clamp(delta * 0.96, 900, 2600)
 }
 
 function getGpsSmoothingAlpha(accuracy, speed) {
@@ -673,6 +684,33 @@ function getRoutePathSliceFromProjection(routePath, projection, maxMeters) {
   }
 
   return result
+}
+
+function getRoutePathFromProjectionWithGap(routePath, projection, gapMeters = 0) {
+  const routePoints = getRoutePathWithProjection(routePath, projection)
+  if (routePoints.length < 2) return routePoints
+
+  const gap = Math.max(0, Number(gapMeters) || 0)
+  if (gap <= 0) return routePoints
+
+  let travelled = 0
+
+  for (let index = 1; index < routePoints.length; index += 1) {
+    const previous = routePoints[index - 1]
+    const current = routePoints[index]
+    const segmentDistance = getDistanceMeters(previous, current)
+
+    if (travelled + segmentDistance >= gap) {
+      const remaining = gap - travelled
+      const fraction = segmentDistance > 0 ? remaining / segmentDistance : 0
+      const startPoint = interpolateLatLng(previous, current, fraction)
+      return [startPoint, ...routePoints.slice(index)].filter(isValidCoord)
+    }
+
+    travelled += segmentDistance
+  }
+
+  return [routePoints[routePoints.length - 1]]
 }
 
 function formatInstructionDistance(meters) {
@@ -1517,6 +1555,8 @@ function createClientOverlay(clientAvatar, name, google, onCenter) {
 function createNavigationOverlaySmooth(position, google, heading = 0, spriteType = 'back', containerElement = null) {
   const overlay = new google.maps.OverlayView()
   const element = document.createElement('div')
+  const routeMask = document.createElement('div')
+  const wake = document.createElement('div')
   const image = document.createElement('img')
 
   // Current visual state (what the user sees)
@@ -1537,6 +1577,10 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
   overlay._animDuration = null
   overlay._animFrameId = null
   overlay._firstPosition = true
+  overlay._lastTargetAt = 0
+  overlay._lastFrameAt = 0
+  overlay._positionResponseMs = VEHICLE_GLIDE_POSITION_RESPONSE_MS
+  overlay._headingResponseMs = VEHICLE_GLIDE_HEADING_RESPONSE_MS
   overlay.__modeKey = 'car'
   overlay.currentSpriteType = spriteType
 
@@ -1548,6 +1592,12 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
   element.style.willChange = 'left, top, transform'
   element.style.transform = 'translate(-50%, -50%)'
 
+  routeMask.className = 'navigation-car-route-mask'
+  routeMask.setAttribute('aria-hidden', 'true')
+
+  wake.className = 'navigation-car-wake'
+  wake.setAttribute('aria-hidden', 'true')
+
   image.className = 'navigation-car-img'
   image.alt = 'Auto en navegación'
   image.src = getVehicleSpriteSource(spriteType)
@@ -1555,6 +1605,8 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
   image.style.transformOrigin = '50% 50%'
   image.style.transform = `rotate(${overlay.currentHeading}deg)`
 
+  element.appendChild(routeMask)
+  element.appendChild(wake)
   element.appendChild(image)
 
   /**
@@ -1565,35 +1617,52 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     if (!this._animating) return
 
     const now = performance.now()
-    const elapsed = now - (this._animStartTime || now)
-    const duration = this._animDuration || DURATION_NORMAL
-    const rawProgress = Math.min(elapsed / duration, 1)
-    const progress = 1 - (1 - rawProgress) ** 3
+    const dt = clamp(now - (this._lastFrameAt || now), 8, 64)
+    this._lastFrameAt = now
 
-    // Interpolate position
-    const interpolatedPos = interpolateLatLng(this._animFrom, this._animTo, progress)
-    this.currentPosition = interpolatedPos
+    const targetPosition = this.targetPosition || this._animTo
+    const targetHeading = this.targetHeading ?? this._animToHeading
+    const distance = getDistanceMeters(this.currentPosition, targetPosition)
+    const positionResponse = Math.max(180, Number(this._positionResponseMs) || VEHICLE_GLIDE_POSITION_RESPONSE_MS)
+    const headingResponse = Math.max(160, Number(this._headingResponseMs) || VEHICLE_GLIDE_HEADING_RESPONSE_MS)
+    const positionAlpha = 1 - Math.exp(-dt / positionResponse)
+    const headingAlpha = 1 - Math.exp(-dt / headingResponse)
 
-    // Interpolate heading
-    if (this._animFromHeading != null && this._animToHeading != null) {
-      const interpHeading = interpolateHeading(this._animFromHeading, this._animToHeading, progress)
-      this.currentHeading = interpHeading
-      image.style.transform = `rotate(${interpHeading}deg)`
+    if (isValidCoord(targetPosition) && Number.isFinite(distance)) {
+      if (distance < 0.05) {
+        this.currentPosition = toLatLng(targetPosition)
+      } else {
+        this.currentPosition = interpolateLatLng(this.currentPosition, targetPosition, clamp(positionAlpha, 0.012, 0.18))
+      }
     }
 
-    // Redraw overlay
+    if (Number.isFinite(Number(targetHeading))) {
+      const headingDiff = Math.abs(shortestAngleDiff(this.currentHeading, targetHeading))
+      if (headingDiff < 0.08) {
+        this.currentHeading = normalizeHeading(targetHeading)
+      } else {
+        this.currentHeading = interpolateHeading(this.currentHeading, targetHeading, clamp(headingAlpha, 0.014, 0.22))
+      }
+      image.style.transform = `rotate(${this.currentHeading}deg)`
+    }
+
     this.draw()
 
-    if (rawProgress < 1 && this._animating) {
+    const remainingDistance = getDistanceMeters(this.currentPosition, targetPosition)
+    const remainingHeading = Number.isFinite(Number(targetHeading))
+      ? Math.abs(shortestAngleDiff(this.currentHeading, targetHeading))
+      : 0
+    const shouldKeepGliding = remainingDistance > 0.08 || remainingHeading > 0.12
+
+    if (shouldKeepGliding && this._animating) {
       this._animFrameId = requestAnimationFrame(() => this._animate())
     } else {
-      // Snap to final position
-      if (this._animTo) {
-        this.currentPosition = toLatLng(this._animTo)
+      if (isValidCoord(targetPosition)) {
+        this.currentPosition = toLatLng(targetPosition)
         this.draw()
       }
-      if (this._animToHeading != null) {
-        this.currentHeading = normalizeHeading(this._animToHeading)
+      if (Number.isFinite(Number(targetHeading))) {
+        this.currentHeading = normalizeHeading(targetHeading)
         image.style.transform = `rotate(${this.currentHeading}deg)`
       }
       this._animating = false
@@ -1654,8 +1723,17 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     }
 
     // Calculate distance for dynamic duration
+    const now = performance.now()
     const distance = getDistanceMeters(this.currentPosition, newPos)
-    const animDuration = clamp(duration || getAnimationDuration(distance), MIN_ANIMATION_DURATION, MAX_ANIMATION_DURATION)
+    const updateInterval = this._lastTargetAt ? now - this._lastTargetAt : 0
+    this._lastTargetAt = now
+
+    let requestedDuration = duration || getAnimationDuration(distance)
+    if (Number.isFinite(updateInterval) && updateInterval > 0 && updateInterval < 900) {
+      const liveCadenceDuration = clamp(updateInterval * 2.8, MIN_LIVE_VEHICLE_ANIMATION_MS, MAX_LIVE_VEHICLE_ANIMATION_MS)
+      requestedDuration = Math.min(requestedDuration, liveCadenceDuration)
+    }
+    const animDuration = clamp(requestedDuration, MIN_LIVE_VEHICLE_ANIMATION_MS, MAX_LIVE_VEHICLE_ANIMATION_MS)
 
     if (distance > 180) {
       this._cancelAnimation()
@@ -1670,19 +1748,24 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
       return
     }
 
-    // Keep the current interpolated frame as the next animation start.
-    this._cancelAnimation()
-
-    // Set animation targets
-    this._animFrom = toLatLng(this.currentPosition)
+    this.targetPosition = newPos
+    if (newHeading != null) this.targetHeading = newHeading
+    this._animFrom = this.currentPosition
     this._animTo = newPos
     this._animFromHeading = this.currentHeading
-    this._animToHeading = newHeading != null ? newHeading : this.currentHeading
+    this._animToHeading = newHeading != null ? newHeading : this.targetHeading
     this._animStartTime = performance.now()
     this._animDuration = animDuration
+    this._positionResponseMs = clamp(animDuration * 0.62, 360, 960)
+    this._headingResponseMs = clamp(animDuration * 0.52, 300, 840)
+
+    if (this._animFrameId) {
+      return
+    }
+
+    this._lastFrameAt = performance.now()
     this._animating = true
 
-    // Start animation
     this._animFrameId = requestAnimationFrame(() => this._animate())
   }
 
@@ -2005,6 +2088,10 @@ export default function InteractiveRouteMap({
   const cameraAnimToTiltRef = useRef(null)
   const cameraAnimStartRef = useRef(0)
   const cameraAnimDurationRef = useRef(0)
+  const cameraAnimLastFrameAtRef = useRef(0)
+  const cameraPositionResponseRef = useRef(CAMERA_GLIDE_POSITION_RESPONSE_MS)
+  const cameraHeadingResponseRef = useRef(CAMERA_GLIDE_HEADING_RESPONSE_MS)
+  const cameraZoomResponseRef = useRef(CAMERA_GLIDE_ZOOM_RESPONSE_MS)
   const currentCarSpriteRef = useRef('back')
   const lastSpriteChangeAtRef = useRef(0)
   const lastSpriteHeadingRef = useRef(0)
@@ -2252,9 +2339,16 @@ export default function InteractiveRouteMap({
       return
     }
 
-    const index = Math.max(1, Math.min(projection.index, routePath.length - 1))
-    const completedPath = [...routePath.slice(0, index), projection.point]
-    const remainingPath = [projection.point, ...routePath.slice(index)].filter(isValidCoord)
+    const visualProjection = driverPreviewNavigation && isValidCoord(originOverlayRef.current?.currentPosition)
+      ? getClosestRouteProjection(originOverlayRef.current.currentPosition, routePath, {
+          fromIndex: Math.max(1, (lastMatchedRouteIndexRef.current || projection.index || 1) - NAVIGATION_BACKTRACK_TOLERANCE),
+          toIndex: Math.min(routePath.length - 1, (lastMatchedRouteIndexRef.current || projection.index || 1) + NAVIGATION_FORWARD_SEARCH),
+        }) || projection
+      : projection
+    const index = Math.max(1, Math.min(visualProjection.index, routePath.length - 1))
+    const completedPath = [...routePath.slice(0, index), visualProjection.point]
+    const routeHeadGapMeters = 0
+    const remainingPath = getRoutePathFromProjectionWithGap(routePath, visualProjection, routeHeadGapMeters)
     const remainingVisiblePath = remainingPath.length < 2 ? routePath : remainingPath
     const mainVisiblePath = stableDriverNavigation && !driverPreviewNavigation ? routePath : remainingVisiblePath
     const usedFallbackPath = remainingVisiblePath === routePath
@@ -2267,7 +2361,7 @@ export default function InteractiveRouteMap({
       NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS,
       Math.max(80, Number(smartInstruction?.distanceToNextStep) || NAVIGATION_NEXT_STEP_HIGHLIGHT_METERS)
     )
-    const nextStepPath = getRoutePathSliceFromProjection(routePath, projection, highlightMeters)
+    const nextStepPath = getRoutePathSliceFromProjection(routePath, visualProjection, highlightMeters)
     const recalculating = smartInstruction?.alertLevel === 'recalculating' || smartInstruction?.recalculating
 
     if (arrivedVisual) {
@@ -2852,18 +2946,22 @@ const visibleDrivers = useMemo(() => {
   function animateCameraSmooth(map, targetCenter, targetHeading, duration = 800) {
     if (!map || !isValidCoord(targetCenter)) return
 
-    const fromCenter = cameraLastCenterRef.current || targetCenter
-    const fromHeading = cameraLastHeadingRef.current
     const cameraHeading = stablePreviewNavigation ? 0 : targetHeading
-    const toHeading = Number.isFinite(Number(cameraHeading)) ? Number(cameraHeading) : fromHeading
+    const toHeading = Number.isFinite(Number(cameraHeading)) ? Number(cameraHeading) : cameraLastHeadingRef.current
     const currentZoom = typeof map.getZoom === 'function' ? Number(map.getZoom()) : null
     const currentTilt = typeof map.getTilt === 'function' ? Number(map.getTilt()) : null
-    const fromZoom = Number.isFinite(Number(cameraLastZoomRef.current))
+    const currentCenter = typeof map.getCenter === 'function' ? map.getCenter() : null
+    const initialCenter = cameraLastCenterRef.current || (
+      currentCenter && typeof currentCenter.lat === 'function' && typeof currentCenter.lng === 'function'
+        ? { lat: currentCenter.lat(), lng: currentCenter.lng() }
+        : targetCenter
+    )
+    const initialZoom = Number.isFinite(Number(cameraLastZoomRef.current))
       ? Number(cameraLastZoomRef.current)
       : Number.isFinite(currentZoom)
         ? currentZoom
         : getCurrentNavigationZoom()
-    const fromTilt = Number.isFinite(Number(cameraLastTiltRef.current))
+    const initialTilt = Number.isFinite(Number(cameraLastTiltRef.current))
       ? Number(cameraLastTiltRef.current)
       : Number.isFinite(currentTilt)
         ? currentTilt
@@ -2871,52 +2969,72 @@ const visibleDrivers = useMemo(() => {
     const toZoom = getCurrentNavigationZoom()
     const toTilt = getCurrentNavigationTilt()
 
-    // If distance is very small, just snap
-    const dist = getDistanceMeters(fromCenter, targetCenter)
-    if (dist < 0.5) {
+    if (!cameraLastCenterRef.current || !isValidCoord(cameraLastCenterRef.current)) {
+      cameraLastCenterRef.current = initialCenter
+      cameraLastHeadingRef.current = Number.isFinite(Number(cameraLastHeadingRef.current))
+        ? cameraLastHeadingRef.current
+        : toHeading
+      cameraLastZoomRef.current = initialZoom
+      cameraLastTiltRef.current = initialTilt
       runProgrammaticCameraMove(() => {
-        applyNavigationCamera(map, targetCenter, cameraHeading, {
-          zoom: toZoom,
-          tilt: toTilt,
+        applyNavigationCamera(map, initialCenter, cameraLastHeadingRef.current, {
+          zoom: initialZoom,
+          tilt: initialTilt,
           ...getCurrentNavigationCameraOptions(),
         })
       })
-      cameraLastCenterRef.current = targetCenter
-      cameraLastHeadingRef.current = toHeading
-      cameraLastZoomRef.current = toZoom
-      cameraLastTiltRef.current = toTilt
-      return
     }
 
-    // Cancel previous camera animation
-    if (cameraAnimFrameRef.current) {
-      cancelAnimationFrame(cameraAnimFrameRef.current)
-      cameraAnimFrameRef.current = null
-    }
-
-    cameraAnimFromRef.current = fromCenter
+    cameraAnimFromRef.current = cameraLastCenterRef.current || initialCenter
     cameraAnimToRef.current = targetCenter
-    cameraAnimFromHeadingRef.current = fromHeading
+    cameraAnimFromHeadingRef.current = cameraLastHeadingRef.current
     cameraAnimToHeadingRef.current = toHeading
-    cameraAnimFromZoomRef.current = fromZoom
+    cameraAnimFromZoomRef.current = Number.isFinite(Number(cameraLastZoomRef.current)) ? Number(cameraLastZoomRef.current) : initialZoom
     cameraAnimToZoomRef.current = toZoom
-    cameraAnimFromTiltRef.current = fromTilt
+    cameraAnimFromTiltRef.current = Number.isFinite(Number(cameraLastTiltRef.current)) ? Number(cameraLastTiltRef.current) : initialTilt
     cameraAnimToTiltRef.current = toTilt
+    cameraAnimDurationRef.current = clamp(duration, 800, 2600)
+    cameraPositionResponseRef.current = clamp(cameraAnimDurationRef.current * 0.58, 520, 1400)
+    cameraHeadingResponseRef.current = clamp(cameraAnimDurationRef.current * 0.78, 640, 1700)
+    cameraZoomResponseRef.current = clamp(cameraAnimDurationRef.current * 0.9, 800, 1900)
+
+    if (cameraAnimFrameRef.current) return
+
     cameraAnimStartRef.current = performance.now()
-    cameraAnimDurationRef.current = clamp(duration, 300, 1200)
+    cameraAnimLastFrameAtRef.current = performance.now()
     cameraAnimatingRef.current = true
 
     const cameraAnimLoop = () => {
       if (!cameraAnimatingRef.current) return
 
-      const elapsed = performance.now() - cameraAnimStartRef.current
-      const rawProgress = Math.min(elapsed / cameraAnimDurationRef.current, 1)
-      const progress = easeInOutCubic(rawProgress)
+      const now = performance.now()
+      const dt = clamp(now - (cameraAnimLastFrameAtRef.current || now), 8, 64)
+      cameraAnimLastFrameAtRef.current = now
 
-      const interpCenter = interpolateLatLng(cameraAnimFromRef.current, cameraAnimToRef.current, progress)
-      const interpHeading = interpolateHeading(cameraAnimFromHeadingRef.current, cameraAnimToHeadingRef.current, progress)
-      const interpZoom = lerp(cameraAnimFromZoomRef.current, cameraAnimToZoomRef.current, progress)
-      const interpTilt = lerp(cameraAnimFromTiltRef.current, cameraAnimToTiltRef.current, progress)
+      const target = cameraAnimToRef.current
+      const targetHeadingValue = cameraAnimToHeadingRef.current
+      const targetZoom = cameraAnimToZoomRef.current
+      const targetTilt = cameraAnimToTiltRef.current
+      const centerResponse = Math.max(240, Number(cameraPositionResponseRef.current) || CAMERA_GLIDE_POSITION_RESPONSE_MS)
+      const headingResponse = Math.max(280, Number(cameraHeadingResponseRef.current) || CAMERA_GLIDE_HEADING_RESPONSE_MS)
+      const zoomResponse = Math.max(360, Number(cameraZoomResponseRef.current) || CAMERA_GLIDE_ZOOM_RESPONSE_MS)
+      const centerAlpha = clamp(1 - Math.exp(-dt / centerResponse), 0.008, 0.15)
+      const headingAlpha = clamp(1 - Math.exp(-dt / headingResponse), 0.006, 0.11)
+      const zoomAlpha = clamp(1 - Math.exp(-dt / zoomResponse), 0.005, 0.1)
+
+      const currentCenterValue = cameraLastCenterRef.current || target
+      const interpCenter = isValidCoord(target)
+        ? interpolateLatLng(currentCenterValue, target, centerAlpha)
+        : currentCenterValue
+      const interpHeading = Number.isFinite(Number(targetHeadingValue))
+        ? interpolateHeading(cameraLastHeadingRef.current, targetHeadingValue, headingAlpha)
+        : cameraLastHeadingRef.current
+      const interpZoom = Number.isFinite(Number(targetZoom))
+        ? lerp(Number(cameraLastZoomRef.current ?? targetZoom), targetZoom, zoomAlpha)
+        : cameraLastZoomRef.current
+      const interpTilt = Number.isFinite(Number(targetTilt))
+        ? lerp(Number(cameraLastTiltRef.current ?? targetTilt), targetTilt, zoomAlpha)
+        : cameraLastTiltRef.current
 
       runProgrammaticCameraMove(() => {
         applyNavigationCamera(map, interpCenter, interpHeading, {
@@ -2930,10 +3048,21 @@ const visibleDrivers = useMemo(() => {
       cameraLastZoomRef.current = interpZoom
       cameraLastTiltRef.current = interpTilt
 
-      if (rawProgress < 1) {
+      const remainingCenter = getDistanceMeters(cameraLastCenterRef.current, cameraAnimToRef.current)
+      const remainingHeading = Number.isFinite(Number(cameraAnimToHeadingRef.current))
+        ? Math.abs(shortestAngleDiff(cameraLastHeadingRef.current, cameraAnimToHeadingRef.current))
+        : 0
+      const remainingZoom = Math.abs(Number(cameraLastZoomRef.current) - Number(cameraAnimToZoomRef.current))
+      const remainingTilt = Math.abs(Number(cameraLastTiltRef.current) - Number(cameraAnimToTiltRef.current))
+      const keepMoving =
+        remainingCenter > 0.04 ||
+        remainingHeading > 0.05 ||
+        remainingZoom > 0.003 ||
+        remainingTilt > 0.02
+
+      if (keepMoving) {
         cameraAnimFrameRef.current = requestAnimationFrame(cameraAnimLoop)
       } else {
-        // Final snap
         runProgrammaticCameraMove(() => {
           applyNavigationCamera(map, cameraAnimToRef.current, cameraAnimToHeadingRef.current, {
             zoom: cameraAnimToZoomRef.current,
@@ -3167,14 +3296,12 @@ const visibleDrivers = useMemo(() => {
           })
         }
 
-        if (!(driverPreviewNavigation && !freeDriveNavigation)) {
-          matchedOrigin = smoothVisualPosition(
-            visualDriverPositionRef.current || originOverlayRef.current?.currentPosition || previousPoint,
-            matchedOrigin,
-            rawAccuracy,
-            effectiveSpeed
-          )
-        }
+        matchedOrigin = smoothVisualPosition(
+          visualDriverPositionRef.current || originOverlayRef.current?.currentPosition || previousPoint,
+          matchedOrigin,
+          rawAccuracy,
+          effectiveSpeed
+        )
 
         lastKnownPositionRef.current = matchedOrigin
       } else {
@@ -3296,14 +3423,15 @@ const visibleDrivers = useMemo(() => {
     } else if (showCarAsOrigin) {
       // Update car position with smooth animation
       if (typeof originOverlayRef.current.updatePositionSmooth === 'function') {
-        const duration = driverPreviewNavigation && !freeDriveNavigation
-            ? 460
-            : navigationMode
-              ? Number(performanceSettings?.carAnimationDuration) || 540
-            : getGpsAnimationDuration(
+        const gpsDuration = getGpsAnimationDuration(
           originOverlayRef.current.currentPosition || previousPoint,
           pointWithTs
         )
+        const duration = driverPreviewNavigation && !freeDriveNavigation
+          ? clamp(gpsDuration, 1250, 2400)
+          : navigationMode
+            ? clamp(Number(performanceSettings?.carAnimationDuration) || gpsDuration, 950, 2400)
+            : gpsDuration
         const vehicleVisual = getCurrentVehicleVisual(navigationHeadingRef.current, effectiveSpeed)
         if (typeof originOverlayRef.current.updateVehicleVisual === 'function') {
           originOverlayRef.current.updateVehicleVisual(vehicleVisual.spriteType, vehicleVisual.rotation)
@@ -3342,17 +3470,17 @@ const visibleDrivers = useMemo(() => {
           const cameraDist = cameraLastCenterRef.current
             ? getDistanceMeters(cameraLastCenterRef.current, cameraPoint)
             : 999
-          const minCameraMoveMeters = stablePreviewNavigation ? 9 : driverPreviewNavigation ? 0.6 : cinematicNavigation ? 0.75 : NAVIGATION_CAMERA_MIN_MOVE_METERS
+          const minCameraMoveMeters = stablePreviewNavigation ? 9 : driverPreviewNavigation ? 0.55 : cinematicNavigation ? 0.75 : NAVIGATION_CAMERA_MIN_MOVE_METERS
           const minCameraUpdateMs = driverPreviewNavigation && !freeDriveNavigation
-            ? 190
+            ? 90
             : stablePreviewNavigation
             ? 700
             : Number(performanceSettings?.cameraUpdateMinMs) || (driverPreviewNavigation ? 70 : cinematicNavigation ? 80 : NAVIGATION_CAMERA_MIN_UPDATE_MS)
           const cameraDuration = driverPreviewNavigation && !freeDriveNavigation
-            ? 680
+            ? 2200
             : stablePreviewNavigation
             ? 900
-            : Number(performanceSettings?.carAnimationDuration) || (driverPreviewNavigation ? 300 : cinematicNavigation ? 640 : 760)
+            : Number(performanceSettings?.carAnimationDuration) || (driverPreviewNavigation ? 1200 : cinematicNavigation ? 900 : 980)
 
           if (
             cameraDist > minCameraMoveMeters ||
