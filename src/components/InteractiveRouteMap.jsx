@@ -4058,7 +4058,9 @@ const visibleDrivers = useMemo(() => {
     const normalizedDestination = toLatLng(destination)
     const normalizedSelectedDriver = isValidCoord(selectedDriver) ? toLatLng(selectedDriver) : null
 
-    const routeOrigin = routeOriginRef.current || normalizedOrigin
+    const routeOrigin = stableDriverNavigation
+      ? routeOriginRef.current || normalizedOrigin
+      : normalizedOrigin
     const routeSignature = JSON.stringify({
       origin: routeOrigin,
       destination: normalizedDestination,
