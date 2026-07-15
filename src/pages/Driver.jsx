@@ -487,60 +487,6 @@ export default function Driver() {
   const lastRoadsSnapAtRef = useRef(0)
   const roadsSyncBusyRef = useRef(false)
 
-  useEffect(() => {
-    if (auth.loading) return
-
-    if (!auth.user) {
-      window.location.href = '/login'
-      return
-    }
-    if (auth.profile?.role === 'passenger') {
-      window.location.href = '/client'
-      return
-    }
-
-    // Espera a que el perfil del chofer esté listo para cargar viajes y suscripciones.
-    if (!auth.driverProfile) {
-      return
-    }
-
-    // Carga inicial, solo una vez.
-    if (!hasLoadedTripsRef.current) {
-      loadTrips(auth.user.id)
-    }
-
-    const refreshTrips = () => {
-      loadTrips(auth.user.id)
-    }
-
-    const channel = supabase
-      .channel(`driver-trips-${auth.user.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'trips', filter: `driver_id=eq.${auth.user.id}` },
-        refreshTrips
-      )
-      .subscribe((status) => {
-        if (import.meta.env.DEV) {
-          console.info('[MiChofer Driver Realtime]', { status, driverId: auth.user.id })
-        }
-
-        if (status === 'SUBSCRIBED') {
-          refreshTrips()
-        }
-      })
-
-    // Polling como fallback, con un intervalo más razonable.
-    const interval = window.setInterval(() => {
-      loadTrips(auth.user.id)
-    }, 5000)
-
-    return () => {
-      window.clearInterval(interval)
-      supabase.removeChannel(channel)
-    }
-  }, [auth.loading, auth.user, auth.profile, auth.driverProfile, loadTrips])
-
   const verificationStatus = auth.driverProfile?.verification_status || 'incomplete'
   const approved = auth.driverProfile?.verified === true && verificationStatus === 'approved'
   const verificationTitle = useMemo(() => verificationCopy(verificationStatus, approved)[0], [verificationStatus, approved])
@@ -1110,6 +1056,60 @@ export default function Driver() {
     auth.user?.email,
     auth.user?.id,
   ])
+
+  useEffect(() => {
+    if (auth.loading) return
+
+    if (!auth.user) {
+      window.location.href = '/login'
+      return
+    }
+    if (auth.profile?.role === 'passenger') {
+      window.location.href = '/client'
+      return
+    }
+
+    // Espera a que el perfil del chofer esté listo para cargar viajes y suscripciones.
+    if (!auth.driverProfile) {
+      return
+    }
+
+    // Carga inicial, solo una vez.
+    if (!hasLoadedTripsRef.current) {
+      loadTrips(auth.user.id)
+    }
+
+    const refreshTrips = () => {
+      loadTrips(auth.user.id)
+    }
+
+    const channel = supabase
+      .channel(`driver-trips-${auth.user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'trips', filter: `driver_id=eq.${auth.user.id}` },
+        refreshTrips
+      )
+      .subscribe((status) => {
+        if (import.meta.env.DEV) {
+          console.info('[MiChofer Driver Realtime]', { status, driverId: auth.user.id })
+        }
+
+        if (status === 'SUBSCRIBED') {
+          refreshTrips()
+        }
+      })
+
+    // Polling como fallback, con un intervalo más razonable.
+    const interval = window.setInterval(() => {
+      loadTrips(auth.user.id)
+    }, 5000)
+
+    return () => {
+      window.clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
+  }, [auth.loading, auth.user, auth.profile, auth.driverProfile, loadTrips])
 
   const refreshDriverState = useCallback(async () => {
     await auth.reloadProfiles()
@@ -2069,7 +2069,7 @@ const updateTrip = useCallback(async (trip, status) => {
                   <strong>GPS del chofer pendiente</strong>
                   <span>Activá o calibrá tu ubicación para aparecer en el punto real.</span>
                   <button type="button" className="main-btn" onClick={() => syncDriverLocation(null, true, isAvailable)}>
-                    Calibrar ubicación
+                    Mejorar precisión
                   </button>
                 </div>
               </div>
@@ -2097,8 +2097,8 @@ const updateTrip = useCallback(async (trip, status) => {
     <small>
       {hasDriverLocation
         ? isReceivingTrips
-          ? 'GPS activo · recibiendo viajes'
-          : 'GPS activo · en espera'
+          ? 'GPS preciso · recibiendo viajes'
+          : 'GPS preciso · en espera'
         : 'GPS pendiente'}
     </small>
   </div>
@@ -2176,7 +2176,7 @@ const updateTrip = useCallback(async (trip, status) => {
 
           <div className="mc-driver-request-proof">
             <span>Ruta segura</span>
-            <span>GPS activo</span>
+            <span>GPS preciso</span>
             <strong className={`mc-driver-payment-pill ${String(trip?.payment_method || 'cash').toLowerCase()}`}>
               {tripPaymentLabel(trip)}
             </strong>
@@ -2226,7 +2226,7 @@ const updateTrip = useCallback(async (trip, status) => {
         disabled={!approved}
       >
         {isOnline ? <ToggleRight size={21} /> : <ToggleLeft size={21} />}
-        <span>{isOnline ? 'En línea' : 'Conectarme'}</span>
+        <span>{isOnline ? 'Disponible' : 'Conectarme'}</span>
       </button>
 
       <button
@@ -2247,7 +2247,7 @@ const updateTrip = useCallback(async (trip, status) => {
         onClick={() => syncDriverLocation(activeTrip, true, isAvailable)}
       >
         <RefreshCw size={15} />
-        <span>Calibrar ubicación</span>
+        <span>Mejorar precisión</span>
       </button>
 
       <div className="mc-driver-request-count">
@@ -2452,7 +2452,7 @@ const updateTrip = useCallback(async (trip, status) => {
         <div className="performance-card-actions">
           <button type="button" onClick={() => performance.runPerformanceTest({ force: true })} disabled={performance.isTesting}>
             <RefreshCw size={17} />
-            <span>{performance.isTesting ? 'Analizando...' : 'Volver a realizar el test'}</span>
+            <span>{performance.isTesting ? 'Analizando...' : 'Optimizar de nuevo'}</span>
           </button>
         </div>
       </section>

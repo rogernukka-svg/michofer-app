@@ -161,7 +161,8 @@ function isMissingRideCategoryArg(error) {
   return (
     error?.code === 'PGRST202' ||
     message.includes('p_ride_category') ||
-    message.includes('could not find the function')
+    message.includes('could not find the function') ||
+    (message.includes('request_trip') && message.includes('ride_category'))
   )
 }
 

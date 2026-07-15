@@ -412,7 +412,7 @@ export default function Register() {
 
   const registerSteps = useMemo(
     () => (role === 'driver'
-      ? ['name', 'role', 'identity', 'photo', 'vehicle', 'documents', 'email', 'password']
+      ? ['name', 'role', 'photo', 'vehicle', 'documents', 'email', 'password']
       : ['name', 'role', 'identity', 'photo', 'email', 'password']),
     [role]
   )
@@ -449,7 +449,7 @@ export default function Register() {
     }
 
     if (step === 'photo') {
-      setStep('identity')
+      setStep(role === 'driver' ? 'role' : 'identity')
       return
     }
 
@@ -491,6 +491,7 @@ export default function Register() {
   }
 
   function updateDriverVehicle(key, value) {
+    setErrorMessage('')
     setDriverVehicle((current) => ({
       ...current,
       [key]: value,
@@ -742,15 +743,25 @@ export default function Register() {
       return
     }
 
-    setStep(role ? 'identity' : 'role')
+    setStep(role ? (role === 'driver' ? 'photo' : 'identity') : 'role')
   }
 
   function nextFromRole(value) {
+    setErrorMessage('')
     setRole(value)
+
+    if (value === 'driver') {
+      setGenderIdentity('')
+      setRidePreference('standard')
+      setStep('photo')
+      return
+    }
+
     setStep('identity')
   }
 
   function nextFromRidePreference(value) {
+    setErrorMessage('')
     setRidePreference(value)
     // FIX: No asumir que el usuario es mujer solo por la preferencia.
     // El género se pregunta (o se debería preguntar) en otro paso si es relevante.
@@ -788,7 +799,7 @@ export default function Register() {
       return
     }
 
-    if (!genderIdentity) {
+    if (role === 'passenger' && !genderIdentity) {
       setErrorMessage('Elegí una preferencia de viaje para continuar.')
       setStep('identity')
       return
@@ -838,6 +849,9 @@ export default function Register() {
       return
     }
 
+    const cleanGenderIdentity = role === 'passenger' ? genderIdentity : ''
+    const cleanRidePreference = role === 'passenger' ? (ridePreference || 'standard') : 'standard'
+
     try {
       setBusy(true)
       setStep('loading')
@@ -849,8 +863,8 @@ export default function Register() {
           data: {
             full_name: fullName,
             role,
-            gender_identity: genderIdentity,
-            ride_preference: ridePreference || 'standard',
+            gender_identity: cleanGenderIdentity,
+            ride_preference: cleanRidePreference,
           },
         },
       })
@@ -955,7 +969,7 @@ export default function Register() {
           role,
           avatarUrl,
           email: cleanEmail,
-          genderIdentity,
+          genderIdentity: cleanGenderIdentity,
         })
 
         if (profileError) {
@@ -967,26 +981,28 @@ export default function Register() {
           return
         }
 
-        if (genderIdentity === 'woman') {
-          const { error: womenModeError } = await requestWomenMode('woman')
+        if (cleanGenderIdentity) {
+          if (cleanGenderIdentity === 'woman') {
+            const { error: womenModeError } = await requestWomenMode('woman')
 
-          if (womenModeError) {
-            console.warn('WOMEN MODE REQUEST ERROR:', womenModeError)
-          }
-        } else {
-          const { error: identitySaveError } = await supabase
-            .from('profiles')
-            .update({
-              gender_identity: genderIdentity,
-              gender_visibility: 'private',
-              women_mode_requested: false,
-              women_mode_status: 'not_requested',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', userId)
+            if (womenModeError) {
+              console.warn('WOMEN MODE REQUEST ERROR:', womenModeError)
+            }
+          } else {
+            const { error: identitySaveError } = await supabase
+              .from('profiles')
+              .update({
+                gender_identity: cleanGenderIdentity,
+                gender_visibility: 'private',
+                women_mode_requested: false,
+                women_mode_status: 'not_requested',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', userId)
 
-          if (identitySaveError) {
-            console.warn('GENDER IDENTITY SAVE ERROR:', identitySaveError)
+            if (identitySaveError) {
+              console.warn('GENDER IDENTITY SAVE ERROR:', identitySaveError)
+            }
           }
         }
 
@@ -1097,15 +1113,15 @@ export default function Register() {
           full_name: fullName,
           avatar_url: avatarUrl,
           role,
-          gender_identity: genderIdentity,
-          ride_preference: ridePreference || 'standard',
+          gender_identity: cleanGenderIdentity,
+          ride_preference: cleanRidePreference,
         },
       })
 
       const targetRole = role || 'passenger'
       localStorage.setItem('michofer_last_role', targetRole)
-      localStorage.setItem('michofer_last_gender_identity', genderIdentity)
-      localStorage.setItem('michofer_last_ride_preference', ridePreference || 'standard')
+      localStorage.setItem('michofer_last_gender_identity', cleanGenderIdentity)
+      localStorage.setItem('michofer_last_ride_preference', cleanRidePreference)
 
       if (targetRole === 'driver') {
         window.location.replace('/driver')

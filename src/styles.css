@@ -263,6 +263,547 @@ body.route-driver .driver-nav-layout.driver-view-arrival .driver-navigation-turn
   }
 }
 
+/* Final auth viewport fit: compact browsers without broken page scroll */
+body.route-login,
+body.route-registro {
+  overflow: hidden !important;
+}
+
+body.route-login .app-shell,
+body.route-registro .app-shell {
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+body.route-login .login-panel,
+body.route-registro .login-panel {
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  padding-top: max(14px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  gap: clamp(7px, 1.35dvh, 13px) !important;
+}
+
+body.route-login .login-panel h1,
+body.route-registro .login-panel h1 {
+  font-size: clamp(30px, 6.5dvh, 44px) !important;
+  line-height: 0.98 !important;
+}
+
+body.route-login .login-subtitle,
+body.route-registro .login-subtitle {
+  margin: 0 !important;
+  font-size: clamp(13px, 2.2dvh, 17px) !important;
+  line-height: 1.25 !important;
+}
+
+body.route-login .login-step-form,
+body.route-registro .login-step-form {
+  gap: clamp(8px, 1.4dvh, 13px) !important;
+}
+
+body.route-login .login-step-form input,
+body.route-login .login-main-btn,
+body.route-login .login-secondary-btn,
+body.route-registro .login-step-form input,
+body.route-registro .login-main-btn,
+body.route-registro .login-secondary-btn {
+  min-height: clamp(44px, 7dvh, 58px) !important;
+}
+
+body.route-login .login-error-message,
+body.route-registro .login-error-message {
+  padding: 10px 12px !important;
+  border-radius: 17px !important;
+  font-size: clamp(12px, 2dvh, 14px) !important;
+  line-height: 1.22 !important;
+}
+
+@media (max-height: 760px), (max-width: 560px) {
+  body.route-login .auth-progress,
+  body.route-registro .auth-progress {
+    gap: 4px !important;
+    margin-bottom: 0 !important;
+  }
+
+  body.route-login .auth-progress span,
+  body.route-registro .auth-progress span {
+    height: 4px !important;
+  }
+
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    padding-left: clamp(16px, 4.4vw, 22px) !important;
+    padding-right: clamp(16px, 4.4vw, 22px) !important;
+  }
+
+  body.route-login .login-panel::before,
+  body.route-registro .login-panel::before {
+    inset: 8px !important;
+    border-radius: 28px !important;
+  }
+
+  body.route-login .login-panel h1,
+  body.route-registro .login-panel h1 {
+    font-size: clamp(28px, 6.2dvh, 38px) !important;
+  }
+
+  body.route-login .login-subtitle,
+  body.route-registro .login-subtitle {
+    max-width: 34ch !important;
+    font-size: 13px !important;
+  }
+
+  body.route-registro .driver-vehicle-step {
+    gap: 8px !important;
+  }
+
+  body.route-registro .driver-vehicle-type-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  body.route-registro .driver-vehicle-type {
+    min-height: 62px !important;
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    gap: 3px !important;
+    padding: 8px 5px !important;
+    border-radius: 16px !important;
+    text-align: center !important;
+  }
+
+  body.route-registro .driver-vehicle-type span {
+    width: 28px !important;
+    height: 28px !important;
+    grid-row: auto !important;
+    border-radius: 12px !important;
+  }
+
+  body.route-registro .driver-vehicle-type strong {
+    font-size: 12px !important;
+    line-height: 1.05 !important;
+  }
+
+  body.route-registro .driver-vehicle-type small {
+    display: none !important;
+  }
+
+  body.route-registro .driver-vehicle-fields {
+    gap: 6px !important;
+    padding: 8px !important;
+    border-radius: 17px !important;
+  }
+
+  body.route-registro .driver-vehicle-fields > span {
+    font-size: 10px !important;
+  }
+
+  body.route-registro .driver-vehicle-note {
+    display: none !important;
+  }
+
+  body.route-registro .driver-documents-step {
+    gap: 7px !important;
+  }
+
+  body.route-registro .driver-documents-intro {
+    min-height: 0 !important;
+    padding: 8px 10px !important;
+    border-radius: 16px !important;
+  }
+
+  body.route-registro .driver-documents-intro span {
+    display: none !important;
+  }
+
+  body.route-registro .driver-documents-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    padding-right: 0 !important;
+  }
+
+  body.route-registro .driver-document-card {
+    min-height: 50px !important;
+    gap: 2px !important;
+    padding: 8px !important;
+    border-radius: 14px !important;
+  }
+
+  body.route-registro .driver-document-card div {
+    gap: 5px !important;
+  }
+
+  body.route-registro .driver-document-card strong {
+    font-size: 11px !important;
+    line-height: 1.08 !important;
+  }
+
+  body.route-registro .driver-document-card span {
+    display: none !important;
+  }
+
+  body.route-registro .register-photo-preview {
+    width: clamp(86px, 18dvh, 132px) !important;
+    height: clamp(86px, 18dvh, 132px) !important;
+  }
+
+  body.route-registro .register-photo-box {
+    min-height: 0 !important;
+    padding: 12px !important;
+  }
+}
+
+@media (max-height: 670px) {
+  body.route-login .login-subtitle,
+  body.route-registro .login-subtitle {
+    display: none !important;
+  }
+
+  body.route-login .login-error-message,
+  body.route-registro .login-error-message {
+    padding: 8px 10px !important;
+  }
+
+  body.route-registro .driver-documents-intro {
+    display: none !important;
+  }
+
+  body.route-registro .driver-document-card {
+    min-height: 44px !important;
+  }
+}
+
+/* Final client viewport guard: prevent cropped search panel on narrow Chrome/mobile sizes */
+body.route-client .app-shell,
+body.route-client .client-phone.client-premium {
+  width: 100vw !important;
+  max-width: none !important;
+  min-height: 100dvh !important;
+  height: 100dvh !important;
+  margin: 0 auto !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+}
+
+body.route-client .client-premium > .mobility-map,
+body.route-client .client-premium > .interactive-map,
+body.route-client .client-premium > .mobility-map .google-real-map,
+body.route-client .client-premium > .interactive-map .google-real-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+body.route-client .client-premium .client-top.premium-map-header {
+  position: absolute !important;
+  top: max(10px, env(safe-area-inset-top, 0px)) !important;
+  left: max(10px, env(safe-area-inset-left, 0px)) !important;
+  right: max(10px, env(safe-area-inset-right, 0px)) !important;
+  width: auto !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  z-index: 80 !important;
+}
+
+body.route-client .client-premium .route-search-card.map-search-bar {
+  width: 100% !important;
+  max-width: 560px !important;
+  min-width: 0 !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  border-radius: clamp(22px, 5vw, 30px) !important;
+}
+
+body.route-client .client-premium .route-search-fields,
+body.route-client .client-premium .route-point-row,
+body.route-client .client-premium .route-input {
+  min-width: 0 !important;
+}
+
+body.route-client .client-premium .route-input {
+  width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+body.route-client .client-premium .map-toolbar {
+  left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  right: auto !important;
+}
+
+body.route-client .client-premium .map-locate-btn {
+  right: max(12px, env(safe-area-inset-right, 0px)) !important;
+}
+
+@media (orientation: landscape) and (max-height: 760px) {
+  body.route-client .client-premium .client-top.premium-map-header {
+    left: max(10px, env(safe-area-inset-left, 0px)) !important;
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+  }
+
+  body.route-client .client-premium .route-search-card.map-search-bar {
+    max-width: min(560px, calc(100vw - 20px)) !important;
+  }
+
+  body.route-client .client-premium .map-locate-btn {
+    right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body.route-client .client-premium .client-top.premium-map-header {
+    top: max(8px, env(safe-area-inset-top, 0px)) !important;
+    left: 8px !important;
+    right: 8px !important;
+  }
+
+  body.route-client .client-premium .route-search-card.map-search-bar {
+    border-radius: 24px !important;
+    padding: 12px 12px 12px 14px !important;
+  }
+}
+
+/* Apple-grade product polish: calmer sheets, single visual system, tactile controls */
+:root {
+  --mc-surface: rgba(8, 13, 17, 0.92);
+  --mc-surface-soft: rgba(255, 255, 255, 0.065);
+  --mc-surface-line: rgba(255, 255, 255, 0.10);
+  --mc-text: #f7fffd;
+  --mc-muted: rgba(247, 255, 253, 0.62);
+  --mc-action: #22ead7;
+  --mc-action-2: #17c7ff;
+  --mc-danger: #ff5b6b;
+  --mc-radius-xl: 28px;
+  --mc-radius-lg: 22px;
+  --mc-ease: cubic-bezier(.2,.8,.2,1);
+}
+
+body.route-client .client-bottom-start-card,
+body.route-client .client-bottom-quickbar,
+body.route-client .client-decision-dock,
+body.route-client .floating-driver-panel,
+body.route-client .driver-picker-sheet,
+body.route-client .michofer-live-sheet,
+body.route-client .mc-ride-live-sheet,
+body.route-client .mc-confirm-ride-card,
+body.route-driver .mc-driver-dock,
+body.route-driver .driver-navigation-bottom,
+body.route-driver .driver-trip-panel,
+body.route-driver .driver-live-sheet,
+body.route-driver .driver-bottom-sheet,
+body.route-driver .mc-driver-request-card {
+  border-radius: var(--mc-radius-xl) !important;
+  color: var(--mc-text) !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(34, 234, 215, 0.10), transparent 34%),
+    linear-gradient(180deg, rgba(13, 21, 27, 0.94), rgba(5, 8, 12, 0.96)) !important;
+  border: 1px solid var(--mc-surface-line) !important;
+  box-shadow:
+    0 24px 76px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: blur(26px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(1.12) !important;
+}
+
+body.route-client .sheet-handle,
+body.route-client .ride-sheet-handle,
+body.route-client .driver-picker-sheet .sheet-handle,
+body.route-driver .driver-navigation-bottom::before,
+body.route-driver .driver-live-sheet::before {
+  background: rgba(247, 255, 253, 0.32) !important;
+}
+
+body.route-client .sheet-heading .eyebrow,
+body.route-client .account-section-label,
+body.route-client .client-bottom-start-card span,
+body.route-client .michofer-live-sheet span,
+body.route-client .mc-ride-live-sheet span,
+body.route-driver .driver-live-sheet span,
+body.route-driver .driver-navigation-trip > span,
+body.route-driver .mc-driver-request-top span,
+body.route-driver .mc-driver-dock-secondary span {
+  color: var(--mc-muted) !important;
+  font-size: 10px !important;
+  line-height: 1.1 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+body.route-client .sheet-heading h1,
+body.route-client .client-bottom-start-card strong,
+body.route-client .client-driver-discovery-btn strong,
+body.route-client .michofer-live-sheet strong,
+body.route-client .mc-ride-live-sheet strong,
+body.route-driver .driver-live-sheet strong,
+body.route-driver .driver-navigation-trip strong,
+body.route-driver .mc-driver-request-copy h2 {
+  color: #ffffff !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .client-bottom-start-card {
+  left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  width: auto !important;
+  padding: 12px !important;
+  transform-origin: center bottom !important;
+}
+
+body.route-client .client-start-ride-btn,
+body.route-client .client-driver-discovery-btn,
+body.route-client .request-btn,
+body.route-client .mc-confirm-primary,
+body.route-driver .mc-driver-dock-btn,
+body.route-driver .mc-driver-accept-btn,
+body.route-driver .driver-navigation-primary {
+  min-height: 54px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  color: #021012 !important;
+  background: linear-gradient(135deg, var(--mc-action), var(--mc-action-2)) !important;
+  box-shadow:
+    0 18px 46px rgba(23, 199, 255, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
+  font-weight: 950 !important;
+  transition:
+    transform 170ms var(--mc-ease),
+    filter 170ms ease,
+    box-shadow 170ms ease !important;
+}
+
+body.route-client .client-start-ride-btn:active,
+body.route-client .client-driver-discovery-btn:active,
+body.route-client .request-btn:active,
+body.route-client .mc-confirm-primary:active,
+body.route-driver .mc-driver-dock-btn:active,
+body.route-driver .mc-driver-accept-btn:active,
+body.route-driver .driver-navigation-primary:active {
+  transform: scale(0.985) !important;
+  filter: brightness(0.96) !important;
+}
+
+body.route-client .client-driver-discovery-btn,
+body.route-driver .mc-driver-dock-btn:not(.active) {
+  color: var(--mc-text) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+body.route-driver .mc-driver-dock-btn.active,
+body.route-driver .mc-driver-dock-btn.receive.active {
+  color: #021012 !important;
+  background: linear-gradient(135deg, var(--mc-action), var(--mc-action-2)) !important;
+}
+
+body.route-client .client-bottom-quickbar {
+  left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  width: auto !important;
+  padding: 8px !important;
+  gap: 7px !important;
+}
+
+body.route-client .client-bottom-quickbar button,
+body.route-client .ride-category-strip button,
+body.route-driver .mc-driver-calibrate-btn,
+body.route-driver .mc-driver-request-count,
+body.route-driver .driver-navigation-chat,
+body.route-driver .driver-navigation-cancel {
+  min-height: 42px !important;
+  border-radius: 16px !important;
+  color: rgba(247, 255, 253, 0.84) !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+  box-shadow: none !important;
+}
+
+body.route-driver .driver-navigation-cancel,
+body.route-client .mc-confirm-close {
+  color: #ffd6dc !important;
+  background: rgba(255, 91, 107, 0.12) !important;
+  border-color: rgba(255, 91, 107, 0.20) !important;
+}
+
+body.route-driver .mc-driver-hud,
+body.route-client .premium-map-header,
+body.route-client .client-top {
+  backdrop-filter: blur(20px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.08) !important;
+}
+
+body.route-driver .mc-driver-hud-status strong,
+body.route-driver .mc-driver-hud-main small {
+  letter-spacing: 0 !important;
+}
+
+body.route-driver .mc-driver-status-dot.online,
+body.route-driver .mc-driver-status-dot.standby,
+body.route-client .status-dot,
+body.route-client .online-dot {
+  box-shadow: 0 0 0 6px rgba(34, 234, 215, 0.12), 0 0 22px rgba(34, 234, 215, 0.42) !important;
+}
+
+body.route-driver .driver-navigation-bottom {
+  left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  width: auto !important;
+  padding: 13px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+}
+
+body.route-driver .driver-navigation-trip small,
+body.route-driver .driver-trip-mini-rail span,
+body.route-client .michofer-live-sheet small,
+body.route-client .mc-ride-live-sheet small {
+  color: rgba(247, 255, 253, 0.58) !important;
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  body.route-client .client-bottom-start-card,
+  body.route-client .client-bottom-quickbar,
+  body.route-driver .driver-navigation-bottom,
+  body.route-driver .mc-driver-dock {
+    border-radius: 22px !important;
+    padding: 10px !important;
+  }
+
+  body.route-driver .driver-navigation-bottom {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+}
+
+@media (max-width: 380px) {
+  body.route-client .client-start-ride-btn,
+  body.route-client .client-driver-discovery-btn,
+  body.route-driver .mc-driver-dock-btn,
+  body.route-driver .driver-navigation-primary {
+    min-height: 50px !important;
+    border-radius: 18px !important;
+  }
+
+  body.route-driver .driver-navigation-bottom {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* Final home premium cleanup: quieter map, fewer words, clearer role choice */
 body.route-home .home-map {
   filter: saturate(0.82) contrast(0.94) brightness(0.92) !important;
@@ -1024,6 +1565,108 @@ body.route-home .home-secondary-actions a {
 
   body.route-client .client-premium .client-sheet {
     border-radius: 30px 30px 0 0 !important;
+  }
+}
+
+/* Client viewport guard: keep map and search card centered in every browser/device size */
+body.route-client .app-shell {
+  width: 100vw !important;
+  min-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+body.route-client .client-phone.client-premium {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 auto !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+body.route-client .client-premium > .mobility-map,
+body.route-client .client-premium > .interactive-map,
+body.route-client .client-premium > .mobility-map .google-real-map,
+body.route-client .client-premium > .interactive-map .google-real-map {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+body.route-client .client-premium .client-top.premium-map-header {
+  position: absolute !important;
+  top: max(10px, env(safe-area-inset-top, 0px)) !important;
+  left: max(10px, env(safe-area-inset-left, 0px)) !important;
+  right: max(10px, env(safe-area-inset-right, 0px)) !important;
+  width: auto !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  z-index: 70 !important;
+}
+
+body.route-client .client-premium .route-search-card.map-search-bar {
+  width: 100% !important;
+  max-width: 560px !important;
+  margin: 0 auto !important;
+  min-width: 0 !important;
+  border-radius: clamp(22px, 5vw, 30px) !important;
+  box-sizing: border-box !important;
+}
+
+body.route-client .client-premium .route-search-fields,
+body.route-client .client-premium .route-point-row,
+body.route-client .client-premium .route-input {
+  min-width: 0 !important;
+}
+
+body.route-client .client-premium .route-input {
+  width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+body.route-client .client-premium .map-toolbar {
+  left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  right: auto !important;
+}
+
+body.route-client .client-premium .map-locate-btn {
+  right: max(12px, env(safe-area-inset-right, 0px)) !important;
+}
+
+@media (orientation: landscape) and (max-height: 760px) {
+  body.route-client .client-premium .client-top.premium-map-header {
+    left: max(10px, env(safe-area-inset-left, 0px)) !important;
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+  }
+
+  body.route-client .client-premium .route-search-card.map-search-bar {
+    max-width: min(560px, calc(100vw - 20px)) !important;
+  }
+
+  body.route-client .client-premium .map-locate-btn {
+    right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body.route-client .client-premium .client-top.premium-map-header {
+    top: max(8px, env(safe-area-inset-top, 0px)) !important;
+    left: 8px !important;
+    right: 8px !important;
+  }
+
+  body.route-client .client-premium .route-search-card.map-search-bar {
+    border-radius: 24px !important;
+    padding: 12px 12px 12px 14px !important;
   }
 }
 
@@ -28942,6 +29585,146 @@ body.route-driver .driver-ella-status-card {
     left: 10px !important;
     right: 10px !important;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 124px) !important;
+  }
+}
+
+/* Final auth compact fit: last auth-specific override in the cascade */
+@media (max-height: 760px), (max-width: 560px) {
+  body.route-login,
+  body.route-registro {
+    overflow: hidden !important;
+  }
+
+  body.route-login .app-shell,
+  body.route-registro .app-shell,
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  body.route-login .login-panel,
+  body.route-registro .login-panel {
+    padding: max(12px, env(safe-area-inset-top)) clamp(16px, 4.4vw, 22px) max(10px, env(safe-area-inset-bottom)) !important;
+    gap: clamp(6px, 1.2dvh, 10px) !important;
+  }
+
+  body.route-login .login-panel h1,
+  body.route-registro .login-panel h1 {
+    font-size: clamp(28px, 6dvh, 38px) !important;
+    line-height: 0.98 !important;
+  }
+
+  body.route-login .login-subtitle,
+  body.route-registro .login-subtitle {
+    margin: 0 !important;
+    font-size: 13px !important;
+    line-height: 1.22 !important;
+  }
+
+  body.route-login .login-step-form,
+  body.route-registro .login-step-form {
+    gap: clamp(7px, 1.2dvh, 10px) !important;
+  }
+
+  body.route-login .login-step-form input,
+  body.route-login .login-main-btn,
+  body.route-login .login-secondary-btn,
+  body.route-registro .login-step-form input,
+  body.route-registro .login-main-btn,
+  body.route-registro .login-secondary-btn {
+    min-height: clamp(42px, 6.6dvh, 50px) !important;
+  }
+
+  body.route-login .login-error-message,
+  body.route-registro .login-error-message {
+    padding: 8px 10px !important;
+    border-radius: 16px !important;
+    font-size: 12px !important;
+    line-height: 1.18 !important;
+  }
+
+  body.route-registro .driver-vehicle-step {
+    gap: 7px !important;
+  }
+
+  body.route-registro .driver-vehicle-type-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  body.route-registro .driver-vehicle-type {
+    min-height: 60px !important;
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    gap: 3px !important;
+    padding: 7px 5px !important;
+    border-radius: 15px !important;
+    text-align: center !important;
+  }
+
+  body.route-registro .driver-vehicle-type span {
+    width: 27px !important;
+    height: 27px !important;
+    grid-row: auto !important;
+    border-radius: 11px !important;
+  }
+
+  body.route-registro .driver-vehicle-type strong {
+    font-size: 12px !important;
+    line-height: 1.04 !important;
+  }
+
+  body.route-registro .driver-vehicle-type small,
+  body.route-registro .driver-vehicle-note,
+  body.route-registro .driver-documents-intro span,
+  body.route-registro .driver-document-card span {
+    display: none !important;
+  }
+
+  body.route-registro .driver-vehicle-fields {
+    gap: 6px !important;
+    padding: 8px !important;
+    border-radius: 17px !important;
+  }
+
+  body.route-registro .driver-vehicle-fields > span {
+    font-size: 10px !important;
+  }
+
+  body.route-registro .driver-documents-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    padding-right: 0 !important;
+  }
+
+  body.route-registro .driver-document-card {
+    min-height: 48px !important;
+    gap: 2px !important;
+    padding: 8px !important;
+    border-radius: 14px !important;
+  }
+
+  body.route-registro .driver-document-card strong {
+    font-size: 11px !important;
+    line-height: 1.06 !important;
+  }
+}
+
+@media (max-height: 670px) {
+  body.route-login .login-subtitle,
+  body.route-registro .login-subtitle,
+  body.route-registro .driver-documents-intro {
+    display: none !important;
+  }
+
+  body.route-registro .driver-document-card {
+    min-height: 42px !important;
   }
 }
 

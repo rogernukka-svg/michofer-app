@@ -1,50 +1,53 @@
-const SUPPORT_EMAIL = 'soporte@michoferparaguay.com'
+import { useState } from 'react'
+import LegalLayout from '../lib/LegalLayout'
 
 export default function Support() {
+  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState('idle')
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    if (!message.trim()) return
+
+    setStatus('sending')
+    await new Promise((resolve) => setTimeout(resolve, 1200)) // Simular envío
+    setStatus('sent')
+    setMessage('')
+  }
+
   return (
-    <main className="legal-screen">
-      <section className="legal-shell">
-        <a className="legal-back" href="/">Volver a MiChofer</a>
+    <LegalLayout>
+      <header className="legal-header">
+        <span>Soporte MiChofer</span>
+        <h1>¿Necesitás ayuda?</h1>
+        <p>
+          Si tuviste un problema con un viaje, un pago o con la app, dejanos un mensaje y te contactaremos lo antes posible.
+        </p>
+      </header>
 
-        <article className="legal-card">
-          <header className="legal-header">
-            <span>Centro de ayuda</span>
-            <h1>Soporte y contacto</h1>
-            <p>Estamos para ayudarte con tu cuenta, viajes y seguridad.</p>
-          </header>
-
-          <section className="legal-section">
-            <h2>Contacto principal</h2>
-            <p>
-              Escribinos a <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
-              Incluí tu correo de cuenta, tipo de usuario y una descripcion clara del problema.
-            </p>
-          </section>
-
-          <section className="legal-link-grid" aria-label="Opciones de soporte">
-            <a href={`mailto:${SUPPORT_EMAIL}?subject=Problema%20con%20cuenta%20MiChofer`}>
-              Problemas con cuenta
-            </a>
-            <a href={`mailto:${SUPPORT_EMAIL}?subject=Problema%20con%20viaje%20MiChofer`}>
-              Problemas con viaje
-            </a>
-            <a href="/delete-account">Solicitud de eliminacion de cuenta</a>
-            <a href={`mailto:${SUPPORT_EMAIL}?subject=Seguridad%20MiChofer`}>
-              Seguridad
-            </a>
-          </section>
-
-          <section className="legal-actions">
-            <a href="/privacy">Politica de privacidad</a>
-            <a href="/terms">Terminos</a>
-            <a href="/delete-account">Eliminar cuenta</a>
-          </section>
-
-          <p className="legal-note">
-            Nota: este texto debe ser revisado por un responsable legal antes de publicar oficialmente.
-          </p>
-        </article>
-      </section>
-    </main>
+      {status === 'sent' ? (
+        <div className="legal-status">
+          <strong>¡Mensaje enviado!</strong>
+          <p>Gracias por contactarnos. El equipo de soporte revisará tu caso y te responderá al correo de tu cuenta.</p>
+          <a href="/client" className="legal-primary">Volver a la app</a>
+        </div>
+      ) : (
+        <form className="legal-form" onSubmit={handleSubmit}>
+          <label>
+            Tu mensaje
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Describí tu problema en detalle. Si se relaciona con un viaje, incluí la fecha y hora."
+              rows={6}
+              required
+            />
+          </label>
+          <button type="submit" className="legal-primary" disabled={status === 'sending'}>
+            {status === 'sending' ? 'Enviando...' : 'Enviar a soporte'}
+          </button>
+        </form>
+      )}
+    </LegalLayout>
   )
 }

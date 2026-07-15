@@ -46,6 +46,7 @@ import {
   RIDE_CATEGORY_OPTIONS,
   canUseWomenMode,
   getDriverPreferredRideCategory,
+  getRideCategoryDbCode,
   getRideCategoryMeta,
   getWomenModeStatus,
   isWomenDriver,
@@ -133,6 +134,17 @@ function getErrorMessage(error) {
   return error?.message || error?.details || error?.hint || 'Error desconocido'
 }
 
+function getSupabaseRequestMessage(error) {
+  const parts = [
+    error?.message,
+    error?.details,
+    error?.hint,
+    error?.code ? `Codigo ${error.code}` : '',
+  ].filter(Boolean)
+
+  return parts.join(' - ') || 'Error desconocido'
+}
+
 function isNetworkFetchError(error) {
   const message = getErrorMessage(error).toLowerCase()
   return (
@@ -140,6 +152,8 @@ function isNetworkFetchError(error) {
     message.includes('network') ||
     message.includes('connection') ||
     message.includes('err_connection') ||
+    message.includes('err_name_not_resolved') ||
+    message.includes('err_internet_disconnected') ||
     error?.name === 'TypeError'
   )
 }
@@ -408,27 +422,14 @@ function normalizeCategoryList(value) {
 }
 
 function resolveRideCategoryForRequest(driver, selectedVehicleMode) {
-  const driverTypeText = [
-    driver?.driver_type,
-    driver?.vehicle_type,
-    driver?.type,
-    driver?.vehicle,
-    driver?.vehicle_make,
-    driver?.vehicle_model,
-    driver?.moto_brand,
-    driver?.moto_model,
-    driver?.moto_plate,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-
+  const driverType = String(driver?.driver_type || driver?.vehicle_type || driver?.type || '').trim().toLowerCase()
+  const vehicleCategory = String(driver?.vehicle_category || '').trim().toLowerCase()
   const approvedCategories = [
     ...normalizeCategoryList(driver?.approved_categories),
+    ...normalizeCategoryList(driver?.available_categories),
     ...normalizeCategoryList(driver?.enabled_categories),
     ...normalizeCategoryList(driver?.ride_categories),
     ...normalizeCategoryList(driver?.categories),
-    ...normalizeCategoryList(driver?.requested_categories),
   ]
 
   const helperCategory = String(
@@ -436,43 +437,35 @@ function resolveRideCategoryForRequest(driver, selectedVehicleMode) {
   ).toLowerCase()
 
   if (selectedVehicleMode === 'ella') {
-    return 'ella'
-  }
-
-  if (selectedVehicleMode && selectedVehicleMode !== 'all') {
-    return selectedVehicleMode
-  }
-
-  if (
-    driverTypeText.includes('moto') ||
-    driverTypeText.includes('motocicleta') ||
-    driverTypeText.includes('asd')
-  ) {
-    return 'moto'
-  }
-
-  if (approvedCategories.includes('moto')) {
-    return 'moto'
-  }
-
-  if (driverTypeText.includes('premium') || approvedCategories.includes('premium')) {
-    return 'premium'
-  }
-
-  if (driverTypeText.includes('comfort') || approvedCategories.includes('comfort')) {
-    return 'comfort'
-  }
-
-  if (
-    driverTypeText.includes('auto') ||
-    driverTypeText.includes('car') ||
-    approvedCategories.includes('auto_standard')
-  ) {
     return 'auto_standard'
   }
 
+  if (selectedVehicleMode && selectedVehicleMode !== 'all') {
+    return getRideCategoryDbCode(selectedVehicleMode)
+  }
+
+  if (vehicleCategory && vehicleCategory !== 'auto' && vehicleCategory !== 'all') {
+    return getRideCategoryDbCode(vehicleCategory)
+  }
+
+  if (approvedCategories.includes('premium')) {
+    return 'premium'
+  }
+
+  if (approvedCategories.includes('comfort')) {
+    return 'comfort'
+  }
+
+  if (approvedCategories.includes('campus')) {
+    return 'campus'
+  }
+
+  if (driverType === 'moto' || approvedCategories.includes('moto')) {
+    return 'moto'
+  }
+
   if (helperCategory && helperCategory !== 'all') {
-    return helperCategory
+    return getRideCategoryDbCode(helperCategory)
   }
 
   return 'auto_standard'
@@ -526,6 +519,8 @@ export default function Client() {
   const [driverRatingStars, setDriverRatingStars] = useState(5)
   const [driverRatingComment, setDriverRatingComment] = useState('')
   const [ratingSubmitting, setRatingSubmitting] = useState(false)
+  const [driversLastLoadedAt, setDriversLastLoadedAt] = useState(0)
+  const [driversLoadError, setDriversLoadError] = useState(null)
 
   const avatarInputRef = useRef(null)
   const messageAudioRef = useRef(null)
@@ -537,8 +532,9 @@ export default function Client() {
   const driversInFlightRef = useRef(false)
   const driversFailureCountRef = useRef(0)
   const driversRetryAtRef = useRef(0)
+  const driversRef = useRef([])
 
-   function playMessageNotificationSound() {
+  function playMessageNotificationSound() {
     const now = Date.now()
 
     // Evita doble sonido cuando TripChatModal y Realtime avisan casi al mismo tiempo.
@@ -1114,11 +1110,13 @@ const { data: liveTrip, error: liveError } = await supabase
     return normalized
   }
 
-  async function loadDrivers(location = clientLocation) {
-    if (driversInFlightRef.current) return
+  async function loadDrivers(location = clientLocation, options = {}) {
+    const force = Boolean(options.force)
+
+    if (driversInFlightRef.current) return driversRef.current
 
     const now = Date.now()
-    if (now < driversRetryAtRef.current) return
+    if (!force && now < driversRetryAtRef.current) return driversRef.current
 
     driversInFlightRef.current = true
     let data = null
@@ -1149,64 +1147,70 @@ const { data: liveTrip, error: liveError } = await supabase
 
     if (error) {
       console.warn('AVAILABLE DRIVERS RPC ERROR:', error)
+      setDriversLoadError(error)
       const nextFailures = driversFailureCountRef.current + 1
       driversFailureCountRef.current = nextFailures
       driversRetryAtRef.current = Date.now() + Math.min(45000, 2500 * nextFailures)
 
-      if (!drivers.length && nextFailures >= 3) {
+      if (!driversRef.current.length && nextFailures >= 3) {
         setMessage(`No pude cargar choferes disponibles: ${getErrorMessage(error)}. Reintentando solo.`)
       }
-      return
+      return driversRef.current
     }
 
     driversFailureCountRef.current = 0
-driversRetryAtRef.current = 0
+    driversRetryAtRef.current = 0
+    setDriversLoadError(null)
+    setDriversLastLoadedAt(Date.now())
 
-const normalized = (data || [])
-  .map((driver) => normalizeDriver(driver, location))
-  .filter((driver) => isValidParaguayCoord(driver))
+    const normalized = (data || [])
+      .map((driver) => normalizeDriver(driver, location))
+      .filter((driver) => isValidParaguayCoord(driver))
 
-let normalizedWithRatings = normalized
+    let normalizedWithRatings = normalized
 
-if (normalized.length > 0) {
-  const driverIds = normalized
-    .map((driver) => driver.user_id || driver.id)
-    .filter(Boolean)
+    if (normalized.length > 0) {
+      const driverIds = normalized
+        .map((driver) => driver.user_id || driver.id)
+        .filter(Boolean)
 
-  const { data: ratingRows, error: ratingError } = await supabase
-    .from('driver_rating_summary')
-    .select('driver_id, rating, rating_count')
-    .in('driver_id', driverIds)
+      const { data: ratingRows, error: ratingError } = await supabase
+        .from('driver_rating_summary')
+        .select('driver_id, rating, rating_count')
+        .in('driver_id', driverIds)
 
-  if (!ratingError && Array.isArray(ratingRows)) {
-    const ratingMap = ratingRows.reduce((acc, item) => {
-      acc[item.driver_id] = item
-      return acc
-    }, {})
+      if (!ratingError && Array.isArray(ratingRows)) {
+        const ratingMap = ratingRows.reduce((acc, item) => {
+          acc[item.driver_id] = item
+          return acc
+        }, {})
 
-    normalizedWithRatings = normalized.map((driver) => {
-      const summary = ratingMap[driver.user_id || driver.id]
+        normalizedWithRatings = normalized.map((driver) => {
+          const summary = ratingMap[driver.user_id || driver.id]
 
-      return {
-        ...driver,
-        rating: summary?.rating ? Number(summary.rating) : Number(driver.rating || 5),
-        ratingCount: summary?.rating_count ? Number(summary.rating_count) : Number(driver.rating_count || 0),
+          return {
+            ...driver,
+            rating: summary?.rating ? Number(summary.rating) : Number(driver.rating || 5),
+            ratingCount: summary?.rating_count ? Number(summary.rating_count) : Number(driver.rating_count || 0),
+          }
+        })
       }
-    })
-  }
-}
+    }
 
-console.log('[MiChofer Drivers] raw drivers:', data || [])
-console.log('[MiChofer Drivers] valid drivers:', normalizedWithRatings)
-console.log('[MiChofer Drivers] clientLocation:', location)
+    console.log('[MiChofer Drivers] raw drivers:', data || [])
+    console.log('[MiChofer Drivers] valid drivers:', normalizedWithRatings)
+    console.log('[MiChofer Drivers] clientLocation:', location)
 
-setDrivers(normalizedWithRatings)
+    driversRef.current = normalizedWithRatings
+    setDrivers(normalizedWithRatings)
 
-if (!normalized.length) {
-  setMessage('No hay choferes disponibles cerca. Verificá que el chofer esté aprobado, en línea, recibiendo y con GPS activo.')
-} else if (message.includes('choferes disponibles') || message.includes('No hay choferes')) {
-  setMessage('')
-}
+    if (!normalized.length) {
+      setMessage('No hay choferes disponibles cerca. Verificá que el chofer esté aprobado, en línea, recibiendo y con GPS activo.')
+    } else if (message.includes('choferes disponibles') || message.includes('No hay choferes')) {
+      setMessage('')
+    }
+
+    return normalizedWithRatings
   }
 
   async function handleLogout() {
@@ -1407,8 +1411,38 @@ async function requestRide() {
     return
   }
 
-  if (!isValidParaguayCoord({ lat: selectedDriver.lat, lng: selectedDriver.lng })) {
-    console.error('[MiChofer requestRide] Chofer sin GPS válido:', selectedDriver)
+  let freshestDriver = drivers.find((driver) => {
+    const driverId = driver.user_id || driver.id
+    return String(driverId || '') === String(selectedDriverId || '')
+  })
+  const driversSnapshotAge = driversLastLoadedAt ? Date.now() - driversLastLoadedAt : Infinity
+
+  if (driversSnapshotAge > 60000 || !freshestDriver) {
+    setMessage('Confirmando disponibilidad del chofer...')
+    const refreshedDrivers = await loadDrivers(clientLocation, { force: true })
+
+    freshestDriver = (refreshedDrivers || []).find((driver) => {
+      const driverId = driver.user_id || driver.id
+      return String(driverId || '') === String(selectedDriverId || '')
+    })
+  }
+
+  if (driversLoadError && !freshestDriver) {
+    setMessage(`No pude confirmar choferes disponibles: ${getErrorMessage(driversLoadError)}. Verificá internet y probá otra vez.`)
+    return
+  }
+
+  if (!freshestDriver) {
+    setMessage('Ese chofer ya no aparece disponible. Elegí otro chofer y probá de nuevo.')
+    return
+  }
+
+  if (freshestDriver !== selectedDriver) {
+    setSelectedDriver(freshestDriver)
+  }
+
+  if (!isValidParaguayCoord({ lat: freshestDriver.lat, lng: freshestDriver.lng })) {
+    console.error('[MiChofer requestRide] Chofer sin GPS válido:', freshestDriver)
     setMessage('Este chofer no tiene GPS válido. Pedile que calibre ubicación en modo chofer.')
     return
   }
@@ -1422,7 +1456,7 @@ async function requestRide() {
   setMessage('')
 
   const destinationTextFinal = destinationPlace?.formatted_address || destinationPlace?.name || destination
-  const requestedRideCategory = resolveRideCategoryForRequest(selectedDriver, vehicleMode)
+  const requestedRideCategory = resolveRideCategoryForRequest(freshestDriver, vehicleMode)
   const safeRouteKm = Number.isFinite(Number(routeKm))
     ? Number(routeKm)
     : distanceKm(clientLocation, destinationPoint)
@@ -1434,8 +1468,8 @@ async function requestRide() {
     destinationLng: Number(destinationPoint.lng),
     pickupLat: Number(clientLocation.lat),
     pickupLng: Number(clientLocation.lng),
-    driverLat: Number(selectedDriver.lat),
-    driverLng: Number(selectedDriver.lng),
+    driverLat: Number(freshestDriver.lat),
+    driverLng: Number(freshestDriver.lng),
     routeKm: safeRouteKm,
     price: Number(routePrice),
     paymentMethod,
@@ -1447,8 +1481,8 @@ async function requestRide() {
   console.log('[MiChofer Route] destination:', destinationPoint, destinationTextFinal)
   console.log('[MiChofer requestTrip category debug]', {
     vehicleMode,
-    selectedDriver,
-    driverType: selectedDriver?.driver_type,
+    selectedDriver: freshestDriver,
+    driverType: freshestDriver?.driver_type,
     requestedRideCategory,
   })
   console.log('[MiChofer requestTrip payload]', tripPayload)
@@ -1461,14 +1495,14 @@ async function requestRide() {
     console.error('[MiChofer requestTrip RPC ERROR]', {
       error,
       tripPayload,
-      selectedDriver,
+      selectedDriver: freshestDriver,
       vehicleMode,
       requestedRideCategory,
     })
 
     setMessage(
       `No se pudo crear el viaje: ${
-        error.message || error.details || error.hint || 'Error desconocido'
+        getSupabaseRequestMessage(error)
       }`
     )
     return
@@ -1486,7 +1520,7 @@ async function requestRide() {
   }
 
   setActiveTrip(createdTrip)
-  setActiveTripDriver(selectedDriver)
+  setActiveTripDriver(freshestDriver)
   setLastTripStatus(createdTrip?.status || 'pending')
   setTripWaitingSeconds(0)
   setRushSentAt(null)
@@ -1769,24 +1803,24 @@ async function cancelActiveTrip() {
   }
 }
 
-    async function refreshLocation() {
+  async function refreshLocation() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const nextLocation = {
-  lat: Number(pos.coords.latitude),
-  lng: Number(pos.coords.longitude),
-}
+          lat: Number(pos.coords.latitude),
+          lng: Number(pos.coords.longitude),
+        }
 
-if (!isValidParaguayCoord(nextLocation)) {
-  setLocationReady(false)
-  setMessage('Tu GPS devolvió una ubicación inválida. Activá ubicación precisa y probá de nuevo.')
-  return
-}
+        if (!isValidParaguayCoord(nextLocation)) {
+          setLocationReady(false)
+          setMessage('Tu GPS devolvió una ubicación inválida. Activá ubicación precisa y probá de nuevo.')
+          return
+        }
 
-setClientLocation(nextLocation)
-setLocationReady(true)
-loadDrivers(nextLocation)
-setMessage('')
+        setClientLocation(nextLocation)
+        setLocationReady(true)
+        loadDrivers(nextLocation)
+        setMessage('')
       },
       () => {
         setLocationReady(false)
@@ -1796,7 +1830,7 @@ setMessage('')
     )
   }
 
-    const liveDriverPoint = useMemo(() => {
+  const liveDriverPoint = useMemo(() => {
     // Priority:
     // 1. activeTrip.driver_road_lat / driver_road_lng (Roads API snapped)
     // 2. activeTrip.driver_lat / driver_lng (raw GPS from driver updates)
@@ -2339,7 +2373,7 @@ setMessage('')
                 <MapPin size={17} />
                 Choferes cerca
               </span>
-              <strong>{canOpenDrivers ? 'Ver opciones de viaje' : 'Elegí destino'}</strong>
+              <strong>{canOpenDrivers ? 'Elegir viaje' : 'Elegí destino'}</strong>
               <ChevronRight size={20} />
             </button>
           </section>
@@ -2353,8 +2387,8 @@ setMessage('')
               onClick={() => setShowDriverChooser(true)}
               disabled={!canOpenDrivers}
             >
-              <span>{canOpenDrivers ? 'MiChofer disponible' : 'Elegí destino'}</span>
-              <strong>{canOpenDrivers ? 'Ver choferes cerca' : 'Buscar chofer'}</strong>
+              <span>{canOpenDrivers ? 'Listo para viajar' : 'Elegí destino'}</span>
+              <strong>{canOpenDrivers ? 'Elegir chofer' : 'Buscar chofer'}</strong>
             </button>
           </div>
         )}
@@ -3001,14 +3035,14 @@ setMessage('')
               <div className="account-section">
                 <button type="button" onClick={refreshLocation}>
                   <Share2 size={19} />
-                  <span>Calibrar ubicación</span>
+                  <span>Mejorar precisión</span>
                   <ChevronRight size={17} />
                 </button>
               </div>
 
               <div className="account-section performance-card">
-                <span className="account-section-label">Rendimiento de la aplicación</span>
-                <p>MiChofer adapta automáticamente el mapa y las animaciones para funcionar mejor en tu dispositivo.</p>
+                <span className="account-section-label">Rendimiento</span>
+                <p>Ajustamos mapa y animaciones para que MiChofer se sienta fluido en tu dispositivo.</p>
                 {performance.slowNotice && (
                   <div className="performance-slow-notice">
                     ¿MiChofer está funcionando lento? Probá el test de rendimiento desde Configuración.
@@ -3039,7 +3073,7 @@ setMessage('')
                 <div className="performance-card-actions">
                   <button type="button" onClick={() => performance.runPerformanceTest({ force: true })} disabled={performance.isTesting}>
                     <RefreshCw size={17} />
-                    <span>{performance.isTesting ? 'Analizando...' : 'Volver a realizar el test'}</span>
+                    <span>{performance.isTesting ? 'Analizando...' : 'Optimizar de nuevo'}</span>
                   </button>
                 </div>
               </div>

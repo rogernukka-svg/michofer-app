@@ -1352,7 +1352,7 @@ function escapeOverlayHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
-function createDriverOverlay(driver, selected, onSelect, google) {
+function createDriverOverlay(driver, selected, onSelect, google, onDriverMarkerPress) {
   const overlay = new google.maps.OverlayView()
   const element = document.createElement('button')
   const initials = String(driver.name || 'CH').slice(0, 2).toUpperCase()
@@ -1400,8 +1400,21 @@ function createDriverOverlay(driver, selected, onSelect, google) {
     </span>
   `
 
-  element.addEventListener('click', (event) => {
+  const stopMarkerEvent = (event) => {
     event.stopPropagation()
+    if (typeof event.stopImmediatePropagation === 'function') {
+      event.stopImmediatePropagation()
+    }
+  }
+
+  ;['pointerdown', 'mousedown', 'touchstart'].forEach((eventName) => {
+    element.addEventListener(eventName, stopMarkerEvent, { passive: true })
+  })
+
+  element.addEventListener('click', (event) => {
+    event.preventDefault()
+    stopMarkerEvent(event)
+    onDriverMarkerPress?.(driver)
     onSelect?.(driver)
   })
 
@@ -1555,7 +1568,7 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     const elapsed = now - (this._animStartTime || now)
     const duration = this._animDuration || DURATION_NORMAL
     const rawProgress = Math.min(elapsed / duration, 1)
-    const progress = rawProgress
+    const progress = 1 - (1 - rawProgress) ** 3
 
     // Interpolate position
     const interpolatedPos = interpolateLatLng(this._animFrom, this._animTo, progress)
@@ -1978,18 +1991,25 @@ export default function InteractiveRouteMap({
   const cameraSmoothHeadingRef = useRef(0)
   const cameraLastCenterRef = useRef(null)
   const cameraLastHeadingRef = useRef(0)
+  const cameraLastZoomRef = useRef(null)
+  const cameraLastTiltRef = useRef(null)
   const cameraAnimFrameRef = useRef(null)
   const cameraAnimatingRef = useRef(false)
   const cameraAnimFromRef = useRef(null)
   const cameraAnimToRef = useRef(null)
   const cameraAnimFromHeadingRef = useRef(0)
   const cameraAnimToHeadingRef = useRef(0)
+  const cameraAnimFromZoomRef = useRef(null)
+  const cameraAnimToZoomRef = useRef(null)
+  const cameraAnimFromTiltRef = useRef(null)
+  const cameraAnimToTiltRef = useRef(null)
   const cameraAnimStartRef = useRef(0)
   const cameraAnimDurationRef = useRef(0)
   const currentCarSpriteRef = useRef('back')
   const lastSpriteChangeAtRef = useRef(0)
   const lastSpriteHeadingRef = useRef(0)
   const navigationStartedAtRef = useRef(0)
+  const suppressMapClickUntilRef = useRef(0)
 
   useEffect(() => {
     onMapClickRef.current = onMapClick
@@ -2004,6 +2024,13 @@ export default function InteractiveRouteMap({
         isProgrammaticCameraMoveRef.current = false
       }, 450)
     }
+  }
+
+  function suppressNextMapClick(durationMs = 750) {
+    suppressMapClickUntilRef.current = Math.max(
+      suppressMapClickUntilRef.current,
+      Date.now() + durationMs
+    )
   }
 
   function getCurrentVehicleVisual(nextHeading, speed) {
@@ -2476,6 +2503,14 @@ const visibleDrivers = useMemo(() => {
 
         map.addListener('click', (event) => {
           if (typeof onMapClickRef.current !== 'function') return
+          if (Date.now() < suppressMapClickUntilRef.current) return
+
+          const eventTarget = event?.domEvent?.target
+          if (eventTarget?.closest?.('.google-driver-marker, .google-client-marker')) {
+            suppressNextMapClick()
+            return
+          }
+
           const lat = Number(event.latLng?.lat?.())
           const lng = Number(event.latLng?.lng?.())
           if (Number.isFinite(lat) && Number.isFinite(lng)) {
@@ -2821,19 +2856,35 @@ const visibleDrivers = useMemo(() => {
     const fromHeading = cameraLastHeadingRef.current
     const cameraHeading = stablePreviewNavigation ? 0 : targetHeading
     const toHeading = Number.isFinite(Number(cameraHeading)) ? Number(cameraHeading) : fromHeading
+    const currentZoom = typeof map.getZoom === 'function' ? Number(map.getZoom()) : null
+    const currentTilt = typeof map.getTilt === 'function' ? Number(map.getTilt()) : null
+    const fromZoom = Number.isFinite(Number(cameraLastZoomRef.current))
+      ? Number(cameraLastZoomRef.current)
+      : Number.isFinite(currentZoom)
+        ? currentZoom
+        : getCurrentNavigationZoom()
+    const fromTilt = Number.isFinite(Number(cameraLastTiltRef.current))
+      ? Number(cameraLastTiltRef.current)
+      : Number.isFinite(currentTilt)
+        ? currentTilt
+        : getCurrentNavigationTilt()
+    const toZoom = getCurrentNavigationZoom()
+    const toTilt = getCurrentNavigationTilt()
 
     // If distance is very small, just snap
     const dist = getDistanceMeters(fromCenter, targetCenter)
     if (dist < 0.5) {
       runProgrammaticCameraMove(() => {
         applyNavigationCamera(map, targetCenter, cameraHeading, {
-          zoom: getCurrentNavigationZoom(),
-          tilt: getCurrentNavigationTilt(),
+          zoom: toZoom,
+          tilt: toTilt,
           ...getCurrentNavigationCameraOptions(),
         })
       })
       cameraLastCenterRef.current = targetCenter
       cameraLastHeadingRef.current = toHeading
+      cameraLastZoomRef.current = toZoom
+      cameraLastTiltRef.current = toTilt
       return
     }
 
@@ -2847,6 +2898,10 @@ const visibleDrivers = useMemo(() => {
     cameraAnimToRef.current = targetCenter
     cameraAnimFromHeadingRef.current = fromHeading
     cameraAnimToHeadingRef.current = toHeading
+    cameraAnimFromZoomRef.current = fromZoom
+    cameraAnimToZoomRef.current = toZoom
+    cameraAnimFromTiltRef.current = fromTilt
+    cameraAnimToTiltRef.current = toTilt
     cameraAnimStartRef.current = performance.now()
     cameraAnimDurationRef.current = clamp(duration, 300, 1200)
     cameraAnimatingRef.current = true
@@ -2856,20 +2911,24 @@ const visibleDrivers = useMemo(() => {
 
       const elapsed = performance.now() - cameraAnimStartRef.current
       const rawProgress = Math.min(elapsed / cameraAnimDurationRef.current, 1)
-      const progress = driverPreviewNavigation ? rawProgress : easeInOutCubic(rawProgress)
+      const progress = easeInOutCubic(rawProgress)
 
       const interpCenter = interpolateLatLng(cameraAnimFromRef.current, cameraAnimToRef.current, progress)
       const interpHeading = interpolateHeading(cameraAnimFromHeadingRef.current, cameraAnimToHeadingRef.current, progress)
+      const interpZoom = lerp(cameraAnimFromZoomRef.current, cameraAnimToZoomRef.current, progress)
+      const interpTilt = lerp(cameraAnimFromTiltRef.current, cameraAnimToTiltRef.current, progress)
 
       runProgrammaticCameraMove(() => {
         applyNavigationCamera(map, interpCenter, interpHeading, {
-          zoom: getCurrentNavigationZoom(),
-          tilt: getCurrentNavigationTilt(),
+          zoom: interpZoom,
+          tilt: interpTilt,
           ...getCurrentNavigationCameraOptions(),
         })
       })
       cameraLastCenterRef.current = interpCenter
       cameraLastHeadingRef.current = interpHeading
+      cameraLastZoomRef.current = interpZoom
+      cameraLastTiltRef.current = interpTilt
 
       if (rawProgress < 1) {
         cameraAnimFrameRef.current = requestAnimationFrame(cameraAnimLoop)
@@ -2877,13 +2936,15 @@ const visibleDrivers = useMemo(() => {
         // Final snap
         runProgrammaticCameraMove(() => {
           applyNavigationCamera(map, cameraAnimToRef.current, cameraAnimToHeadingRef.current, {
-            zoom: getCurrentNavigationZoom(),
-            tilt: getCurrentNavigationTilt(),
+            zoom: cameraAnimToZoomRef.current,
+            tilt: cameraAnimToTiltRef.current,
             ...getCurrentNavigationCameraOptions(),
           })
         })
         cameraLastCenterRef.current = cameraAnimToRef.current
         cameraLastHeadingRef.current = cameraAnimToHeadingRef.current
+        cameraLastZoomRef.current = cameraAnimToZoomRef.current
+        cameraLastTiltRef.current = cameraAnimToTiltRef.current
         cameraAnimatingRef.current = false
         cameraAnimFrameRef.current = null
       }
@@ -3396,7 +3457,13 @@ const visibleDrivers = useMemo(() => {
       if (driver.lat == null || driver.lng == null) return
 
       const selected = selectedDriver?.id === driver.id
-      const overlay = createDriverOverlay(driver, selected, onSelectDriver, googleApi)
+      const overlay = createDriverOverlay(
+        driver,
+        selected,
+        onSelectDriver,
+        googleApi,
+        suppressNextMapClick
+      )
 
       overlay.setMap(map)
       markersRef.current.push(overlay)

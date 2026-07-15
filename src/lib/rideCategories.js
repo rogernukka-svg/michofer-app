@@ -50,6 +50,16 @@ export const RIDE_CATEGORY_OPTIONS = [
     cta: 'Buscar Premium',
     bullets: ['Categoria manual', 'Auto reciente', 'Experiencia superior'],
   },
+  {
+    code: 'campus',
+    dbCode: 'campus',
+    label: 'Campus',
+    shortLabel: 'Campus',
+    title: 'MiChofer Campus',
+    description: 'Viajes para universidad, residencias, hospitales y guardias.',
+    cta: 'Buscar Campus',
+    bullets: ['Viaje universitario', 'Residencias y hospitales', 'Chofer aprobado'],
+  },
 ]
 
 export const DRIVER_CATEGORY_ACTIONS = [
@@ -157,6 +167,7 @@ export function getDriverPreferredRideCategory(driver, requestedCategory = 'all'
   if (categories.includes('premium')) return 'premium'
   if (categories.includes('comfort')) return 'comfort'
   if (categories.includes('moto') || driverType === 'moto') return 'moto'
+  if (categories.includes('campus')) return 'campus'
   return 'auto_standard'
 }
 
