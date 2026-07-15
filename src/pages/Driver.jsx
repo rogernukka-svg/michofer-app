@@ -469,6 +469,7 @@ export default function Driver() {
   const [showTripsHistory, setShowTripsHistory] = useState(false)
   const [tripHistory, setTripHistory] = useState([])
   const [tripHistoryLoading, setTripHistoryLoading] = useState(false)
+  const [liveDriverLocation, setLiveDriverLocation] = useState(null)
 
   const auth = useAuth()
   const performance = usePerformanceProfile()
@@ -499,7 +500,7 @@ export default function Driver() {
   const showEllaDriverPanel = isWomanDriver || ellaDriverStatus !== 'not_requested'
   const isOnline = auth.driverProfile?.is_online === true
   const isAvailable = auth.driverProfile?.is_available === true
-  const hasDriverLocation = isValidParaguayCoord(auth.driverProfile)
+  const hasDriverLocation = isValidParaguayCoord(liveDriverLocation) || isValidParaguayCoord(auth.driverProfile)
   const isReceivingTrips = useMemo(() => isOnline && isAvailable && hasDriverLocation, [isOnline, isAvailable, hasDriverLocation])
 
   const pushDriverNotification = useCallback((title, body, tone = 'info') => {
@@ -673,6 +674,20 @@ export default function Driver() {
 
   const focusTrip = activeTrip || pendingTrips[0] || null
   const driverPoint = useMemo(() => {
+  if (isValidParaguayCoord(liveDriverLocation)) {
+    const liveHeading = Number(liveDriverLocation.heading)
+    const liveSpeed = Number(liveDriverLocation.speed)
+    const liveAccuracy = Number(liveDriverLocation.accuracy)
+
+    return {
+      lat: Number(liveDriverLocation.lat),
+      lng: Number(liveDriverLocation.lng),
+      heading: Number.isFinite(liveHeading) ? liveHeading : null,
+      speed: Number.isFinite(liveSpeed) ? liveSpeed : null,
+      accuracy: Number.isFinite(liveAccuracy) ? liveAccuracy : null,
+    }
+  }
+
   const lat = Number(auth.driverProfile?.lat)
   const lng = Number(auth.driverProfile?.lng)
   const heading = Number(auth.driverProfile?.heading)
@@ -691,6 +706,11 @@ export default function Driver() {
     accuracy: Number.isFinite(accuracy) ? accuracy : null,
   }
 }, [
+  liveDriverLocation?.lat,
+  liveDriverLocation?.lng,
+  liveDriverLocation?.heading,
+  liveDriverLocation?.speed,
+  liveDriverLocation?.accuracy,
   auth.driverProfile?.lat,
   auth.driverProfile?.lng,
   auth.driverProfile?.heading,
@@ -851,7 +871,7 @@ export default function Driver() {
     : null
 
      useEffect(() => {
-    if (!activeTrip?.id || !hasDriverLocation || !navigator.geolocation || !auth.user?.id) return undefined
+    if (!activeTrip?.id || !navigator.geolocation || !driverUserId) return undefined
 
     let cancelled = false
 
@@ -874,8 +894,11 @@ export default function Driver() {
       )
     }
 
-    const handleError = () => {
+    const handleError = (error) => {
       if (!cancelled) {
+        if (import.meta.env.DEV) {
+          console.warn('[MiChofer GPS watch] error:', error)
+        }
         syncStoredTripLocation(activeTrip)
       }
     }
@@ -906,7 +929,7 @@ export default function Driver() {
 
       window.clearInterval(fallbackInterval)
     }
-  }, [activeTrip?.id, activeTrip?.status, hasDriverLocation, auth.user?.id])
+  }, [activeTrip?.id, activeTrip?.status, driverUserId])
 
  const loadTrips = useCallback(async (driverId) => {
   /*
@@ -1164,6 +1187,18 @@ const getStoredLocation = useCallback(() => {
   return stored
 }, [auth.driverProfile])
 
+useEffect(() => {
+  const storedLocation = getStoredLocation()
+  if (storedLocation) {
+    setLiveDriverLocation((currentLocation) => {
+      if (!currentLocation) return storedLocation
+      const currentTs = Number(currentLocation._timestamp) || 0
+      const storedTs = Number(storedLocation._timestamp) || 0
+      return storedTs >= currentTs ? storedLocation : currentLocation
+    })
+  }
+}, [getStoredLocation])
+
 const getCurrentLocation = useCallback(async () => {
   const storedLocation = getStoredLocation()
   const fallback = storedLocation || DEFAULT_DRIVER_LOCATION
@@ -1188,6 +1223,7 @@ const getCurrentLocation = useCallback(async () => {
           return
         }
 
+        setLiveDriverLocation(nextLocation)
         resolve(nextLocation)
       },
       () => resolve(fallback),
@@ -1209,6 +1245,8 @@ const getCurrentLocation = useCallback(async () => {
   // en interiores, solo en la ruta de watchPosition. Unificado acá para que
   // ambas rutas se comporten igual.
   const commitDriverLocationUpdate = useCallback(async (location, trip, previousLocation) => {
+    if (!driverUserId) return previousLocation
+
     const locationWithTs = { ...location, _timestamp: location._timestamp || Date.now() }
     const accuracy = Number(location.accuracy)
     const speed = Number(location.speed)
@@ -1250,17 +1288,31 @@ const getCurrentLocation = useCallback(async () => {
     }
 
     logGps(true, null)
-    liveLastStoredPointRef.current = locationWithTs
+    const acceptedLocation = {
+      ...locationWithTs,
+      lat: Number(locationWithTs.lat),
+      lng: Number(locationWithTs.lng),
+      accuracy: Number.isFinite(accuracy) ? accuracy : null,
+      speed: Number.isFinite(effectiveSpeed) ? effectiveSpeed : null,
+      heading: Number.isFinite(Number(locationWithTs.heading))
+        ? Number(locationWithTs.heading)
+        : Number.isFinite(Number(previousLocation?.heading))
+          ? Number(previousLocation.heading)
+          : null,
+    }
 
-    if (GOOGLE_ROADS_API_ENABLED && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
-      gpsBufferRef.current.push({ lat: location.lat, lng: location.lng })
+    liveLastStoredPointRef.current = acceptedLocation
+    setLiveDriverLocation(acceptedLocation)
+
+    if (GOOGLE_ROADS_API_ENABLED && Number.isFinite(acceptedLocation.lat) && Number.isFinite(acceptedLocation.lng)) {
+      gpsBufferRef.current.push({ lat: acceptedLocation.lat, lng: acceptedLocation.lng })
     }
 
     const { data: updatedDriver } = await updateOwnDriverStatus({
       isOnline: true,
       isAvailable,
-      lat: location.lat,
-      lng: location.lng,
+      lat: acceptedLocation.lat,
+      lng: acceptedLocation.lng,
     })
 
     // AuthContext will reload the driver profile automatically.
@@ -1269,14 +1321,14 @@ const getCurrentLocation = useCallback(async () => {
 
     await supabase
       .from('trips')
-      .update(tripDriverTelemetryPayload(location))
+      .update(tripDriverTelemetryPayload(acceptedLocation))
       .eq('id', trip.id)
-      .eq('driver_id', auth.user.id)
+      .eq('driver_id', driverUserId)
 
     await supabase
       .from('driver_profiles')
-      .update(driverProfileTelemetryPayload(location))
-      .eq('user_id', auth.user.id)
+      .update(driverProfileTelemetryPayload(acceptedLocation))
+      .eq('user_id', driverUserId)
 
     if (GOOGLE_ROADS_API_ENABLED && gpsBufferRef.current.getForRoads().length >= ROADS_MIN_POINTS) {
       const enoughTime = Date.now() - lastRoadsSnapAtRef.current >= ROADS_SYNC_INTERVAL_MS
@@ -1297,7 +1349,7 @@ const getCurrentLocation = useCallback(async () => {
                   driver_road_snapped_at: new Date(snappedPoint.snappedAt).toISOString(),
                 })
                 .eq('id', trip.id)
-                .eq('driver_id', auth.user.id)
+                .eq('driver_id', driverUserId)
               if (import.meta.env.DEV) {
                 console.info('[MiChofer Roads] saved snapped point:', snappedPoint)
               }
@@ -1315,11 +1367,11 @@ const getCurrentLocation = useCallback(async () => {
       }
     }
 
-    return location
-  }, [isAvailable, auth.user?.id, setMessage])
+    return acceptedLocation
+  }, [isAvailable, driverUserId, setMessage])
 
   const pushLiveTripLocation = useCallback(async (location, trip = activeTrip) => {
-    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !auth.user?.id) return null
+    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !driverUserId) return null
 
     if (!isValidParaguayCoord(location)) {
       return getStoredLocation()
@@ -1344,7 +1396,7 @@ const getCurrentLocation = useCallback(async () => {
     } finally {
       liveSyncBusyRef.current = false
     }
-  }, [activeTrip, commitDriverLocationUpdate, auth.user?.id])
+  }, [activeTrip, commitDriverLocationUpdate, driverUserId, getStoredLocation])
 
   const syncStoredTripLocation = useCallback(async (trip = activeTrip) => {
     // Si ya hubo una sincronización reciente vía watchPosition, no hace falta
@@ -1356,7 +1408,7 @@ const getCurrentLocation = useCallback(async () => {
     }
 
     const location = await getCurrentLocation()
-    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !auth.user?.id) return null
+    if (!trip?.id || !location || !LOCATION_STATUSES.includes(trip.status) || !driverUserId) return null
 
     if (!isValidParaguayCoord(location)) {
       return getStoredLocation()
@@ -1366,7 +1418,7 @@ const getCurrentLocation = useCallback(async () => {
     liveLastSyncAtRef.current = Date.now()
 
     return commitDriverLocationUpdate(location, trip, previousLocation)
-  }, [activeTrip, commitDriverLocationUpdate, getCurrentLocation, auth.user?.id])
+  }, [activeTrip, commitDriverLocationUpdate, getCurrentLocation, getStoredLocation, driverUserId])
 
   const syncDriverLocation = useCallback(async (trip = activeTrip, nextOnline = isOnline, nextAvailable = isAvailable) => {
   let currentUser = auth.user
@@ -1388,6 +1440,11 @@ const getCurrentLocation = useCallback(async () => {
     setMessage('GPS inválido. Activá ubicación precisa para recibir solicitudes.')
     return null
   }
+
+  setLiveDriverLocation({
+    ...location,
+    _timestamp: location._timestamp || Date.now(),
+  })
 
   const { data: updatedDriver, error } = await updateOwnDriverStatus({
     isOnline: nextOnline,
@@ -1434,6 +1491,13 @@ const getCurrentLocation = useCallback(async () => {
   if (nextOnline && !isValidParaguayCoord(location)) {
     setMessage('GPS inválido. Activá ubicación precisa para recibir solicitudes.')
     return
+  }
+
+  if (isValidParaguayCoord(location)) {
+    setLiveDriverLocation({
+      ...location,
+      _timestamp: location._timestamp || Date.now(),
+    })
   }
 
   const { data: updatedDriver, error } = await updateOwnDriverStatus({

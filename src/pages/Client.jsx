@@ -1996,13 +1996,11 @@ async function cancelActiveTrip() {
 
    const mapDestination = useMemo(() => {
     if (!activeTripAcceptedByDriver) return destinationPoint || mapDestinationMarker
-    return activeTripWaitingForPickup && locationReady ? clientLocation : destinationPoint || mapDestinationMarker
+    return liveTargetPoint || destinationPoint || mapDestinationMarker
   }, [
     activeTripAcceptedByDriver,
-    activeTripWaitingForPickup,
-    locationReady,
-    clientLocation?.lat,
-    clientLocation?.lng,
+    liveTargetPoint?.lat,
+    liveTargetPoint?.lng,
     destinationPoint?.lat,
     destinationPoint?.lng,
     mapDestinationMarker?.lat,
@@ -2324,6 +2322,9 @@ async function cancelActiveTrip() {
       showOriginCar={shouldTrackDriverOnMap}
       showMapTypeControl
       animateCamera={!shouldTrackDriverOnMap}
+      navigationMode={shouldTrackDriverOnMap}
+      navigationVariant={shouldTrackDriverOnMap ? 'driver' : 'default'}
+      navigationCamera={shouldTrackDriverOnMap ? 'stable' : 'default'}
     />
   ) : (
   <section className="mobility-map interactive-map">
