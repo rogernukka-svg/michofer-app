@@ -69,6 +69,23 @@ const DEFAULT_CENTER = { lat: -25.5167, lng: -54.6167 }
 const ACTIVE_STATUSES = ['pending', 'accepted', 'arriving', 'in_progress']
 const CAR_PRICE_PER_KM = 4500
 const CAR_MIN_PRICE = 12000
+const CLIENT_LIVE_DRIVER_MAP_SAFE_AREA = { top: 190, bottom: 220, left: 24, right: 24 }
+const CLIENT_LIVE_DRIVER_MAP_PADDING = { top: 210, bottom: 235, left: 36, right: 36 }
+const CLIENT_LIVE_DRIVER_CAMERA = {
+  closeAheadMeters: 10,
+  nearAheadMeters: 18,
+  maneuverAheadMeters: 28,
+  panoramicAheadMeters: 110,
+  closeZoomDesktop: 19.95,
+  closeZoomMobile: 20.08,
+  maneuverZoomDesktop: 19.65,
+  maneuverZoomMobile: 19.82,
+  panoramicZoomDesktop: 18.25,
+  panoramicZoomMobile: 18.42,
+  closeTilt: 48,
+  maneuverTilt: 52,
+  panoramicTilt: 58,
+}
 
 const MODE_ICON_LABEL = {
   all: 'T',
@@ -2083,6 +2100,7 @@ async function cancelActiveTrip() {
   }, [Boolean(activeTrip), visibleDrivers])
 
   const mapSelectedDriver = activeTrip ? null : selectedDriver
+  const mapDestinationText = activeTrip?.destination_text || mapDestinationAddress || destination
 
   return (
     <main className="app-shell">
@@ -2353,7 +2371,7 @@ async function cancelActiveTrip() {
     <InteractiveRouteMap
       origin={mapOrigin}
       destination={mapDestination}
-      destinationText={mapDestinationAddress || destination}
+      destinationText={mapDestinationText}
       clientAvatar={mapAvatar}
       drivers={mapDrivers}
       selectedDriver={mapSelectedDriver}
@@ -2361,7 +2379,7 @@ async function cancelActiveTrip() {
       onChooseDriver={() => setShowDriverChooser(true)}
       onRefreshLocation={refreshLocation}
       onRouteUpdate={setRouteGuidance}
-      onMapClick={async (point) => {
+      onMapClick={activeTrip ? undefined : async (point) => {
         setDestination('Punto marcado en el mapa')
         setMapDestinationMarker(point)
         setDestinationPoint(point)
@@ -2390,10 +2408,13 @@ async function cancelActiveTrip() {
       showRouteSummary={false}
       showOriginCar={shouldTrackDriverOnMap}
       showMapTypeControl
+      fitPadding={shouldTrackDriverOnMap ? CLIENT_LIVE_DRIVER_MAP_PADDING : undefined}
+      uiSafeArea={shouldTrackDriverOnMap ? CLIENT_LIVE_DRIVER_MAP_SAFE_AREA : null}
       animateCamera={!shouldTrackDriverOnMap}
       navigationMode={shouldTrackDriverOnMap}
       navigationVariant={shouldTrackDriverOnMap ? 'driver' : 'default'}
-      navigationCamera={shouldTrackDriverOnMap ? 'stable' : 'default'}
+      navigationCamera={shouldTrackDriverOnMap ? 'preview' : 'default'}
+      navigationCameraConfig={shouldTrackDriverOnMap ? CLIENT_LIVE_DRIVER_CAMERA : null}
     />
   ) : (
   <section className="mobility-map interactive-map">
