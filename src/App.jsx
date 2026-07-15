@@ -1,9 +1,11 @@
+import { useEffect, useMemo } from 'react'
 import { ArrowRight, CarFront, LogIn, ShieldCheck, UserRound } from 'lucide-react'
 import InstallMiChoferButton from './components/InstallMiChoferButton.jsx'
 import InteractiveRouteMap from './components/InteractiveRouteMap.jsx'
 import alexAvatar from './assets/roger-nunez-client.jpeg'
 import logo from './assets/logo.png'
 import rogerAvatar from './assets/alex-gonzalez-driver.jpeg'
+import { useAuth } from './pages/AuthContext'
 
 const alexLocation = {
   id: 'alex-gonzalez',
@@ -28,6 +30,49 @@ function homeRoutePadding() {
 }
 
 export default function App() {
+  const auth = useAuth()
+
+  const signedInTarget = useMemo(() => {
+    if (!auth.user) return ''
+
+    const role =
+      auth.profile?.role ||
+      auth.user?.user_metadata?.role ||
+      localStorage.getItem('michofer_last_role') ||
+      'passenger'
+
+    if (role === 'admin') return '/admin'
+    if (role === 'driver') return '/driver'
+    return '/client'
+  }, [auth.profile?.role, auth.user])
+
+  useEffect(() => {
+    if (auth.loading || !signedInTarget) return
+
+    const redirectId = window.setTimeout(() => {
+      window.location.replace(signedInTarget)
+    }, 420)
+
+    return () => window.clearTimeout(redirectId)
+  }, [auth.loading, signedInTarget])
+
+  if (auth.loading || signedInTarget) {
+    return (
+      <main className="app-shell home-shell">
+        <section className="phone home-phone home-premium home-session-boot">
+          <img src={logo} alt="MiChofer" />
+          <div className="home-session-loader" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <strong>Abriendo MiChofer</strong>
+          <p>{signedInTarget === '/driver' ? 'Preparando tu panel de chofer.' : signedInTarget === '/admin' ? 'Entrando al panel admin.' : 'Preparando tu viaje.'}</p>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="app-shell home-shell">
       <section className="phone home-phone home-premium">

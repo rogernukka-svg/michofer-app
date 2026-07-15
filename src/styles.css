@@ -7392,6 +7392,82 @@ body.route-home .home-phone {
   overflow: hidden;
 }
 
+body.route-home .home-session-boot {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(38, 224, 199, 0.18), transparent 28%),
+    radial-gradient(circle at 52% 58%, rgba(24, 198, 255, 0.12), transparent 34%),
+    #05070a;
+}
+
+body.route-home .home-session-boot img {
+  width: clamp(126px, 32vw, 168px);
+  height: auto;
+  padding: 12px 15px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.35),
+    0 0 46px rgba(31, 229, 207, 0.16);
+}
+
+body.route-home .home-session-loader {
+  width: 78px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+body.route-home .home-session-loader span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #22f0d0;
+  box-shadow: 0 0 20px rgba(34, 240, 208, 0.45);
+  animation: home-session-pulse 920ms ease-in-out infinite;
+}
+
+body.route-home .home-session-loader span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+body.route-home .home-session-loader span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+body.route-home .home-session-boot strong {
+  color: #ffffff;
+  font-size: clamp(22px, 5vw, 30px);
+  font-weight: 950;
+}
+
+body.route-home .home-session-boot p {
+  max-width: 280px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+@keyframes home-session-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: translateY(3px) scale(0.78);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1);
+  }
+}
+
 body.route-home .home-header {
   position: absolute;
   z-index: 20;
