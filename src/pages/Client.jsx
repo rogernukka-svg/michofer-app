@@ -265,6 +265,10 @@ function sameDriverAccount(driver, driverId) {
   return accountId && String(accountId) === String(driverId || '')
 }
 
+function getDriverProfileLookupId(driver) {
+  return driver?.profile_id || driver?.id || null
+}
+
 function rideStatusUi(status, driverName, etaText = '') {
   const name = firstName(driverName)
   const eta = etaText || 'breve'
@@ -1206,6 +1210,42 @@ const { data: liveTrips, error: liveError } = await supabase
     return normalized
   }
 
+  async function resolveSelectedDriverForRequest(driver, location = clientLocation) {
+    if (!driver) return null
+
+    const accountId = getDriverAccountId(driver)
+    const profileId = getDriverProfileLookupId(driver)
+
+    if (!accountId && !profileId) return null
+
+    let query = supabase
+      .from('driver_profiles')
+      .select('*')
+      .limit(1)
+
+    if (accountId) {
+      query = query.eq('user_id', accountId)
+    } else {
+      query = query.eq('id', profileId)
+    }
+
+    const { data, error } = await query.maybeSingle()
+
+    if (error) {
+      console.warn('[MiChofer requestRide] No pude refrescar el chofer seleccionado:', {
+        error,
+        accountId,
+        profileId,
+        driver,
+      })
+      return accountId ? driver : null
+    }
+
+    if (!data) return accountId ? driver : null
+
+    return normalizeDriver(data, location)
+  }
+
   async function loadDrivers(location = clientLocation, options = {}) {
     const force = Boolean(options.force)
 
@@ -1536,7 +1576,8 @@ async function getFreshClientPickupLocation() {
     return
   }
 
-  const selectedDriverId = getDriverAccountId(selectedDriver)
+  const confirmedSelectedDriver = await resolveSelectedDriverForRequest(selectedDriver, pickupLocation)
+  const selectedDriverId = getDriverAccountId(confirmedSelectedDriver)
 
   if (!selectedDriverId) {
     setRequesting(false)
@@ -1553,7 +1594,7 @@ async function getFreshClientPickupLocation() {
 
   let freshestDriver = drivers.find((driver) => {
     return sameDriverAccount(driver, selectedDriverId)
-  })
+  }) || confirmedSelectedDriver
   const driversSnapshotAge = driversLastLoadedAt ? Date.now() - driversLastLoadedAt : Infinity
 
   if (driversSnapshotAge > 60000 || !freshestDriver) {
@@ -2704,6 +2745,12 @@ async function cancelActiveTrip() {
 
       <small>Precio calculado por distancia y categoría.</small>
     </section>
+
+    {message && (
+      <p className="mc-select-message" role="status">
+        {message}
+      </p>
+    )}
 
     <div className="mc-confirm-actions">
       <button
