@@ -140,6 +140,9 @@ const MIN_LIVE_VEHICLE_ANIMATION_MS = 320
 const MAX_LIVE_VEHICLE_ANIMATION_MS = 1450
 const VEHICLE_GLIDE_POSITION_RESPONSE_MS = 760
 const VEHICLE_GLIDE_HEADING_RESPONSE_MS = 640
+const VEHICLE_LIVE_CATCHUP_DISTANCE_METERS = 9
+const VEHICLE_LIVE_HARD_CATCHUP_DISTANCE_METERS = 26
+const VEHICLE_LIVE_FAST_SPEED_MPS = 8
 const CAMERA_GLIDE_POSITION_RESPONSE_MS = 980
 const CAMERA_GLIDE_HEADING_RESPONSE_MS = 1120
 const CAMERA_GLIDE_ZOOM_RESPONSE_MS = 1300
@@ -362,7 +365,19 @@ function smoothVisualPosition(currentVisual, realPoint, accuracy, speed) {
 
   const baseAlpha = getGpsSmoothingAlpha(accuracy, speed)
   const catchUpBoost = clamp(distance / GPS_ROUTE_BLEND_MAX_METERS, 0, 0.42)
-  const alpha = clamp(baseAlpha + catchUpBoost, baseAlpha, 0.72)
+  const movingBoost = Number.isFinite(speedNumber)
+    ? clamp(speedNumber / VEHICLE_LIVE_FAST_SPEED_MPS, 0, 0.18)
+    : 0
+  const liveCatchUpAlpha = distance >= VEHICLE_LIVE_HARD_CATCHUP_DISTANCE_METERS
+    ? 0.86
+    : distance >= VEHICLE_LIVE_CATCHUP_DISTANCE_METERS
+      ? 0.68
+      : baseAlpha
+  const alpha = clamp(
+    Math.max(baseAlpha + catchUpBoost + movingBoost, liveCatchUpAlpha),
+    baseAlpha,
+    0.9
+  )
 
   return interpolateLatLng(currentVisual, realPoint, alpha)
 }
@@ -1786,6 +1801,7 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
   overlay._lastFrameAt = 0
   overlay._positionResponseMs = VEHICLE_GLIDE_POSITION_RESPONSE_MS
   overlay._headingResponseMs = VEHICLE_GLIDE_HEADING_RESPONSE_MS
+  overlay._targetSpeedMps = 0
   overlay.onVisualFrame = null
   overlay.__modeKey = 'car'
   overlay.currentSpriteType = spriteType
@@ -1833,16 +1849,32 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     const targetPosition = this.targetPosition || this._animTo
     const targetHeading = this.targetHeading ?? this._animToHeading
     const distance = getDistanceMeters(this.currentPosition, targetPosition)
-    const positionResponse = Math.max(180, Number(this._positionResponseMs) || VEHICLE_GLIDE_POSITION_RESPONSE_MS)
+    const targetSpeed = Number(this._targetSpeedMps)
+    const speedBoost = Number.isFinite(targetSpeed)
+      ? clamp(targetSpeed / VEHICLE_LIVE_FAST_SPEED_MPS, 0, 1)
+      : 0
+    const distanceBoost = Number.isFinite(distance)
+      ? clamp((distance - VEHICLE_LIVE_CATCHUP_DISTANCE_METERS) / 28, 0, 1)
+      : 0
+    const catchUpBoost = Math.max(speedBoost, distanceBoost)
+    const dynamicPositionResponse = lerp(
+      Number(this._positionResponseMs) || VEHICLE_GLIDE_POSITION_RESPONSE_MS,
+      240,
+      catchUpBoost
+    )
+    const positionResponse = Math.max(160, dynamicPositionResponse)
     const headingResponse = Math.max(160, Number(this._headingResponseMs) || VEHICLE_GLIDE_HEADING_RESPONSE_MS)
     const positionAlpha = 1 - Math.exp(-dt / positionResponse)
     const headingAlpha = 1 - Math.exp(-dt / headingResponse)
+    const maxPositionAlpha = distance >= VEHICLE_LIVE_HARD_CATCHUP_DISTANCE_METERS
+      ? 0.58
+      : lerp(0.2, 0.42, catchUpBoost)
 
     if (isValidCoord(targetPosition) && Number.isFinite(distance)) {
       if (distance < 0.05) {
         this.currentPosition = toLatLng(targetPosition)
       } else {
-        this.currentPosition = interpolateLatLng(this.currentPosition, targetPosition, clamp(positionAlpha, 0.012, 0.18))
+        this.currentPosition = interpolateLatLng(this.currentPosition, targetPosition, clamp(positionAlpha, 0.014, maxPositionAlpha))
       }
     }
 
@@ -1918,7 +1950,7 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
    * @param {number|null} nextHeading - heading in degrees
    * @param {number} duration - animation duration in ms
    */
-  overlay.updatePositionSmooth = function (nextPosition, nextHeading, duration) {
+  overlay.updatePositionSmooth = function (nextPosition, nextHeading, duration, speedMps = null) {
     if (!isValidCoord(nextPosition)) return
 
     const newPos = toLatLng(nextPosition)
@@ -1943,6 +1975,15 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     const distance = getDistanceMeters(this.currentPosition, newPos)
     const updateInterval = this._lastTargetAt ? now - this._lastTargetAt : 0
     this._lastTargetAt = now
+    const numericSpeed = Number(speedMps)
+    const measuredSpeed = updateInterval > 0 && Number.isFinite(distance)
+      ? distance / (updateInterval / 1000)
+      : null
+    this._targetSpeedMps = Number.isFinite(numericSpeed)
+      ? numericSpeed
+      : Number.isFinite(measuredSpeed)
+        ? measuredSpeed
+        : this._targetSpeedMps
 
     let requestedDuration = duration || getAnimationDuration(distance)
     if (Number.isFinite(updateInterval) && updateInterval > 0 && updateInterval < 900) {
@@ -1972,8 +2013,14 @@ function createNavigationOverlaySmooth(position, google, heading = 0, spriteType
     this._animToHeading = newHeading != null ? newHeading : this.targetHeading
     this._animStartTime = performance.now()
     this._animDuration = animDuration
-    this._positionResponseMs = clamp(animDuration * 0.62, 360, 960)
-    this._headingResponseMs = clamp(animDuration * 0.52, 300, 840)
+    const catchUpDistance = Number.isFinite(distance) ? distance : 0
+    const speedCatchUp = Number.isFinite(this._targetSpeedMps)
+      ? clamp(this._targetSpeedMps / VEHICLE_LIVE_FAST_SPEED_MPS, 0, 1)
+      : 0
+    const distanceCatchUp = clamp((catchUpDistance - VEHICLE_LIVE_CATCHUP_DISTANCE_METERS) / 28, 0, 1)
+    const catchUp = Math.max(speedCatchUp, distanceCatchUp)
+    this._positionResponseMs = clamp(lerp(animDuration * 0.62, 260, catchUp), 220, 900)
+    this._headingResponseMs = clamp(lerp(animDuration * 0.52, 240, catchUp), 220, 780)
 
     if (this._animFrameId) {
       return
@@ -3147,7 +3194,7 @@ const visibleDrivers = useMemo(() => {
             if (typeof originOverlayRef.current.updateVehicleVisual === 'function') {
               originOverlayRef.current.updateVehicleVisual(vehicleVisual.spriteType, vehicleVisual.rotation)
             }
-            originOverlayRef.current.updatePositionSmooth(finalPredicted, vehicleVisual.rotation, driverPreviewNavigation ? 620 : 400)
+            originOverlayRef.current.updatePositionSmooth(finalPredicted, vehicleVisual.rotation, driverPreviewNavigation ? 520 : 360, speed)
           }
 
           if (navigationMode && isFollowingDriver && mapRef.current) {
@@ -3769,15 +3816,15 @@ const visibleDrivers = useMemo(() => {
           pointWithTs
         )
         const duration = driverPreviewNavigation && !freeDriveNavigation
-          ? clamp(gpsDuration, 1250, 2400)
+          ? clamp(gpsDuration * 0.58, 420, 1350)
           : navigationMode
-            ? clamp(Number(performanceSettings?.carAnimationDuration) || gpsDuration, 950, 2400)
+            ? clamp(Number(performanceSettings?.carAnimationDuration) || gpsDuration * 0.72, 520, 1500)
             : gpsDuration
         const vehicleVisual = getCurrentVehicleVisual(navigationHeadingRef.current, effectiveSpeed)
         if (typeof originOverlayRef.current.updateVehicleVisual === 'function') {
           originOverlayRef.current.updateVehicleVisual(vehicleVisual.spriteType, vehicleVisual.rotation)
         }
-        originOverlayRef.current.updatePositionSmooth(matchedOrigin, vehicleVisual.rotation, duration)
+        originOverlayRef.current.updatePositionSmooth(matchedOrigin, vehicleVisual.rotation, duration, effectiveSpeed)
       } else {
         // Fallback for legacy overlay
         originOverlayRef.current.updatePosition(matchedOrigin)
