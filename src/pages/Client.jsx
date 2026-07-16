@@ -2651,6 +2651,7 @@ async function cancelActiveTrip() {
       navigationVariant={shouldTrackDriverOnMap ? 'driver' : 'default'}
       navigationCamera={shouldTrackDriverOnMap ? 'stable' : 'default'}
       navigationCameraConfig={null}
+      routeVisualVariant="client"
       preserveNavigationRouteOrigin={!shouldTrackDriverOnMap}
     />
   ) : (
