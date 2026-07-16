@@ -71,21 +71,6 @@ const CAR_PRICE_PER_KM = 4500
 const CAR_MIN_PRICE = 12000
 const CLIENT_LIVE_DRIVER_MAP_SAFE_AREA = { top: 190, bottom: 220, left: 24, right: 24 }
 const CLIENT_LIVE_DRIVER_MAP_PADDING = { top: 210, bottom: 235, left: 36, right: 36 }
-const CLIENT_LIVE_DRIVER_CAMERA = {
-  closeAheadMeters: 10,
-  nearAheadMeters: 18,
-  maneuverAheadMeters: 28,
-  panoramicAheadMeters: 110,
-  closeZoomDesktop: 19.95,
-  closeZoomMobile: 20.08,
-  maneuverZoomDesktop: 19.65,
-  maneuverZoomMobile: 19.82,
-  panoramicZoomDesktop: 18.25,
-  panoramicZoomMobile: 18.42,
-  closeTilt: 48,
-  maneuverTilt: 52,
-  panoramicTilt: 58,
-}
 const CLIENT_DRIVER_ROAD_MAX_AGE_MS = 18000
 const CLIENT_DRIVER_GPS_MAX_AGE_MS = 45000
 const CLIENT_DRIVER_PROFILE_MAX_AGE_MS = 90000
@@ -2513,8 +2498,8 @@ async function cancelActiveTrip() {
       animateCamera={!shouldTrackDriverOnMap}
       navigationMode={shouldTrackDriverOnMap}
       navigationVariant={shouldTrackDriverOnMap ? 'driver' : 'default'}
-      navigationCamera={shouldTrackDriverOnMap ? 'preview' : 'default'}
-      navigationCameraConfig={shouldTrackDriverOnMap ? CLIENT_LIVE_DRIVER_CAMERA : null}
+      navigationCamera={shouldTrackDriverOnMap ? 'stable' : 'default'}
+      navigationCameraConfig={null}
       preserveNavigationRouteOrigin={!shouldTrackDriverOnMap}
     />
   ) : (
