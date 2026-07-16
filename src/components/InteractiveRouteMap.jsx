@@ -21,15 +21,15 @@ const ROUTE_STYLE = {
     next: '#00f5d4',
   },
   client: {
-    main: '#0a84ff',
-    glow: '#8edcff',
+    main: '#1769d6',
+    glow: '#b9e7ff',
     casing: '#ffffff',
-    completed: '#8b9caf',
-    next: '#26d4ff',
-    mainWeight: 6,
-    glowWeight: 9,
-    casingWeight: 9,
-    opacity: 0.88,
+    completed: '#9aa9b8',
+    next: '#28b7ff',
+    mainWeight: 4,
+    glowWeight: 6,
+    casingWeight: 6,
+    opacity: 0.76,
   },
   driver: {
     main: '#1173ff',
@@ -2517,25 +2517,25 @@ export default function InteractiveRouteMap({
           if (routePolylineRef.current) {
             routePolylineRef.current.setOptions({
               strokeOpacity: style.opacity,
-              strokeWeight: navigationMode ? style.mainWeight : Math.max(5, ROUTE_STYLE.client.mainWeight - 3),
+              strokeWeight: navigationMode ? style.mainWeight : Math.max(3, ROUTE_STYLE.client.mainWeight - 1),
             })
           }
           if (focusRouteGlowRef.current) {
             focusRouteGlowRef.current.setOptions({
-              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.18) : 0,
+              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.08) : 0,
               strokeWeight: navigationMode ? style.glowWeight : 0,
             })
           }
           if (routeCompletedPolylineRef.current) {
             routeCompletedPolylineRef.current.setOptions({
-              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.32 : 0.22) : 0,
-              strokeWeight: navigationMode ? Math.max(4, style.mainWeight - 2) : 0,
+              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.32 : 0.10) : 0,
+              strokeWeight: navigationMode ? Math.max(stableDriverNavigation ? 4 : 2, style.mainWeight - 2) : 0,
             })
           }
           if (routeNextStepPolylineRef.current) {
             routeNextStepPolylineRef.current.setOptions({
-              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.9 : 0.72) : 0,
-              strokeWeight: navigationMode ? Math.max(5, style.mainWeight - 1) : 0,
+              strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.9 : 0.46) : 0,
+              strokeWeight: navigationMode ? Math.max(stableDriverNavigation ? 5 : 3, style.mainWeight - 1) : 0,
             })
           }
         } catch (e) {
@@ -2605,13 +2605,13 @@ export default function InteractiveRouteMap({
       currentPolyline?.setOptions({
         strokeColor: style.main,
         strokeOpacity: style.opacity,
-        strokeWeight: navigationMode ? previewRouteWeight : ROUTE_STYLE.client.mainWeight - 2,
+        strokeWeight: navigationMode ? previewRouteWeight : Math.max(2, ROUTE_STYLE.client.mainWeight - 1),
         zIndex: MAP_LAYER_Z.routeMain,
       })
       currentFocusGlow?.setOptions({
         strokeColor: style.glow,
-        strokeOpacity: navigationMode ? 0.24 : 0.16,
-        strokeWeight: navigationMode ? style.glowWeight : ROUTE_STYLE.client.glowWeight - 4,
+        strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.24 : 0.08) : 0.06,
+        strokeWeight: navigationMode ? style.glowWeight : Math.max(3, ROUTE_STYLE.client.glowWeight - 3),
         zIndex: MAP_LAYER_Z.routeGlow,
       })
       currentPolyline?.setPath(routePath)
@@ -2668,26 +2668,26 @@ export default function InteractiveRouteMap({
 
     completedPolyline?.setOptions({
       strokeColor: style.completed,
-      strokeOpacity: navigationMode && !simpleStableRoute ? (stableDriverNavigation ? 0.32 : 0.22) : 0,
-      strokeWeight: navigationMode && !simpleStableRoute ? Math.max(4, style.mainWeight - 2) : 0,
+      strokeOpacity: navigationMode && !simpleStableRoute ? (stableDriverNavigation ? 0.32 : 0.10) : 0,
+      strokeWeight: navigationMode && !simpleStableRoute ? Math.max(stableDriverNavigation ? 4 : 2, style.mainWeight - 2) : 0,
       zIndex: MAP_LAYER_Z.completedRoute,
     })
     currentFocusGlow?.setOptions({
       strokeColor: style.glow,
-      strokeOpacity: navigationMode && !simpleStableRoute ? (recalculating ? 0.16 : stableDriverNavigation ? 0.26 : 0.18) : 0,
+      strokeOpacity: navigationMode && !simpleStableRoute ? (recalculating ? 0.08 : stableDriverNavigation ? 0.26 : 0.08) : 0,
       strokeWeight: navigationMode && !simpleStableRoute ? style.glowWeight : 0,
       zIndex: MAP_LAYER_Z.routeGlow,
     })
     currentPolyline?.setOptions({
       strokeColor: style.main,
       strokeOpacity: recalculating ? 0.64 : style.opacity,
-      strokeWeight: navigationMode ? previewRouteWeight : Math.max(5, style.mainWeight - 3),
+      strokeWeight: navigationMode ? previewRouteWeight : Math.max(stableDriverNavigation ? 5 : 3, style.mainWeight - 1),
       zIndex: MAP_LAYER_Z.routeMain,
     })
     nextStepPolyline?.setOptions({
       strokeColor: style.next,
-      strokeOpacity: navigationMode && !recalculating && !simpleStableRoute ? (stableDriverNavigation ? 0.9 : 0.72) : 0,
-      strokeWeight: navigationMode && !simpleStableRoute ? Math.max(5, style.mainWeight - 1) : 0,
+      strokeOpacity: navigationMode && !recalculating && !simpleStableRoute ? (stableDriverNavigation ? 0.9 : 0.46) : 0,
+      strokeWeight: navigationMode && !simpleStableRoute ? Math.max(stableDriverNavigation ? 5 : 3, style.mainWeight - 1) : 0,
       zIndex: MAP_LAYER_Z.nextStep,
     })
 
@@ -2911,7 +2911,7 @@ const visibleDrivers = useMemo(() => {
           map,
           path: [],
           strokeColor: initialRouteStyle.glow,
-          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.18) : 0,
+          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.08) : 0,
           strokeWeight: navigationMode ? initialRouteStyle.glowWeight : 0,
           clickable: false,
           geodesic: true,
@@ -2923,7 +2923,7 @@ const visibleDrivers = useMemo(() => {
           path: [],
           strokeColor: initialRouteStyle.main,
           strokeOpacity: initialRouteStyle.opacity,
-          strokeWeight: navigationMode ? initialRouteStyle.mainWeight : Math.max(5, ROUTE_STYLE.client.mainWeight - 3),
+          strokeWeight: navigationMode ? initialRouteStyle.mainWeight : Math.max(3, ROUTE_STYLE.client.mainWeight - 1),
           clickable: false,
           geodesic: true,
           zIndex: MAP_LAYER_Z.routeMain,
@@ -2933,8 +2933,8 @@ const visibleDrivers = useMemo(() => {
           map,
           path: [],
           strokeColor: initialRouteStyle.completed,
-          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.32 : 0.22) : 0,
-          strokeWeight: navigationMode ? Math.max(4, initialRouteStyle.mainWeight - 2) : 0,
+          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.32 : 0.10) : 0,
+          strokeWeight: navigationMode ? Math.max(stableDriverNavigation ? 4 : 2, initialRouteStyle.mainWeight - 2) : 0,
           clickable: false,
           geodesic: true,
           zIndex: MAP_LAYER_Z.completedRoute,
@@ -2944,8 +2944,8 @@ const visibleDrivers = useMemo(() => {
           map,
           path: [],
           strokeColor: initialRouteStyle.next,
-          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.9 : 0.72) : 0,
-          strokeWeight: navigationMode ? Math.max(5, initialRouteStyle.mainWeight - 1) : 0,
+          strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.9 : 0.46) : 0,
+          strokeWeight: navigationMode ? Math.max(stableDriverNavigation ? 5 : 3, initialRouteStyle.mainWeight - 1) : 0,
           clickable: false,
           geodesic: true,
           zIndex: MAP_LAYER_Z.nextStep,
@@ -4158,7 +4158,7 @@ const visibleDrivers = useMemo(() => {
       if (focusRouteGlow) {
         focusRouteGlow.setOptions({
           strokeColor: style.glow,
-          strokeOpacity: 0.24,
+          strokeOpacity: stableDriverNavigation ? 0.24 : 0.08,
           strokeWeight: style.glowWeight,
           zIndex: MAP_LAYER_Z.routeGlow,
         })
@@ -4282,7 +4282,7 @@ const visibleDrivers = useMemo(() => {
         if (currentFocusGlow) {
           currentFocusGlow.setOptions({
             strokeColor: style.glow,
-            strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.18) : 0,
+            strokeOpacity: navigationMode ? (stableDriverNavigation ? 0.26 : 0.08) : 0,
             strokeWeight: navigationMode ? style.glowWeight : 0,
             zIndex: MAP_LAYER_Z.routeGlow,
           })
