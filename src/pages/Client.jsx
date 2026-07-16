@@ -76,7 +76,7 @@ const CLIENT_DRIVER_GPS_MAX_AGE_MS = 45000
 const CLIENT_DRIVER_PROFILE_MAX_AGE_MS = 90000
 const CLIENT_ROAD_GPS_DRIFT_METERS = 180
 const CLIENT_PICKUP_GPS_MAX_AGE_MS = 120000
-const CLIENT_PICKUP_GPS_MAX_ACCURACY_METERS = 120
+const CLIENT_PICKUP_GPS_MAX_ACCURACY_METERS = 300
 const CLIENT_PICKUP_GPS_TIMEOUT_MS = 9000
 const CLIENT_REQUEST_TRIP_TIMEOUT_MS = 18000
 
@@ -1519,20 +1519,32 @@ async function getFreshClientPickupLocation() {
   }
 
   return new Promise((resolve) => {
+    let settled = false
+    const finish = (value) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(fallbackTimer)
+      resolve(value)
+    }
+
+    const fallbackTimer = window.setTimeout(() => {
+      finish(isFreshClientPickupLocation(clientLocation) ? clientLocation : null)
+    }, CLIENT_PICKUP_GPS_TIMEOUT_MS + 1200)
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const nextLocation = normalizeClientGpsPosition(pos)
         if (!isFreshClientPickupLocation(nextLocation)) {
-          resolve(isFreshClientPickupLocation(clientLocation) ? clientLocation : null)
+          finish(isFreshClientPickupLocation(clientLocation) ? clientLocation : null)
           return
         }
 
         setClientLocation(nextLocation)
         setLocationReady(true)
-        resolve(nextLocation)
+        finish(nextLocation)
       },
       () => {
-        resolve(isFreshClientPickupLocation(clientLocation) ? clientLocation : null)
+        finish(isFreshClientPickupLocation(clientLocation) ? clientLocation : null)
       },
       {
         enableHighAccuracy: true,
