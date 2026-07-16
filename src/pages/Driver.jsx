@@ -457,6 +457,8 @@ export default function Driver() {
   const [message, setMessage] = useState('')
   const [routeGuidance, setRouteGuidance] = useState(null)
   const [clientRushNotice, setClientRushNotice] = useState(false)
+  const [dismissedRushTripId, setDismissedRushTripId] = useState(null)
+  const [rushDragX, setRushDragX] = useState(0)
   const [showSideMenu, setShowSideMenu] = useState(false)
   const [tripAction, setTripAction] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -477,6 +479,8 @@ export default function Driver() {
   const driverProfile = auth.driverProfile
    const pendingTripsAudioRef = useRef(null)
   const messageAudioRef = useRef(null)
+  const rushSwipeStartXRef = useRef(null)
+  const rushDragXRef = useRef(0)
   const lastChatUnreadCountRef = useRef(0)
   const lastMessageSoundAtRef = useRef(0)
   const hasLoadedTripsRef = useRef(false)
@@ -531,6 +535,21 @@ export default function Driver() {
   const activeTrip = useMemo(() => trips.find((trip) => trip.status !== 'pending') || null, [trips])
   const activeTripId = activeTrip?.id
   useEffect(() => {
+    if (!activeTripId) {
+      setDismissedRushTripId(null)
+      setRushDragX(0)
+      rushDragXRef.current = 0
+      return
+    }
+
+    const dismissedKey = `michofer_driver_rush_dismissed_${activeTripId}`
+    const dismissed = localStorage.getItem(dismissedKey) === '1'
+    setDismissedRushTripId(dismissed ? activeTripId : null)
+    setRushDragX(0)
+    rushDragXRef.current = 0
+  }, [activeTripId])
+
+  useEffect(() => {
     if (!activeTripId || !auth.user?.id) {
       setClientRushNotice(false)
       return undefined
@@ -573,6 +592,38 @@ export default function Driver() {
       supabase.removeChannel(channel)
     } // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTripId, driverUserId])
+
+  function dismissRushNotice() {
+    if (!activeTripId) return
+    localStorage.setItem(`michofer_driver_rush_dismissed_${activeTripId}`, '1')
+    setDismissedRushTripId(activeTripId)
+    setRushDragX(0)
+    rushDragXRef.current = 0
+    rushSwipeStartXRef.current = null
+  }
+
+  function handleRushPointerDown(event) {
+    rushSwipeStartXRef.current = event.clientX
+  }
+
+  function handleRushPointerMove(event) {
+    if (rushSwipeStartXRef.current == null) return
+    const nextDragX = event.clientX - rushSwipeStartXRef.current
+    const clampedDragX = Math.max(-140, Math.min(140, nextDragX))
+    rushDragXRef.current = clampedDragX
+    setRushDragX(clampedDragX)
+  }
+
+  function handleRushPointerEnd() {
+    if (Math.abs(rushDragXRef.current) >= 76) {
+      dismissRushNotice()
+      return
+    }
+
+    rushSwipeStartXRef.current = null
+    rushDragXRef.current = 0
+    setRushDragX(0)
+  }
   const pendingTrips = useMemo(
     () =>
       trips
@@ -853,9 +904,13 @@ export default function Driver() {
         ? 'GPS estable'
         : 'GPS debil')
   const hasClientRushNotice = Boolean(
-    clientRushNotice ||
-    activeTrip?.client_rush_at ||
-    Number(activeTrip?.client_rush_count) > 0
+    activeTripId &&
+    dismissedRushTripId !== activeTripId &&
+    (
+      clientRushNotice ||
+      activeTrip?.client_rush_at ||
+      Number(activeTrip?.client_rush_count) > 0
+    )
   )
 
   const driverAvatar = auth.driverProfile?.avatar_url || auth.profile?.avatar_url || ''
@@ -1775,7 +1830,19 @@ const updateTrip = useCallback(async (trip, status) => {
           )}
 
           {hasClientRushNotice && (
-            <article className="driver-rush-notice priority-live-alert" role="status" aria-live="polite">
+            <article
+              className={`driver-rush-notice priority-live-alert ${Math.abs(rushDragX) > 48 ? 'is-swiping' : ''}`}
+              role="status"
+              aria-live="polite"
+              style={{
+                transform: `translateX(${rushDragX}px)`,
+                opacity: Math.max(0.34, 1 - Math.abs(rushDragX) / 170),
+              }}
+              onPointerDown={handleRushPointerDown}
+              onPointerMove={handleRushPointerMove}
+              onPointerUp={handleRushPointerEnd}
+              onPointerCancel={handleRushPointerEnd}
+            >
               <span className="driver-rush-icon" aria-hidden="true">
                 <BellRing size={20} />
               </span>
@@ -1785,6 +1852,10 @@ const updateTrip = useCallback(async (trip, status) => {
                 <strong>Cliente con prisa</strong>
                 <small>Avanza apenas sea seguro. Seguridad primero.</small>
               </div>
+
+              <span className="driver-rush-dismiss-hint" aria-hidden="true">
+                Desliza
+              </span>
             </article>
           )}
 
