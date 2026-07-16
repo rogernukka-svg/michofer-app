@@ -90,6 +90,9 @@ const CLIENT_DRIVER_ROAD_MAX_AGE_MS = 18000
 const CLIENT_DRIVER_GPS_MAX_AGE_MS = 45000
 const CLIENT_DRIVER_PROFILE_MAX_AGE_MS = 90000
 const CLIENT_ROAD_GPS_DRIFT_METERS = 180
+const CLIENT_PICKUP_GPS_MAX_AGE_MS = 15000
+const CLIENT_PICKUP_GPS_MAX_ACCURACY_METERS = 120
+const CLIENT_PICKUP_GPS_TIMEOUT_MS = 9000
 
 const MODE_ICON_LABEL = {
   all: 'T',
@@ -318,6 +321,29 @@ function isFreshTimestamp(value, maxAgeMs) {
   const parsed = Date.parse(value || '')
   if (!Number.isFinite(parsed)) return false
   return Date.now() - parsed <= maxAgeMs
+}
+
+function normalizeClientGpsPosition(pos) {
+  if (!pos?.coords) return null
+
+  return {
+    lat: Number(pos.coords.latitude),
+    lng: Number(pos.coords.longitude),
+    accuracy: Number.isFinite(Number(pos.coords.accuracy)) ? Number(pos.coords.accuracy) : null,
+    _timestamp: Number(pos.timestamp) || Date.now(),
+  }
+}
+
+function isFreshClientPickupLocation(point) {
+  if (!isValidParaguayCoord(point)) return false
+
+  const timestamp = Number(point?._timestamp)
+  if (!Number.isFinite(timestamp) || Date.now() - timestamp > CLIENT_PICKUP_GPS_MAX_AGE_MS) {
+    return false
+  }
+
+  const accuracy = Number(point?.accuracy)
+  return !Number.isFinite(accuracy) || accuracy <= CLIENT_PICKUP_GPS_MAX_ACCURACY_METERS
 }
 
 function clientLiveStatusUi(status, driverName, etaText, distanceMeters) {
@@ -669,8 +695,6 @@ useEffect(() => {
     return fares[catKey] ?? fares['auto_standard']
   }, [fares, vehicleMode])
 
-  const routeKm = fares?.details?.distanceKm ?? null
-
   const getDriverFare = (driver) => {
     if (!fares) return null
     const driverCategory = getDriverPreferredRideCategory(driver, vehicleMode)
@@ -708,7 +732,8 @@ useEffect(() => {
     // This part runs regardless of session, to get location
     navigator.geolocation.getCurrentPosition(
       (pos) => handleLocationSuccess(pos),
-      () => handleLocationError()
+      () => handleLocationError(),
+      { enableHighAccuracy: true, timeout: CLIENT_PICKUP_GPS_TIMEOUT_MS, maximumAge: 1000 }
     )
   }, [auth.loading, auth.user, auth.profile])
 
@@ -1012,10 +1037,7 @@ const { data: liveTrips, error: liveError } = await supabase
 
   async function handleLocationSuccess(pos) {
     setLoading(true)
-    const nextLocation = {
-      lat: Number(pos.coords.latitude),
-      lng: Number(pos.coords.longitude),
-    }
+    const nextLocation = normalizeClientGpsPosition(pos)
     if (!isValidParaguayCoord(nextLocation)) {
       setClientLocation(null)
       setLocationReady(false)
@@ -1442,7 +1464,37 @@ async function handleTripUpdate(nextTrip) {
   }
 }
 
-async function requestRide() {
+async function getFreshClientPickupLocation() {
+  if (!navigator.geolocation) {
+    return isFreshClientPickupLocation(clientLocation) ? clientLocation : null
+  }
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const nextLocation = normalizeClientGpsPosition(pos)
+        if (!isFreshClientPickupLocation(nextLocation)) {
+          resolve(isFreshClientPickupLocation(clientLocation) ? clientLocation : null)
+          return
+        }
+
+        setClientLocation(nextLocation)
+        setLocationReady(true)
+        resolve(nextLocation)
+      },
+      () => {
+        resolve(isFreshClientPickupLocation(clientLocation) ? clientLocation : null)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: CLIENT_PICKUP_GPS_TIMEOUT_MS,
+        maximumAge: 0,
+      }
+    )
+  })
+}
+
+  async function requestRide() {
   if (!auth.user) {
     window.location.href = '/login'
     return
@@ -1458,8 +1510,11 @@ async function requestRide() {
     return
   }
 
-  if (!clientLocation || !isValidParaguayCoord(clientLocation)) {
-    setMessage('No tengo tu ubicación actual. Tocá calibrar ubicación y probá de nuevo.')
+  setMessage('Confirmando tu ubicacion actual...')
+  const pickupLocation = await getFreshClientPickupLocation()
+
+  if (!pickupLocation || !isValidParaguayCoord(pickupLocation)) {
+    setMessage('No tengo una ubicacion actual precisa. Toca calibrar ubicacion y proba de nuevo.')
     return
   }
 
@@ -1489,7 +1544,7 @@ async function requestRide() {
 
   if (driversSnapshotAge > 60000 || !freshestDriver) {
     setMessage('Confirmando disponibilidad del chofer...')
-    const refreshedDrivers = await loadDrivers(clientLocation, { force: true })
+    const refreshedDrivers = await loadDrivers(pickupLocation, { force: true })
 
     freshestDriver = (refreshedDrivers || []).find((driver) => {
       const driverId = driver.user_id || driver.id
@@ -1517,37 +1572,46 @@ async function requestRide() {
     return
   }
 
-  if (!routePrice) {
-    setMessage('No pude calcular el precio todavía. Ajustá el destino y probá de nuevo.')
-    return
-  }
-
   setRequesting(true)
   setMessage('')
 
   const destinationTextFinal = destinationPlace?.formatted_address || destinationPlace?.name || destination
   const requestedRideCategory = resolveRideCategoryForRequest(freshestDriver, vehicleMode)
-  const safeRouteKm = Number.isFinite(Number(routeKm))
-    ? Number(routeKm)
-    : distanceKm(clientLocation, destinationPoint)
+  const pickupDriftMeters = liveDistanceMeters(clientLocation, pickupLocation)
+  const canTrustVisibleRoute = Number.isFinite(pickupDriftMeters) && pickupDriftMeters <= 45
+  const requestDistanceMeters = canTrustVisibleRoute && Number.isFinite(Number(routeGuidance?.distance))
+    ? Number(routeGuidance.distance)
+    : (distanceKm(pickupLocation, destinationPoint) || 0) * 1000
+  const requestDurationSeconds = canTrustVisibleRoute && Number.isFinite(Number(routeGuidance?.duration))
+    ? Number(routeGuidance.duration)
+    : Math.max(180, (requestDistanceMeters / 1000) * 180)
+  const requestFare = calculateFare(requestedRideCategory, requestDistanceMeters, requestDurationSeconds)
+  const safeRouteKm = requestFare?.distanceKm ?? requestDistanceMeters / 1000
+  const safeRoutePrice = requestFare?.totalPassengerPays ?? routePrice
+
+  if (!Number.isFinite(Number(safeRoutePrice)) || Number(safeRoutePrice) <= 0) {
+    setRequesting(false)
+    setMessage('No pude calcular el precio todavia. Ajusta el destino y proba de nuevo.')
+    return
+  }
 
   const tripPayload = {
     driverId: selectedDriverId,
     destinationText: destinationTextFinal,
     destinationLat: Number(destinationPoint.lat),
     destinationLng: Number(destinationPoint.lng),
-    pickupLat: Number(clientLocation.lat),
-    pickupLng: Number(clientLocation.lng),
+    pickupLat: Number(pickupLocation.lat),
+    pickupLng: Number(pickupLocation.lng),
     driverLat: Number(freshestDriver.lat),
     driverLng: Number(freshestDriver.lng),
     routeKm: safeRouteKm,
-    price: Number(routePrice),
+    price: Number(safeRoutePrice),
     paymentMethod,
     womenMode: Boolean(ellaSafetyActive),
     rideCategory: requestedRideCategory,
   }
 
-  console.log('[MiChofer Route] origin:', clientLocation)
+  console.log('[MiChofer Route] origin:', pickupLocation)
   console.log('[MiChofer Route] destination:', destinationPoint, destinationTextFinal)
   console.log('[MiChofer requestTrip category debug]', {
     vehicleMode,
@@ -1902,10 +1966,7 @@ async function cancelActiveTrip() {
   async function refreshLocation() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const nextLocation = {
-          lat: Number(pos.coords.latitude),
-          lng: Number(pos.coords.longitude),
-        }
+        const nextLocation = normalizeClientGpsPosition(pos)
 
         if (!isValidParaguayCoord(nextLocation)) {
           setLocationReady(false)
