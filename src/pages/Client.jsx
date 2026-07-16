@@ -241,7 +241,8 @@ function normalizeDriver(driver, location) {
   return {
     ...driver,
     id: driver?.id || driver?.user_id,
-    user_id: driver?.user_id || driver?.id,
+    profile_id: driver?.id || null,
+    user_id: driver?.user_id || null,
     lat: hasLocation ? lat : null,
     lng: hasLocation ? lng : null,
     name: driver?.full_name || driver?.email || 'Chofer disponible',
@@ -253,6 +254,15 @@ function normalizeDriver(driver, location) {
     price,
     hasValidLocation: hasLocation,
   }
+}
+
+function getDriverAccountId(driver) {
+  return driver?.user_id || driver?.driver_id || driver?.profile?.id || null
+}
+
+function sameDriverAccount(driver, driverId) {
+  const accountId = getDriverAccountId(driver)
+  return accountId && String(accountId) === String(driverId || '')
 }
 
 function rideStatusUi(status, driverName, etaText = '') {
@@ -1257,7 +1267,7 @@ const { data: liveTrips, error: liveError } = await supabase
 
     if (normalized.length > 0) {
       const driverIds = normalized
-        .map((driver) => driver.user_id || driver.id)
+        .map((driver) => getDriverAccountId(driver))
         .filter(Boolean)
 
       const { data: ratingRows, error: ratingError } = await supabase
@@ -1272,7 +1282,7 @@ const { data: liveTrips, error: liveError } = await supabase
         }, {})
 
         normalizedWithRatings = normalized.map((driver) => {
-          const summary = ratingMap[driver.user_id || driver.id]
+          const summary = ratingMap[getDriverAccountId(driver)]
 
           return {
             ...driver,
@@ -1526,7 +1536,7 @@ async function getFreshClientPickupLocation() {
     return
   }
 
-  const selectedDriverId = selectedDriver.user_id || selectedDriver.id
+  const selectedDriverId = getDriverAccountId(selectedDriver)
 
   if (!selectedDriverId) {
     setRequesting(false)
@@ -1542,8 +1552,7 @@ async function getFreshClientPickupLocation() {
   }
 
   let freshestDriver = drivers.find((driver) => {
-    const driverId = driver.user_id || driver.id
-    return String(driverId || '') === String(selectedDriverId || '')
+    return sameDriverAccount(driver, selectedDriverId)
   })
   const driversSnapshotAge = driversLastLoadedAt ? Date.now() - driversLastLoadedAt : Infinity
 
@@ -1556,8 +1565,7 @@ async function getFreshClientPickupLocation() {
     )
 
     freshestDriver = (refreshedDrivers || []).find((driver) => {
-      const driverId = driver.user_id || driver.id
-      return String(driverId || '') === String(selectedDriverId || '')
+      return sameDriverAccount(driver, selectedDriverId)
     })
   }
 
