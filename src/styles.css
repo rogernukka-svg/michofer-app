@@ -30293,3 +30293,288 @@ body.route-client .mc-ride-cancel-action:focus-visible {
   }
 }
 
+/* Final client driver chooser polish - premium, calm, factual. */
+body.route-client .mc-select-sheet {
+  width: min(calc(100vw - 24px), 414px) !important;
+  max-height: min(72svh, 650px) !important;
+  padding: 12px !important;
+  gap: 10px !important;
+  border-radius: 30px !important;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(53, 240, 176, 0.075), transparent 36%),
+    linear-gradient(180deg, rgba(13, 18, 25, 0.985), rgba(5, 7, 11, 0.995)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    0 28px 92px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+body.route-client .mc-select-title p {
+  color: rgba(53, 240, 176, 0.68) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.16em !important;
+}
+
+body.route-client .mc-select-title h1 {
+  margin-top: 5px !important;
+  font-size: 30px !important;
+  line-height: 0.98 !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-select-title span {
+  max-width: 31ch !important;
+  margin-top: 6px !important;
+  color: rgba(248, 250, 252, 0.58) !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+}
+
+body.route-client .mc-select-close {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 18px !important;
+  color: rgba(255, 255, 255, 0.84) !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+body.route-client .mc-select-summary {
+  min-height: 56px !important;
+  padding: 5px !important;
+  gap: 5px !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+body.route-client .mc-select-summary div {
+  min-height: 46px !important;
+  padding: 8px 9px !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+body.route-client .mc-select-summary span {
+  color: rgba(248, 250, 252, 0.38) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.08em !important;
+}
+
+body.route-client .mc-select-summary strong {
+  margin-top: 5px !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-select-summary .price strong {
+  color: #e9fffb !important;
+}
+
+body.route-client .mc-apple-modes {
+  gap: 6px !important;
+}
+
+body.route-client .mc-apple-modes-head span {
+  color: rgba(248, 250, 252, 0.50) !important;
+  font-size: 11px !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-apple-modes-head small {
+  color: rgba(248, 250, 252, 0.42) !important;
+  font-size: 11px !important;
+}
+
+body.route-client .mc-apple-mode-strip {
+  min-height: 46px !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  padding: 4px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+body.route-client .mc-apple-mode {
+  min-height: 38px !important;
+  padding: 0 4px !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.route-client .mc-apple-mode.active {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+body.route-client .mc-apple-mode-icon,
+body.route-client .mc-apple-mode-copy small,
+body.route-client .mc-select-note,
+body.route-client .mc-select-footer {
+  display: none !important;
+}
+
+body.route-client .mc-apple-mode-copy strong {
+  color: rgba(255, 255, 255, 0.76) !important;
+  font-size: 10px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+body.route-client .mc-apple-mode.active .mc-apple-mode-copy strong {
+  color: #ffffff !important;
+}
+
+body.route-client .mc-select-content {
+  padding-right: 2px !important;
+}
+
+body.route-client .mc-driver-list {
+  gap: 8px !important;
+}
+
+body.route-client .mc-driver-card {
+  min-height: 84px !important;
+  padding: 9px 10px !important;
+  border-radius: 23px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.062), rgba(255, 255, 255, 0.035)) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 12px 28px rgba(0, 0, 0, 0.18) !important;
+}
+
+body.route-client .mc-driver-card.recommended {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(53, 240, 176, 0.13), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.038)) !important;
+  border-color: rgba(53, 240, 176, 0.18) !important;
+}
+
+body.route-client .mc-driver-card.ella {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+body.route-client .mc-driver-main {
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+  gap: 10px !important;
+}
+
+body.route-client .mc-driver-avatar {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.26) !important;
+}
+
+body.route-client .mc-driver-name {
+  gap: 5px !important;
+}
+
+body.route-client .mc-driver-name strong {
+  font-size: 17px !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-driver-name svg {
+  width: 13px !important;
+  height: 13px !important;
+  color: #35f0b0 !important;
+}
+
+body.route-client .mc-driver-name em {
+  min-height: 18px !important;
+  padding: 0 7px !important;
+  border-radius: 999px !important;
+  color: rgba(233, 255, 251, 0.88) !important;
+  background: rgba(53, 240, 176, 0.08) !important;
+  border: 1px solid rgba(53, 240, 176, 0.15) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.04em !important;
+}
+
+body.route-client .mc-driver-info small {
+  margin-top: 4px !important;
+  color: rgba(248, 250, 252, 0.48) !important;
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+}
+
+body.route-client .mc-driver-meta {
+  margin-top: 7px !important;
+  gap: 4px !important;
+}
+
+body.route-client .mc-driver-meta span {
+  min-height: 22px !important;
+  padding: 0 7px !important;
+  border-radius: 999px !important;
+  color: rgba(248, 250, 252, 0.70) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.055) !important;
+  font-size: 10px !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-driver-meta span.muted {
+  color: rgba(248, 250, 252, 0.46) !important;
+}
+
+body.route-client .mc-driver-side {
+  min-width: 84px !important;
+  gap: 6px !important;
+}
+
+body.route-client .mc-best {
+  min-height: 20px !important;
+  padding: 0 8px !important;
+  color: rgba(233, 255, 251, 0.90) !important;
+  background: rgba(53, 240, 176, 0.09) !important;
+  border: 1px solid rgba(53, 240, 176, 0.16) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.04em !important;
+}
+
+body.route-client .mc-driver-side strong {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-driver-side small {
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  color: #071013 !important;
+  background: rgba(248, 255, 253, 0.96) !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18) !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .mc-select-sheet {
+    width: min(calc(100vw - 18px), 400px) !important;
+    padding: 10px !important;
+    border-radius: 28px !important;
+  }
+
+  body.route-client .mc-select-title h1 {
+    font-size: 27px !important;
+  }
+
+  body.route-client .mc-driver-side {
+    min-width: 78px !important;
+  }
+
+  body.route-client .mc-driver-side small {
+    min-height: 32px !important;
+    padding: 0 12px !important;
+  }
+}
+

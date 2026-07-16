@@ -134,6 +134,23 @@ function firstName(value) {
   return String(value || 'Chofer').split(' ')[0]
 }
 
+function getDriverRatingLabel(driver) {
+  const count = Number(driver?.ratingCount ?? driver?.rating_count ?? 0)
+  const rating = Number(driver?.rating)
+
+  if (count > 0 && Number.isFinite(rating)) {
+    return {
+      value: rating.toFixed(1),
+      hasRating: true,
+    }
+  }
+
+  return {
+    value: 'Nuevo',
+    hasRating: false,
+  }
+}
+
 function maskPlate(value) {
   if (!value) return ''
   const clean = String(value).replace(/\s+/g, '')
@@ -1363,11 +1380,12 @@ const { data: liveTrips, error: liveError } = await supabase
 
         normalizedWithRatings = normalized.map((driver) => {
           const summary = ratingMap[getDriverAccountId(driver)]
+          const ratingCount = summary?.rating_count ? Number(summary.rating_count) : Number(driver.rating_count || 0)
 
           return {
             ...driver,
-            rating: summary?.rating ? Number(summary.rating) : Number(driver.rating || 5),
-            ratingCount: summary?.rating_count ? Number(summary.rating_count) : Number(driver.rating_count || 0),
+            rating: ratingCount > 0 && summary?.rating ? Number(summary.rating) : Number(driver.rating || 0),
+            ratingCount,
           }
         })
       }
@@ -3076,6 +3094,8 @@ async function cancelActiveTrip() {
           <div className="mc-driver-list">
             {visibleDrivers.map((driver, index) => {
               const driverFare = getDriverFare(driver)
+              const ratingLabel = getDriverRatingLabel(driver)
+              const etaText = driver.eta ? String(driver.eta).replace(/^Llega en\s+/i, '') : ''
 
               return (
                 <button
@@ -3107,13 +3127,13 @@ async function cancelActiveTrip() {
                       <small>{driver.vehicle || 'Vehículo verificado'}</small>
 
                       <div className="mc-driver-meta">
-                        <span>
+                        <span className={ratingLabel.hasRating ? '' : 'muted'}>
                           <Star size={12} />
-                          {Number(driver.rating || 5).toFixed(2)}
+                          {ratingLabel.value}
                         </span>
 
                         {driver.eta && (
-                          <span>{String(driver.eta).includes('min') ? `Llega en ${driver.eta}` : driver.eta}</span>
+                          <span>{etaText}</span>
                         )}
 
                         {driver.distance && <span>{driver.distance}</span>}
@@ -3122,7 +3142,7 @@ async function cancelActiveTrip() {
                   </div>
 
                   <div className="mc-driver-side">
-                    {index === 0 && <span className="mc-best">Mejor</span>}
+                    {index === 0 && <span className="mc-best">Cerca</span>}
                     <strong>{driverFare ? formatGs(driverFare) : '---'}</strong>
                     <small>Elegir</small>
                   </div>
