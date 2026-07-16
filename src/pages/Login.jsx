@@ -818,6 +818,15 @@ useEffect(() => {
                 {busy ? 'Conectando...' : 'Continuar con Google'}
               </button>
 
+              <button
+                type="button"
+                className="login-main-btn"
+                onClick={() => setStep('email')}
+                disabled={busy}
+              >
+                Entrar con correo
+              </button>
+
               <a className="login-main-btn login-create-link" href="/registro">
                 Crear cuenta
               </a>
