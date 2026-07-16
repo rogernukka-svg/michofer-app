@@ -276,7 +276,7 @@ function rideStatusUi(status, driverName, etaText = '') {
   if (status === 'accepted') {
     return {
       title: `Recogida en ${eta}`,
-      subtitle: `${name} aceptó tu viaje y va camino al punto de recogida.`,
+      subtitle: `${name} va hacia vos.`,
       badge: 'Confirmado',
       progress: 58,
       chatEnabled: true,
@@ -286,7 +286,7 @@ function rideStatusUi(status, driverName, etaText = '') {
   if (status === 'arriving') {
     return {
       title: 'Llegada en breve',
-      subtitle: `${name} llegó o está muy cerca. Verificá la chapa antes de subir.`,
+      subtitle: `Verificá auto y chapa.`,
       badge: 'Llegando',
       progress: 78,
       chatEnabled: true,
@@ -296,7 +296,7 @@ function rideStatusUi(status, driverName, etaText = '') {
   if (status === 'in_progress') {
     return {
       title: 'Viaje en curso',
-      subtitle: 'Seguimos tu recorrido en tiempo real hasta el destino.',
+      subtitle: 'Seguimiento en vivo.',
       badge: 'En ruta',
       progress: 92,
       chatEnabled: true,
@@ -305,7 +305,7 @@ function rideStatusUi(status, driverName, etaText = '') {
 
   return {
     title: 'Chofer encontrado',
-    subtitle: 'Esperando que confirme tu solicitud. Todavía no está viniendo.',
+    subtitle: 'Esperando confirmación.',
     badge: 'Solicitud enviada',
     progress: 28,
     chatEnabled: false,
@@ -365,7 +365,7 @@ function clientLiveStatusUi(status, driverName, etaText, distanceMeters) {
   if ((status === 'accepted' || status === 'arriving') && distanceMeters != null && distanceMeters <= 22) {
     return {
       title: 'Tu chofer está en el punto',
-      subtitle: `${name} ya está muy cerca. Verificá el auto y la chapa.`,
+      subtitle: `${name} está muy cerca.`,
       badge: 'En el punto',
       progress: 82,
       chatEnabled: true,
@@ -375,7 +375,7 @@ function clientLiveStatusUi(status, driverName, etaText, distanceMeters) {
   if (status === 'in_progress' && distanceMeters != null && distanceMeters <= 25) {
     return {
       title: 'Estás llegando al destino',
-      subtitle: 'El destino está a pocos metros. Revisá tus pertenencias.',
+      subtitle: 'Destino cercano.',
       badge: 'Llegando',
       progress: 96,
       chatEnabled: true,
@@ -391,39 +391,39 @@ function clientTripHumanCopy(status, driverName, etaText, distanceMeters, rushSe
 
   if (status === 'pending') {
     return {
-      title: 'Estamos esperando confirmación',
-      subtitle: 'Tu solicitud ya fue enviada. En breve el chofer responde.',
+      title: 'Solicitud enviada',
+      subtitle: 'Esperando confirmación.',
       mood: 'waiting',
-      joke: 'Respirá tranqui. Estamos moviendo los hilos.',
+      joke: '',
     }
   }
 
   if (status === 'accepted') {
     return {
       title: `${name} ya aceptó tu viaje`,
-      subtitle: `Va camino a buscarte. Llega en ${eta}.`,
+      subtitle: `Llega en ${eta}.`,
       mood: 'accepted',
       joke: rushSent
-        ? 'Ya le avisamos que estás apurado. Seguridad primero, siempre.'
-        : 'Tu chofer ya viene. Vos prepará la ubicación.',
+        ? 'Aviso enviado.'
+        : '',
     }
   }
 
   if (status === 'arriving') {
     return {
       title: `${name} está llegando`,
-      subtitle: 'Ya está muy cerca del punto de recogida. Verificá el auto y la chapa.',
+      subtitle: 'Verificá auto y chapa.',
       mood: 'arriving',
-      joke: 'Está cerquita. Mirá alrededor y subí solo cuando confirmes el auto.',
+      joke: '',
     }
   }
 
   if (status === 'in_progress') {
     return {
       title: 'Viaje en curso',
-      subtitle: 'Seguimos tu recorrido en tiempo real hasta el destino.',
+      subtitle: 'Seguimiento en vivo.',
       mood: 'in_progress',
-      joke: 'Modo copiloto activado.',
+      joke: '',
     }
   }
 
@@ -455,19 +455,19 @@ function clientTripHumanCopy(status, driverName, etaText, distanceMeters, rushSe
 
 function waitingMicrocopy(status, secondsWaiting, rushSent) {
   if (rushSent) {
-    return 'Ya le avisamos al chofer. Seguridad primero, pero con ganas de llegar rápido.'
+    return 'Aviso enviado.'
   }
 
   if (status === 'pending' && secondsWaiting > 20) {
-    return 'Seguimos esperando confirmación. Te acompañamos mientras responde.'
+    return 'Esperando confirmación.'
   }
 
   if (status === 'accepted' && secondsWaiting > 90) {
-    return 'Tu chofer sigue en camino. A veces el tráfico se cree protagonista.'
+    return 'Chofer en camino.'
   }
 
   if (status === 'arriving') {
-    return 'Está cerquita. Mirá alrededor y verificá el auto antes de subir.'
+    return 'Verificá auto y chapa.'
   }
 
   return ''

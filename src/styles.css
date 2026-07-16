@@ -30076,3 +30076,220 @@ body.route-driver .driver-nav-layout.driver-view-horizon .driver-trip-panel {
     bottom: max(10px, env(safe-area-inset-bottom)) !important;
   }
 }
+
+/* Final client premium sheet override - must stay at EOF. */
+body.route-client .mc-ride-live-sheet {
+  max-width: 392px !important;
+  padding: 9px 10px 10px !important;
+  gap: 8px !important;
+  border-radius: 28px !important;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(10, 132, 255, 0.10), transparent 38%),
+    linear-gradient(180deg, rgba(13, 19, 27, 0.965), rgba(5, 8, 13, 0.985)) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.46),
+    0 1px 0 rgba(255, 255, 255, 0.10) inset !important;
+}
+
+body.route-client .mc-ride-handle { height: 11px !important; }
+body.route-client .mc-ride-handle span {
+  width: 38px !important;
+  height: 4px !important;
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+body.route-client .mc-ride-progress {
+  height: 3px !important;
+  background: rgba(255, 255, 255, 0.075) !important;
+}
+
+body.route-client .mc-ride-progress > span {
+  background: linear-gradient(90deg, #0a84ff, #35d6ff) !important;
+  box-shadow: 0 0 14px rgba(10, 132, 255, 0.30) !important;
+}
+
+body.route-client .mc-ride-progress > em {
+  width: 25px !important;
+  height: 25px !important;
+  color: #07111c !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.26) !important;
+}
+
+body.route-client .mc-ride-live-sheet.is-expanded { padding: 10px !important; }
+body.route-client .mc-ride-compact {
+  grid-template-columns: 46px minmax(0, 1fr) auto !important;
+  min-height: 58px !important;
+  gap: 10px !important;
+}
+body.route-client .mc-ride-compact-avatar {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 16px !important;
+}
+
+body.route-client .mc-ride-compact-copy span,
+body.route-client .mc-ride-status-pill {
+  min-height: 20px !important;
+  padding: 0 9px !important;
+  color: #07111c !important;
+  background: rgba(53, 240, 176, 0.94) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.03em !important;
+}
+
+body.route-client .mc-ride-compact-copy strong {
+  margin-top: 5px !important;
+  font-size: 17px !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-ride-compact-copy small {
+  margin-top: 3px !important;
+  color: rgba(255, 255, 255, 0.52) !important;
+  font-size: 11px !important;
+}
+
+body.route-client .mc-ride-compact-action {
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+body.route-client .mc-ride-status-copy h2 {
+  margin-top: 7px !important;
+  font-size: 23px !important;
+  line-height: 1.02 !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-ride-status-copy p {
+  margin-top: 5px !important;
+  color: rgba(255, 255, 255, 0.54) !important;
+  font-size: 12px !important;
+}
+
+body.route-client .mc-ride-driver-card {
+  grid-template-columns: 64px minmax(0, 1fr) !important;
+  min-height: 96px !important;
+  gap: 10px !important;
+  padding: 9px !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  border-color: rgba(255, 255, 255, 0.075) !important;
+}
+
+body.route-client .mc-ride-driver-photo {
+  width: 64px !important;
+  height: 78px !important;
+  border-radius: 18px !important;
+}
+
+body.route-client .mc-ride-driver-photo em {
+  width: 20px !important;
+  height: 20px !important;
+  background: #35f0b0 !important;
+}
+
+body.route-client .mc-ride-driver-info { gap: 8px !important; }
+body.route-client .mc-ride-driver-name span,
+body.route-client .mc-ride-driver-meta span,
+body.route-client .mc-ride-pickup-card span {
+  color: rgba(255, 255, 255, 0.38) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.04em !important;
+}
+
+body.route-client .mc-ride-driver-name strong {
+  margin-top: 4px !important;
+  font-size: 18px !important;
+  letter-spacing: 0 !important;
+}
+
+body.route-client .mc-ride-driver-meta {
+  grid-template-columns: minmax(0, 1fr) minmax(70px, 0.48fr) !important;
+}
+
+body.route-client .mc-ride-driver-meta div {
+  padding: 9px !important;
+  border-radius: 15px !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+}
+body.route-client .mc-ride-driver-meta strong {
+  margin-top: 4px !important;
+  font-size: 12px !important;
+}
+
+body.route-client .mc-ride-pickup-card {
+  min-height: 50px !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  padding: 8px 10px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  border-color: rgba(255, 255, 255, 0.075) !important;
+}
+body.route-client .mc-ride-pickup-icon {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 14px !important;
+  color: #35f0b0 !important;
+  background: rgba(53, 240, 176, 0.08) !important;
+}
+body.route-client .mc-ride-pickup-card strong {
+  margin-top: 4px !important;
+  font-size: 12px !important;
+}
+body.route-client .mc-ride-microcopy { display: none !important; }
+
+body.route-client .mc-ride-actions { gap: 7px !important; }
+body.route-client .mc-ride-chat-action,
+body.route-client .mc-ride-rush-action,
+body.route-client .mc-ride-cancel-action {
+  min-height: 48px !important;
+  border-radius: 17px !important;
+  font-size: 13px !important;
+  letter-spacing: 0.01em !important;
+}
+body.route-client .mc-ride-chat-action {
+  color: #061018 !important;
+  background: linear-gradient(135deg, #33f0b0, #27cfff) !important;
+  box-shadow: 0 12px 28px rgba(39, 207, 255, 0.13) !important;
+}
+body.route-client .mc-ride-rush-action {
+  color: #f8fbff !important;
+  background: rgba(255, 255, 255, 0.085) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow: none !important;
+}
+body.route-client .mc-ride-rush-action.sent { background: rgba(53, 240, 176, 0.12) !important; }
+body.route-client .mc-ride-rush-icon { background: rgba(255, 255, 255, 0.12) !important; }
+body.route-client .mc-ride-rush-note {
+  padding: 8px 10px !important;
+  border-radius: 14px !important;
+  color: rgba(255, 255, 255, 0.60) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+body.route-client .mc-ride-cancel-action {
+  color: rgba(255, 255, 255, 0.70) !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body.route-client .mc-ride-cancel-action:hover,
+body.route-client .mc-ride-cancel-action:focus-visible {
+  color: #ffffff !important;
+  background: rgba(138, 20, 36, 0.82) !important;
+}
+
+@media (max-width: 390px) {
+  body.route-client .mc-ride-live-sheet {
+    border-radius: 26px !important;
+    padding: 8px 9px 9px !important;
+  }
+  body.route-client .mc-ride-status-copy h2 { font-size: 21px !important; }
+  body.route-client .mc-ride-driver-card { grid-template-columns: 60px minmax(0, 1fr) !important; }
+  body.route-client .mc-ride-driver-photo {
+    width: 60px !important;
+    height: 74px !important;
+  }
+}
+
