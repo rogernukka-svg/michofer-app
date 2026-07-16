@@ -1167,6 +1167,46 @@ const { data: liveTrips, error: liveError } = await supabase
     }
   }
 
+  async function ensureClientProfileForTrip() {
+    if (!auth.user?.id) {
+      return {
+        ok: false,
+        message: 'Inicia sesion para solicitar un viaje.',
+      }
+    }
+
+    const fallbackName =
+      auth.profile?.full_name ||
+      auth.user.user_metadata?.full_name ||
+      auth.user.email?.split('@')[0] ||
+      'Cliente MiChofer'
+    const fallbackRole =
+      auth.profile?.role ||
+      auth.user.user_metadata?.role ||
+      'passenger'
+
+    const { error } = await upsertOwnProfile({
+      email: auth.user.email,
+      fullName: fallbackName,
+      role: fallbackRole,
+      avatarUrl: auth.profile?.avatar_url || auth.user.user_metadata?.avatar_url || '',
+    })
+
+    if (error) {
+      console.error('[MiChofer requestRide] No pude asegurar profiles del cliente:', error)
+      return {
+        ok: false,
+        message: `No pude preparar tu cuenta para pedir viaje: ${getErrorMessage(error)}.`,
+      }
+    }
+
+    auth.reloadProfiles?.().catch((profileError) => {
+      console.warn('[MiChofer requestRide] Perfil creado, pero no pude recargarlo todavia:', profileError)
+    })
+
+    return { ok: true }
+  }
+
   async function restoreActiveTrip(clientId) {
     const { data } = await supabase
       .from('trips')
@@ -1693,6 +1733,20 @@ async function getFreshClientPickupLocation() {
   })
   console.log('[MiChofer requestTrip payload]', tripPayload)
 
+  setMessage('Preparando tu cuenta...')
+  const profileReady = await withTimeout(
+    ensureClientProfileForTrip(),
+    CLIENT_REQUEST_TRIP_TIMEOUT_MS,
+    'ensureClientProfileForTrip'
+  )
+
+  if (!profileReady?.ok) {
+    setRequesting(false)
+    setMessage(profileReady?.message || 'No pude preparar tu cuenta para pedir viaje. Proba de nuevo.')
+    return
+  }
+
+  setMessage('Enviando solicitud al chofer...')
   const { data, error } = await withTimeout(
     requestTrip(tripPayload),
     CLIENT_REQUEST_TRIP_TIMEOUT_MS,
