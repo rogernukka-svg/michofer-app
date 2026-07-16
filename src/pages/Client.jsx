@@ -75,7 +75,7 @@ const CLIENT_DRIVER_ROAD_MAX_AGE_MS = 18000
 const CLIENT_DRIVER_GPS_MAX_AGE_MS = 45000
 const CLIENT_DRIVER_PROFILE_MAX_AGE_MS = 90000
 const CLIENT_ROAD_GPS_DRIFT_METERS = 180
-const CLIENT_PICKUP_GPS_MAX_AGE_MS = 15000
+const CLIENT_PICKUP_GPS_MAX_AGE_MS = 120000
 const CLIENT_PICKUP_GPS_MAX_ACCURACY_METERS = 120
 const CLIENT_PICKUP_GPS_TIMEOUT_MS = 9000
 
@@ -1495,15 +1495,18 @@ async function getFreshClientPickupLocation() {
     return
   }
 
+  setRequesting(true)
   setMessage('Confirmando tu ubicacion actual...')
   const pickupLocation = await getFreshClientPickupLocation()
 
   if (!pickupLocation || !isValidParaguayCoord(pickupLocation)) {
+    setRequesting(false)
     setMessage('No tengo una ubicacion actual precisa. Toca calibrar ubicacion y proba de nuevo.')
     return
   }
 
   if (!selectedDriver) {
+    setRequesting(false)
     setMessage('Elegí un chofer disponible.')
     return
   }
@@ -1511,12 +1514,14 @@ async function getFreshClientPickupLocation() {
   const selectedDriverId = selectedDriver.user_id || selectedDriver.id
 
   if (!selectedDriverId) {
+    setRequesting(false)
     console.error('[MiChofer requestRide] Chofer sin user_id válido:', selectedDriver)
     setMessage('Este chofer no tiene user_id válido. Revisá driver_profiles.')
     return
   }
 
   if (selectedDriverId === auth.user.id) {
+    setRequesting(false)
     setMessage('No podés solicitarte un viaje a tu misma cuenta. Probá cliente y chofer con correos distintos.')
     return
   }
@@ -1538,11 +1543,13 @@ async function getFreshClientPickupLocation() {
   }
 
   if (driversLoadError && !freshestDriver) {
+    setRequesting(false)
     setMessage(`No pude confirmar choferes disponibles: ${getErrorMessage(driversLoadError)}. Verificá internet y probá otra vez.`)
     return
   }
 
   if (!freshestDriver) {
+    setRequesting(false)
     setMessage('Ese chofer ya no aparece disponible. Elegí otro chofer y probá de nuevo.')
     return
   }
@@ -1552,12 +1559,12 @@ async function getFreshClientPickupLocation() {
   }
 
   if (!isValidParaguayCoord({ lat: freshestDriver.lat, lng: freshestDriver.lng })) {
+    setRequesting(false)
     console.error('[MiChofer requestRide] Chofer sin GPS válido:', freshestDriver)
     setMessage('Este chofer no tiene GPS válido. Pedile que calibre ubicación en modo chofer.')
     return
   }
 
-  setRequesting(true)
   setMessage('')
 
   const destinationTextFinal = destinationPlace?.formatted_address || destinationPlace?.name || destination
