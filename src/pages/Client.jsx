@@ -78,6 +78,7 @@ const CLIENT_ROAD_GPS_DRIFT_METERS = 180
 const CLIENT_PICKUP_GPS_MAX_AGE_MS = 120000
 const CLIENT_PICKUP_GPS_MAX_ACCURACY_METERS = 120
 const CLIENT_PICKUP_GPS_TIMEOUT_MS = 9000
+const CLIENT_REQUEST_TRIP_TIMEOUT_MS = 18000
 
 const MODE_ICON_LABEL = {
   all: 'T',
@@ -329,6 +330,19 @@ function isFreshClientPickupLocation(point) {
 
   const accuracy = Number(point?.accuracy)
   return !Number.isFinite(accuracy) || accuracy <= CLIENT_PICKUP_GPS_MAX_ACCURACY_METERS
+}
+
+function withTimeout(promise, timeoutMs, label) {
+  let timeoutId
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(`${label} timeout`))
+    }, timeoutMs)
+  })
+
+  return Promise.race([promise, timeout]).finally(() => {
+    window.clearTimeout(timeoutId)
+  })
 }
 
 function clientLiveStatusUi(status, driverName, etaText, distanceMeters) {
@@ -1480,6 +1494,7 @@ async function getFreshClientPickupLocation() {
 }
 
   async function requestRide() {
+  try {
   if (!auth.user) {
     window.location.href = '/login'
     return
@@ -1534,7 +1549,11 @@ async function getFreshClientPickupLocation() {
 
   if (driversSnapshotAge > 60000 || !freshestDriver) {
     setMessage('Confirmando disponibilidad del chofer...')
-    const refreshedDrivers = await loadDrivers(pickupLocation, { force: true })
+    const refreshedDrivers = await withTimeout(
+      loadDrivers(pickupLocation, { force: true }),
+      CLIENT_REQUEST_TRIP_TIMEOUT_MS,
+      'loadDrivers'
+    )
 
     freshestDriver = (refreshedDrivers || []).find((driver) => {
       const driverId = driver.user_id || driver.id
@@ -1613,7 +1632,11 @@ async function getFreshClientPickupLocation() {
   })
   console.log('[MiChofer requestTrip payload]', tripPayload)
 
-  const { data, error } = await requestTrip(tripPayload)
+  const { data, error } = await withTimeout(
+    requestTrip(tripPayload),
+    CLIENT_REQUEST_TRIP_TIMEOUT_MS,
+    'requestTrip'
+  )
 
   setRequesting(false)
 
@@ -1652,6 +1675,12 @@ async function getFreshClientPickupLocation() {
   setRushSentAt(null)
   setShowDriverChooser(false)
   setMessage('Solicitud enviada. Esperando confirmación.')
+  } catch (error) {
+    console.error('[MiChofer requestRide unexpected ERROR]', error)
+    setMessage(`No pude enviar la solicitud: ${getErrorMessage(error)}.`)
+  } finally {
+    setRequesting(false)
+  }
 }
 
   function handleModeSelect(nextMode) {
